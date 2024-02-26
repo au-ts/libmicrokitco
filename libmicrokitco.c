@@ -1,5 +1,5 @@
 #include <microkit.h>
-#include <libco.h>
+#include <stdint.h>
 
 #include <libmicrokitco.h>
 #include "coallocator.h"
@@ -14,7 +14,11 @@ typedef enum cothread_state {
 
 typedef struct cothread_tcb {
     co_state_t state;
-    void *memory;
+
+    // This is checked if the thread is blocked.
+    microkit_cothread_t blocked_on;
+
+    void *stack_memory;
 } co_tcb_t;
 
 struct cothreads_control {
@@ -26,13 +30,19 @@ struct cothreads_control {
     // scheduling stuff...
 };
 
-int microkit_cothread_init(void *backing_memory, int max_cothreads, co_control_t *co_controller) {
+int microkit_cothread_init(void *backing_memory, uint64_t mem_size, int max_cothreads, co_control_t *co_controller) {
     if (!backing_memory || !max_cothreads) {
-        return -1;
+        return 1;
+    }
+
+    // TODO, check that the backing memory is enough to house all the cothreads stack and supporting DS.
+    //       dont need to check that the memory is proper size cause the allocator checks for it.
+
+    if (allocator_init(backing_memory, mem_size, &co_controller->mem_allocator) != 0) {
+        return 1;
     }
 
     co_controller->max_cothreads = max_cothreads;
-    co_controller->backing_memory = backing_memory;
 
     // TODO, figure out how to structure the memory:
 }
