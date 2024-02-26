@@ -1,1 +1,1 @@
-# microkit_clientmodel
+# Client Programming Model for Microkit
