@@ -21,6 +21,8 @@ void microkit_cothread_init(void *backing_memory, int max_cothreads);
 // Returns -1 on error, e.g. max_cothreads reached.
 microkit_cothread microkit_cothread_spawn(void (*cothread_entrypoint)(void));
 
+// Explicitly switch to a another cothread.
+void microkit_cothread_switch(microkit_cothread cothread);
 
 // A co_switch() in disguise. However, before actually switching, it poll for 
 // any pending notifications and map the received notification to blocked cothreads. If 
@@ -33,6 +35,8 @@ microkit_cothread microkit_cothread_spawn(void (*cothread_entrypoint)(void));
 // amount of time before yielding to ensure responsiveness.
 void microkit_cothread_wait(microkit_channel wake_on);
 
+// Invoke the scheduler as described, but the calling cothread is "ready" instead of blocked.
+void microkit_cothread_yield();
 
 // Destroys the calling cothread and return the cothread's local memory into the available pool.
 // Then does similar things to microkit_cothread_wait() and pick the next cothread.
