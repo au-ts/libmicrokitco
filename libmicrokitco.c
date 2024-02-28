@@ -42,33 +42,46 @@ struct cothreads_control {
     co_tcb_t* tcbs;
 
     // stack of free cothread IDs/handles
-    microkit_cothread_t *free;
+    microkit_cothread_t *free_id_stack;
     // point to the next available stack slot, so this is 0 if stack is empty.
     unsigned int stack_top;
 
     // circ queue for scheduling
-    microkit_cothread_t *sched;
+    microkit_cothread_t *sched_queue;
+    // item at the front
     unsigned int front;
+    // next available index for insert, equals to front if queue is empty.
     unsigned int back;
 };
 
 int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned int max_cothreads, co_control_t *co_controller){
     if (!backing_memory || !max_cothreads) {
-        return 1;
+        return MICROKITCO_ERR_INIT_INVALID_ARGS;
     }
 
-    // TODO, check that the backing memory is enough to house all the cothreads stack and supporting DS.
-    //       dont need to check that the memory is proper size cause the allocator checks for it.
-    // TODO, figure out memory layout
+    co_controller->max_cothreads = max_cothreads;
+
+    // memory allocator for the library
     if (allocator_init(backing_memory, mem_size, &co_controller->mem_allocator) != 0) {
-        return 1;
+        return MICROKITCO_ERR_INIT_MEMALLOC_INIT_FAIL;
+    }
+    // allocate all the buffers we need, also checks if backing_memory is large enough
+    co_controller->tcbs = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(co_tcb_t) * max_cothreads);
+    co_controller->free_id_stack = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    co_controller->sched_queue = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    // not enough memory;
+    if (!co_controller->tcbs || !co_controller->free_id_stack || !co_controller->sched_queue) {
+        return MICROKITCO_ERR_INIT_NOT_ENOUGH_MEMORY;
     }
 
+    // initialise the root thread's handle;
     co_controller->root.cothread = co_active();
     co_controller->root.state = cothread_running;
 
-    co_controller->tcbs = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(co_tcb_t) * max_cothreads);
-    co_controller->max_cothreads = max_cothreads;
+    // initialise our free id stack and scheduling queue
+    co_controller->stack_top = 0;
+    co_controller->front = 0;
+    co_controller->back = 0;
 
     return 0;
 }

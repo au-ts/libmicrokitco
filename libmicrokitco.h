@@ -3,6 +3,10 @@
 #define DEFAULT_COSTACK_SIZE 0x2000
 #define NULL (void *) 0
 
+#define MICROKITCO_ERR_INIT_INVALID_ARGS 1
+#define MICROKITCO_ERR_INIT_MEMALLOC_INIT_FAIL 2
+#define MICROKITCO_ERR_INIT_NOT_ENOUGH_MEMORY 3
+
 typedef unsigned int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
