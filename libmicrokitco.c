@@ -13,7 +13,7 @@ typedef enum cothread_state {
     cothread_running = 2,
 } co_state_t;
 
-typedef struct cothread_tcb {
+typedef struct {
     cothread_t cothread;
 
     co_state_t state;
@@ -23,7 +23,7 @@ typedef struct cothread_tcb {
 } co_tcb_t;
 
 // "TCB" of the thread that called microkit_cothread_init()
-typedef struct cothread_tcb {
+typedef struct {
     cothread_t cothread;
     co_state_t state;
     microkit_channel blocked_on;

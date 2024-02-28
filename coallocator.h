@@ -13,8 +13,7 @@ typedef struct allocator {
     // next available address
     uint64_t brk;
 
-    void *(*alloc)(struct allocator *, uint64_t);
-    void *(*free)(struct allocator *, uint64_t);
+    void *(*alloc)(struct allocator *, unsigned int);
 } allocator_t;
 
 void *alloc(allocator_t *allocator, unsigned int size) {
@@ -40,7 +39,6 @@ int allocator_init(void *backing_memory, unsigned int size, allocator_t *allocat
     allocator->size = size;
     allocator->brk = 0;
     allocator->alloc = alloc;
-    allocator->free = 0;
     return 0;
 }
 
