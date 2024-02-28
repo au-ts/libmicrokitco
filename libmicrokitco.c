@@ -83,7 +83,7 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned
     co_controller->front = 0;
     co_controller->back = 0;
 
-    return 0;
+    return MICROKITCO_NOERR;
 }
 
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), co_control_t *co_controller) {
