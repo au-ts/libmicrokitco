@@ -17,7 +17,7 @@ typedef struct allocator {
     void *(*free)(struct allocator *, uint64_t);
 } allocator_t;
 
-void *alloc(allocator_t *allocator, uint64_t size) {
+void *alloc(allocator_t *allocator, unsigned int size) {
     if (allocator->brk + size > allocator->size) {
         return 0;
     } else {
@@ -27,13 +27,13 @@ void *alloc(allocator_t *allocator, uint64_t size) {
     }
 }
 
-int allocator_init(void *backing_memory, uint64_t size, allocator_t *allocator) {
+int allocator_init(void *backing_memory, unsigned int size, allocator_t *allocator) {
     if (!backing_memory || !size) {
         return 1;
     }
 
-    for (uint64_t i = 0; i < size; i++) {
-        ((uint8_t *) backing_memory)[i] = 0;
+    for (int i = 0; i < size; i++) {
+        ((char *) backing_memory)[i] = 0;
     }
 
     allocator->backing_memory = backing_memory;
