@@ -3,15 +3,18 @@
 #include <stdint.h>
 
 // A very crude memory allocator for the coroutine library.
+
 typedef struct allocator {
+    // memory for client is allocated from bottom UP
+    // memory for internal data structure is allocated top DOWN
     void *backing_memory;
     uint64_t size;
 
     // next available address
     uint64_t brk;
 
-    void *(*alloc)(allocator_t *, uint64_t);
-    void *(*free)(allocator_t *, uint64_t);
+    void *(*alloc)(struct allocator *, uint64_t);
+    void *(*free)(struct allocator *, uint64_t);
 } allocator_t;
 
 void *alloc(allocator_t *allocator, uint64_t size) {
