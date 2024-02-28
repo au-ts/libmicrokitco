@@ -5,12 +5,13 @@
 #include "coallocator.h"
 #include "./libco/libco.h"
 
-extern char libmicrokitco_backing_mem[];
-
 typedef enum cothread_state {
-    cothread_blocked = 0,
-    cothread_ready = 1,
-    cothread_running = 2,
+    // this id is not being used
+    cothread_not_active = 0,
+
+    cothread_blocked = 1,
+    cothread_ready = 2,
+    cothread_running = 3,
 } co_state_t;
 
 typedef struct {
@@ -36,8 +37,10 @@ struct cothreads_control {
     allocator_t mem_allocator;
 
     microkit_cothread_t running;
-    // thread that called microkit_cothread_init()
+    // root thread that called microkit_cothread_init()
     tcb_t root;
+    // exclusive of root thread
+    unsigned int num_cothreads;
     // array of cothreads
     co_tcb_t* tcbs;
 
@@ -59,6 +62,7 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned
         return MICROKITCO_ERR_INIT_INVALID_ARGS;
     }
 
+    co_controller->num_cothreads = 0;
     co_controller->max_cothreads = max_cothreads;
 
     // memory allocator for the library
