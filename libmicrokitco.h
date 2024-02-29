@@ -1,7 +1,6 @@
 #pragma once
 
 #define DEFAULT_COSTACK_SIZE 0x2000
-#define NULL (void *) 0
 
 #define MICROKITCO_ERR_COTHREAD_HANDLE -1
 
@@ -10,20 +9,10 @@
 #define MICROKITCO_ERR_INIT_INVALID_ARGS 1
 #define MICROKITCO_ERR_INIT_MEMALLOC_INIT_FAIL 2
 #define MICROKITCO_ERR_INIT_NOT_ENOUGH_MEMORY 3
+#define MICROKITCO_ERR_INIT_STACK_INIT_ERR 4
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
-
-void co_panic() {
-    char *panic_addr = (char *) NULL;
-    *panic_addr = (char) 0;
-}
-
-void co_memset(void *mem, unsigned int size) {
-    for (unsigned int i = 0; i < size; i++) {
-        ((char *) mem)[i] = NULL;
-    }
-}
 
 // Initialise the library's internal data structure. 
 // Will need at least a circular queue for scheduling (to be described later), a table for storing cothreads' state
