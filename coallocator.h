@@ -1,44 +1,41 @@
 #pragma once
 
-#include <stdint.h>
+#include "util.h"
 
 // A very crude memory allocator for the coroutine library.
 
 typedef struct allocator {
-    // memory for client is allocated from bottom UP
-    // memory for internal data structure is allocated top DOWN
+    // memory is allocated bottom UP
     void *backing_memory;
-    uint64_t size;
+    word_t size;
 
     // next available address
-    uint64_t brk;
+    word_t brk;
 
-    void *(*alloc)(struct allocator *, unsigned int);
+    void *(*alloc)(struct allocator *, word_t);
 } allocator_t;
 
-void *alloc(allocator_t *allocator, unsigned int size) {
-    if (allocator->brk + size > allocator->size) {
+void *co_alloc(allocator_t *allocator, word_t size) {
+    if (size < 1 || allocator->brk + size >= allocator->size) {
         return 0;
     } else {
-        uint64_t ret = allocator->brk;
+        word_t ret = allocator->brk;
         allocator->brk += size;
         return (void *) ret;
     }
 }
 
-int allocator_init(void *backing_memory, unsigned int size, allocator_t *allocator) {
-    if (!backing_memory || !size) {
+int co_allocator_init(void *backing_memory, int size, allocator_t *allocator) {
+    if (!backing_memory || size < 1) {
         return 1;
     }
 
-    for (int i = 0; i < size; i++) {
-        ((char *) backing_memory)[i] = 0;
-    }
+    memzero(backing_memory, size);
 
     allocator->backing_memory = backing_memory;
     allocator->size = size;
-    allocator->brk = 0;
-    allocator->alloc = alloc;
+    allocator->brk = (word_t) backing_memory;
+    allocator->alloc = co_alloc;
     return 0;
 }
 
