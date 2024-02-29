@@ -17,6 +17,7 @@ typedef struct {
     int top;
 } hosted_stack_t;
 
+// memory should be (item_size * capacity) bytes size large!
 int hostedstack_init(hosted_stack_t *stack_controller, void *memory, int item_size, int capacity) {
     if (!memory || item_size < 1 || capacity < 1) {
         return LIBHOSTEDSTACK_ERR_INVALID_ARGS;
@@ -62,3 +63,5 @@ int hostedstack_push(hosted_stack_t *stack_controller, void *item) {
     memcpy(base, item, item_size);
     return LIBHOSTEDSTACK_NOERR;
 }
+
+// TODO, write a short integration test
