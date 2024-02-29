@@ -16,8 +16,3 @@ void memcpy(void *dest, void *source, int size) {
         destination[i] = byte;
     }
 }
-
-void memzero(void *mem, int size) {
-    unsigned int zero = 0;
-    memcpy(mem, &zero, size);
-}
