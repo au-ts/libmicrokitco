@@ -2,6 +2,8 @@
 
 #define NULL (void *) 0
 
+#define word_t unsigned long long
+
 void panic() {
     char *panic_addr = (char *) NULL;
     *panic_addr = (char) 0;
