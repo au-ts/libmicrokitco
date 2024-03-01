@@ -21,7 +21,7 @@ typedef struct {
     co_state_t state;
     microkit_channel blocked_on;
 
-    char stack_memory[DEFAULT_COSTACK_SIZE];
+    unsigned char stack_memory[DEFAULT_COSTACK_SIZE];
 } co_tcb_t;
 
 // "TCB" of the thread that called microkit_cothread_init()
@@ -115,7 +115,7 @@ void microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_con
 microkit_cothread_t microkit_cothread_schedule(co_control_t *co_controller) {
     return -1;
 
-    // pop queue
+    // pop scheduling queue
 }
 
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller) {
