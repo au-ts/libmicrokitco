@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../util.h"
+#include <microkit.h>
 
 // A simple fixed capacity stack that grows upward.
 // "Hosted" meaning the user of the library provides the memory.
@@ -22,6 +23,9 @@ int hostedstack_init(hosted_stack_t *stack_controller, void *memory, int item_si
     if (!memory || item_size < 1 || capacity < 1) {
         return LIBHOSTEDSTACK_ERR_INVALID_ARGS;
     }
+
+    // make sure we have enough memory  
+    memzero(memory, item_size * capacity);
 
     stack_controller->memory = memory;
     stack_controller->item_size = item_size;
