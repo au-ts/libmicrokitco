@@ -1,10 +1,12 @@
 #pragma once
 
 #include "../util.h"
+#include <microkit.h>
 
 // A simple fixed capacity circular queue.
 // "Hosted" meaning the user of the library provides the memory.
 
+// return codes:
 #define LIBHOSTEDQUEUE_NOERR 0
 #define LIBHOSTEDQUEUE_ERR_INVALID_ARGS 1
 #define LIBHOSTEDQUEUE_ERR_FULL 2
@@ -28,6 +30,9 @@ int hostedqueue_init(hosted_queue_t *queue_controller, void *memory, int item_si
     if (!memory || item_size < 1 || capacity < 1) {
         return LIBHOSTEDQUEUE_ERR_INVALID_ARGS;
     }
+
+    // make sure we have enough memory
+    memzero(memory, item_size * capacity);
 
     queue_controller->memory = memory;
     queue_controller->item_size = item_size;
