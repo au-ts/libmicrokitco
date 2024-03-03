@@ -30,7 +30,7 @@ int co_allocator_init(void *backing_memory, int size, allocator_t *allocator) {
         return 1;
     }
 
-    memzero(backing_memory, size);
+    // memzero(backing_memory, size);
 
     allocator->backing_memory = backing_memory;
     allocator->size = size;
