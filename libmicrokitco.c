@@ -137,9 +137,9 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
         return MICROKITCO_ERR_OP_FAIL;
     }
 
-    unsigned char *costack = &co_controller->tcbs[new].stack_memory;
+    unsigned char *costack = co_controller->tcbs[new].stack_memory;
     memzero(costack, DEFAULT_COSTACK_SIZE);
-    co_controller->tcbs[new].cothread = co_derive(cothread_entrypoint, DEFAULT_COSTACK_SIZE, costack);
+    co_controller->tcbs[new].cothread = co_derive(costack, DEFAULT_COSTACK_SIZE, cothread_entrypoint);
     co_controller->tcbs[new].prioritised = prioritised;
     co_controller->tcbs[new].state = cothread_ready;
 
