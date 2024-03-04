@@ -146,23 +146,29 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     return new;
 }
 
+// Pick a ready thread
+microkit_cothread_t internal_microkit_cothread_schedule(co_control_t *co_controller) {
+    return -1;
+
+    // pop scheduling queue
+}
+
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller) {
     if (!co_controller->init_success) {
-        return MICROKITCO_ERR_OP_FAIL;
+        return MICROKITCO_ERR_NOT_INITIALISED;
     }
     if (cothread >= co_controller->max_cothreads || cothread < 0) {
-        return MICROKITCO_ERR_INVALID_ARGS;
+        return MICROKITCO_ERR_INVALID_HANDLE;
     }
     if (cothread == co_controller->running) {
-        return MICROKITCO_ERR_INVALID_ARGS;
+        return MICROKITCO_ERR_INVALID_HANDLE;
     }
     if (co_controller->tcbs[cothread].state == cothread_not_active) {
-        return MICROKITCO_ERR_INVALID_ARGS;
+        return MICROKITCO_ERR_INVALID_HANDLE;
     }
 
     if (co_controller->tcbs[cothread].state == cothread_blocked) {
-        // Destination is blocked
-        // TODO
+        return MICROKITCO_ERR_DEST_BLOCKED;
     } else {
         co_controller->tcbs[co_controller->running].state = cothread_ready;
         co_controller->tcbs[cothread].state = cothread_running;
@@ -170,13 +176,6 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
         co_switch(co_controller->tcbs[cothread].cothread);
         return MICROKITCO_NOERR;
     }
-}
-
-// Pick a ready thread
-microkit_cothread_t microkit_cothread_schedule(co_control_t *co_controller) {
-    return -1;
-
-    // pop scheduling queue
 }
 
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller) {

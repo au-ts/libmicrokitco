@@ -9,6 +9,7 @@
 #define MICROKITCO_ERR_NOT_INITIALISED -3
 #define MICROKITCO_ERR_NOMEM -4
 #define MICROKITCO_ERR_OP_FAIL -5
+#define MICROKITCO_ERR_DEST_BLOCKED -6
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
@@ -40,7 +41,7 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
 
 // Explicitly switch to a another cothread.
-// (This is sketchy at best?) If the switchee is blocked, a ready cothread will be picked instead and the switcher is also blocked.
+// (Need to rethink this bit) If the switchee is blocked, a ready cothread will be picked instead and the switcher is also blocked.
 // Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
 
