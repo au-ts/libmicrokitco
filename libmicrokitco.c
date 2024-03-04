@@ -6,6 +6,8 @@
 #include "libhostedqueue/libhostedqueue.h"
 #include "libco/libco.h"
 
+#define SCHEDULER_NULL_CHOICE -1
+
 typedef enum cothread_state {
     // this id is not being used
     cothread_not_active = 0,
@@ -178,7 +180,7 @@ microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_
         microkit_cothread_t next_choice;
         int peek_err = hostedqueue_pop(sched_queue, &next_choice);
         if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
-            return -1;
+            return SCHEDULER_NULL_CHOICE;
         } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
             // queue not empty
             if (tcbs[next_choice].state == cothread_not_active) {
@@ -190,7 +192,7 @@ microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_
             }
         } else {
             // catch other errs
-            return -1;
+            return SCHEDULER_NULL_CHOICE;
         }
     }
 }
@@ -203,7 +205,7 @@ microkit_cothread_t internal_schedule(co_control_t *co_controller) {
     co_tcb_t* tcbs = co_controller->tcbs;
 
     next = internal_pop_from_queue(priority_queue, tcbs);
-    if (next == -1) {
+    if (next == SCHEDULER_NULL_CHOICE) {
         next = internal_pop_from_queue(non_priority_queue, tcbs);
     }
 
@@ -219,6 +221,10 @@ void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controlle
 
 void microkit_cothread_yield(co_control_t *co_controller) {
     microkit_channel next = internal_schedule(co_controller);
+    if (next == SCHEDULER_NULL_CHOICE) {
+        return;
+    }
+
     co_controller->tcbs[co_controller->running].state = cothread_ready;
     microkit_cothread_switch(next, co_controller);
 }

@@ -58,6 +58,7 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller);
 
 // Invoke the scheduler as described, but the calling cothread is "ready" instead of blocked.
+// However, if there is no ready cothread, the caller keeps running.
 void microkit_cothread_yield(co_control_t *co_controller);
 
 // Destroys the calling cothread and return the cothread's local memory into the available pool.
