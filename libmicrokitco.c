@@ -3,8 +3,8 @@
 
 #include "libmicrokitco.h"
 #include "coallocator.h"
-#include "libhostedstack/libhostedstack.h"
-#include "./libco/libco.h"
+#include "libhostedqueue/libhostedqueue.h"
+#include "libco/libco.h"
 
 typedef enum cothread_state {
     // this id is not being used
@@ -21,39 +21,51 @@ typedef struct {
     co_state_t state;
     microkit_channel blocked_on;
 
+    // non-zero means prioritised
+    int prioritised;
+
     unsigned char stack_memory[DEFAULT_COSTACK_SIZE];
 } co_tcb_t;
 
-// "TCB" of the thread that called microkit_cothread_init()
+// "TCB" of the thread that called microkit_cothread_init(), called the root thread.
 typedef struct {
     cothread_t cothread;
     co_state_t state;
     microkit_channel blocked_on;
-} tcb_t;
+    int prioritised;
+} root_tcb_t;
 
 struct cothreads_control {
     int max_cothreads;
-    // exclusive of root thread
+
+    // active cothreads, exclusive of root thread
     int num_cothreads;
+
+    // currently running cothread handle
     microkit_cothread_t running;
 
-    // memory manager
+    // root thread that called microkit_cothread_init()
+    root_tcb_t root;
+
     allocator_t mem_allocator;
 
-    // root thread that called microkit_cothread_init()
-    tcb_t root;
-    microkit_channel root_blocked_on;
-    // array of cothreads
+    // array of cothreads, first index is left unused to signify root thread
     co_tcb_t* tcbs;
 
-    // stack of free cothread handles
-    hosted_stack_t handle_stack;
-    // circular queue for scheduling
-    // TODO
+    // all of these are queues of `microkit_cothread_t`
+    // queue of free cothread handles
+    hosted_queue_t free_handle_queue;
+    // queues for scheduling
+    hosted_queue_t priority_queue;
+    hosted_queue_t non_priority_queue;
+
+    int init_success;
 };
 
-int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned int max_cothreads, co_control_t *co_controller){
-    if (!backing_memory || !max_cothreads) {
+int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads, co_control_t *co_controller){
+    co_controller->init_success = 0;
+
+    if (!backing_memory || max_cothreads <= 1) {
         return MICROKITCO_ERR_INIT_INVALID_ARGS;
     }
 
@@ -62,31 +74,47 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned
 
     // memory allocator for the library
     if (co_allocator_init(backing_memory, mem_size, &co_controller->mem_allocator) != 0) {
-        return MICROKITCO_ERR_INIT_MEMALLOC_INIT_FAIL;
+        return MICROKITCO_ERR_INIT_NOMEM;
     }
+
+    allocator_t *allocator = &co_controller->mem_allocator;
 
     // allocate all the buffers we could possibly need, also checks if backing_memory is large enough
-    void *tcbs_array = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(co_tcb_t) * max_cothreads);
-    void *stack_memory = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(microkit_cothread_t) * max_cothreads);
-    void *queue_memory = co_controller->mem_allocator.alloc(&co_controller->mem_allocator, sizeof(microkit_cothread_t) * max_cothreads);
-
-    // not enough memory;
-    if (!tcbs_array || !stack_memory || !queue_memory) {
-        return MICROKITCO_ERR_INIT_NOT_ENOUGH_MEMORY;
+    void *tcbs_array = allocator->alloc(allocator, sizeof(co_tcb_t) * max_cothreads);
+    void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    void *non_priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    if (!tcbs_array || !free_handle_queue_mem || !priority_queue_mem || !non_priority_queue_mem) {
+        return MICROKITCO_ERR_INIT_NOMEM;
     }
+
+    memzero(tcbs_array, sizeof(co_tcb_t) * max_cothreads);
     co_controller->tcbs = tcbs_array;
 
     // initialise the root thread's handle;
     co_controller->root.cothread = co_active();
     co_controller->root.state = cothread_running;
 
-    // initialise our free id stack
-    int err = hostedstack_init(&co_controller->handle_stack, stack_memory, sizeof(microkit_cothread_t), max_cothreads);
-    if (err != LIBHOSTEDSTACK_NOERR) {
-        return MICROKITCO_ERR_INIT_STACK_INIT_ERR;
+    // initialise the queues
+    int err = hostedqueue_init(&co_controller->free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+        return MICROKITCO_ERR_INIT_FAIL;
+    }
+    err = hostedqueue_init(&co_controller->priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+        return MICROKITCO_ERR_INIT_FAIL;
+    }
+    err = hostedqueue_init(&co_controller->non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+        return MICROKITCO_ERR_INIT_FAIL;
     }
 
-    // initialise our scheduling queue
+    // enqueue all the free IDs
+    for (microkit_cothread_t i = 1; i < max_cothreads; i++) {
+        if (hostedqueue_push(&co_controller->free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
+            return MICROKITCO_ERR_INIT_FAIL;
+        }
+    }
 
     return MICROKITCO_NOERR;
 }

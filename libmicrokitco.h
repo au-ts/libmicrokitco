@@ -7,9 +7,10 @@
 #define MICROKITCO_NOERR 0
 
 #define MICROKITCO_ERR_INIT_INVALID_ARGS 1
-#define MICROKITCO_ERR_INIT_MEMALLOC_INIT_FAIL 2
-#define MICROKITCO_ERR_INIT_NOT_ENOUGH_MEMORY 3
-#define MICROKITCO_ERR_INIT_STACK_INIT_ERR 4
+#define MICROKITCO_ERR_INIT_NOMEM 2
+#define MICROKITCO_ERR_INIT_FAIL 3
+
+#define MICROKITCO_ERR_INVALID_HANDLE 4
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
@@ -22,9 +23,17 @@ typedef struct cothreads_control co_control_t;
 
 // Details of backing_memory size requirements TBD.
 
-// Return 0 on success.
-int microkit_cothread_init(void *backing_memory, unsigned int mem_size, unsigned int max_cothreads, co_control_t *co_controller);
+// max_cothreads will be inclusive of the calling thread
 
+// By default, the calling thread will be prioritised in scheduling.
+
+// Return 0 on success.
+int microkit_cothread_init(void *backing_memory, int mem_size, int max_cothreads, co_control_t *co_controller);
+
+// Select the priority queue that the subject will be placed on when it is scheduled (not picked on).
+// No immediate effect if the cothread is already scheduled in a queue. 
+int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_controller);
+int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co_controller);
 
 // Wrapper around co_derive(). Main job is to allocate from the pool of cothread local memory.
 // Does not jump to the cothread.
@@ -51,10 +60,15 @@ void microkit_cothread_yield(co_control_t *co_controller);
 
 // Destroys the calling cothread and return the cothread's local memory into the available pool.
 // Then does similar things to microkit_cothread_wait() and pick the next cothread.
+
+
+// Must be called when a coroutine finishes, UB otherwise!
 void microkit_cothread_destroy_me(co_control_t *co_controller);
-
+// Should be sparingly used, because cothread might hold resources that needs free'ing.
 void microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller);
+// Both have no effect if subject is the root thread.
 
+// might need an entrypoint for notified as well... TODO
 
 // Food for thoughts on improvements:
 // - Ceiling of max cothreads can't be raised or lowered at runtime. Although might be fine for static systems?
