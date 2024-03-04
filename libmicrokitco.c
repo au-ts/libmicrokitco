@@ -134,7 +134,7 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     int pop_err = hostedqueue_pop(free_handle_queue, &new);
 
     if (pop_err != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_OP_FAIL;
+        return MICROKITCO_ERR_MAX_COTHREADS_REACHED;
     }
 
     unsigned char *costack = co_controller->tcbs[new].stack_memory;
@@ -171,22 +171,54 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
     }
 }
 
+// pop a ready thread from a given scheduling queue, discard any destroyed thread 
+// that result from microkit_cothread_destroy_specific()
+microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_t* tcbs) {
+    while (true) {
+        microkit_cothread_t next_choice;
+        int peek_err = hostedqueue_pop(sched_queue, &next_choice);
+        if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
+            return -1;
+        } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
+            // queue not empty
+            if (tcbs[next_choice].state == cothread_not_active) {
+                // head thread has been destroyed, continue looking.
+                continue;
+            } else {
+                // got a ready thread!
+                return next_choice;
+            }
+        } else {
+            // catch other errs
+            return -1;
+        }
+    }
+}
 // Pick a ready thread
-microkit_cothread_t internal_microkit_cothread_schedule(co_control_t *co_controller) {
-    return -1;
+microkit_cothread_t internal_schedule(co_control_t *co_controller) {
+    microkit_cothread_t next;
 
-    // pop scheduling queue
+    hosted_queue_t *priority_queue = &co_controller->priority_queue;
+    hosted_queue_t *non_priority_queue = &co_controller->non_priority_queue;
+    co_tcb_t* tcbs = co_controller->tcbs;
+
+    next = internal_pop_from_queue(priority_queue, tcbs);
+    if (next == -1) {
+        next = internal_pop_from_queue(non_priority_queue, tcbs);
+    }
+
+    return next;
 }
 
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller) {
     co_controller->tcbs[co_controller->running].state = cothread_blocked;
     co_controller->tcbs[co_controller->running].blocked_on = wake_on;
-    microkit_channel next = internal_microkit_cothread_schedule(co_controller);
+    microkit_channel next = internal_schedule(co_controller);
     microkit_cothread_switch(next, co_controller);
 }
 
 void microkit_cothread_yield(co_control_t *co_controller) {
-    microkit_channel next = internal_microkit_cothread_schedule(co_controller);
+    microkit_channel next = internal_schedule(co_controller);
     co_controller->tcbs[co_controller->running].state = cothread_ready;
     microkit_cothread_switch(next, co_controller);
 }

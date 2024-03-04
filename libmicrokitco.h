@@ -10,6 +10,7 @@
 #define MICROKITCO_ERR_NOMEM -4
 #define MICROKITCO_ERR_OP_FAIL -5
 #define MICROKITCO_ERR_DEST_BLOCKED -6
+#define MICROKITCO_ERR_MAX_COTHREADS_REACHED -7
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
@@ -41,7 +42,7 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
 
 // Explicitly switch to a another cothread.
-// (Need to rethink this bit) If the switchee is blocked, a ready cothread will be picked instead and the switcher is also blocked.
+// If the destination is blocked, returns MICROKITCO_ERR_DEST_BLOCKED.
 // Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
 
@@ -72,6 +73,8 @@ void microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control
 // might need an entrypoint for notified as well... TODO
 
 // Food for thoughts on improvements:
+// HIGH PRIO - stack canary
+
 // - Ceiling of max cothreads can't be raised or lowered at runtime. Although might be fine for static systems?
 
 // - As per docs of the original libco used in LionsOS (https://github.com/higan-emu/libco/blob/master/doc/usage.md#co_create),
