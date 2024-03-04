@@ -229,11 +229,28 @@ void microkit_cothread_yield(co_control_t *co_controller) {
     microkit_cothread_switch(next, co_controller);
 }
 
-void microkit_cothread_destroy(co_control_t *co_controller) {
-
+// These needs work
+// Food for thoughts, do we need to memzero the stack?
+void microkit_cothread_destroy_me(co_control_t *co_controller) {
+    int err = microkit_cothread_destroy_specific(co_controller->running, co_controller);
+    if (err != MICROKITCO_NOERR) {
+        // something went horribly wrong, halt everything.
+        panic();
+    }
 }
 
-// umm???
-void microkit_cothread_destroy_me(co_control_t *co_controller) {
+int microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller) {
+    if (!co_controller->init_success) {
+        return MICROKITCO_ERR_NOT_INITIALISED;
+    }
+    if (cothread >= co_controller->max_cothreads || cothread < 0) {
+        return MICROKITCO_ERR_INVALID_HANDLE;
+    }
+    if (cothread == co_controller->running) {
+        // call microkit_cothread_destroy_me() instead.
+        return MICROKITCO_ERR_INVALID_HANDLE;
+    }
+
+    co_controller->tcbs[cothread].state = cothread_not_active;
 
 }

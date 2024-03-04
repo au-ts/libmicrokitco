@@ -68,8 +68,7 @@ void microkit_cothread_yield(co_control_t *co_controller);
 // Must be called when a coroutine finishes, UB otherwise!
 void microkit_cothread_destroy_me(co_control_t *co_controller);
 // Should be sparingly used, because cothread might hold resources that needs free'ing.
-void microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller);
-// Both have no effect if subject is the root thread.
+int microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller);
 
 // might need an entrypoint for notified as well... TODO
 
