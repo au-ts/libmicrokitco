@@ -40,7 +40,9 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
 
 // Explicitly switch to a another cothread.
-void microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
+// (This is sketchy at best?) If the switchee is blocked, a ready cothread will be picked instead and the switcher is also blocked.
+// Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
+int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
 
 // A co_switch() in disguise. However, before actually switching, it poll for 
 // any pending notifications and map the received notification to blocked cothreads. If 
