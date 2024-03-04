@@ -146,13 +146,6 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     return new;
 }
 
-// Pick a ready thread
-microkit_cothread_t internal_microkit_cothread_schedule(co_control_t *co_controller) {
-    return -1;
-
-    // pop scheduling queue
-}
-
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller) {
     if (!co_controller->init_success) {
         return MICROKITCO_ERR_NOT_INITIALISED;
@@ -178,15 +171,22 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
     }
 }
 
+// Pick a ready thread
+microkit_cothread_t internal_microkit_cothread_schedule(co_control_t *co_controller) {
+    return -1;
+
+    // pop scheduling queue
+}
+
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller) {
     co_controller->tcbs[co_controller->running].state = cothread_blocked;
     co_controller->tcbs[co_controller->running].blocked_on = wake_on;
-    microkit_channel next = microkit_cothread_schedule(co_controller);
+    microkit_channel next = internal_microkit_cothread_schedule(co_controller);
     microkit_cothread_switch(next, co_controller);
 }
 
 void microkit_cothread_yield(co_control_t *co_controller) {
-    microkit_channel next = microkit_cothread_schedule(co_controller);
+    microkit_channel next = internal_microkit_cothread_schedule(co_controller);
     co_controller->tcbs[co_controller->running].state = cothread_ready;
     microkit_cothread_switch(next, co_controller);
 }
