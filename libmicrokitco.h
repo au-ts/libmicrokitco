@@ -2,15 +2,13 @@
 
 #define DEFAULT_COSTACK_SIZE 0x2000
 
-#define MICROKITCO_ERR_COTHREAD_HANDLE -1
-
 #define MICROKITCO_NOERR 0
 
-#define MICROKITCO_ERR_INIT_INVALID_ARGS 1
-#define MICROKITCO_ERR_INIT_NOMEM 2
-#define MICROKITCO_ERR_INIT_FAIL 3
-
-#define MICROKITCO_ERR_INVALID_HANDLE 4
+#define MICROKITCO_ERR_INVALID_ARGS -1
+#define MICROKITCO_ERR_INVALID_HANDLE -2
+#define MICROKITCO_ERR_NOT_INITIALISED -3
+#define MICROKITCO_ERR_NOMEM -4
+#define MICROKITCO_ERR_OP_FAIL -5
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
@@ -28,10 +26,10 @@ typedef struct cothreads_control co_control_t;
 // By default, the calling thread will be prioritised in scheduling.
 
 // Return 0 on success.
-int microkit_cothread_init(void *backing_memory, int mem_size, int max_cothreads, co_control_t *co_controller);
+int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads, co_control_t *co_controller);
 
 // Select the priority queue that the subject will be placed on when it is scheduled (not picked on).
-// No immediate effect if the cothread is already scheduled in a queue. 
+// I.e. no immediate effect if the cothread is already scheduled in a queue. 
 int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_controller);
 int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co_controller);
 
@@ -39,7 +37,7 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co
 // Does not jump to the cothread.
 // Returns a cothread handle, which is an index into the state table.
 // Returns -1 on error, e.g. max_cothreads reached.
-microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), co_control_t *co_controller);
+microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
 
 // Explicitly switch to a another cothread.
 void microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
