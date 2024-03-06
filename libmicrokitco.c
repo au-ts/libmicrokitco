@@ -7,6 +7,7 @@
 #include "libco/libco.h"
 
 #define SCHEDULER_NULL_CHOICE -1
+#define STACK_CANARY_0 
 
 typedef enum cothread_state {
     // this id is not being used
@@ -38,6 +39,11 @@ typedef struct {
 } root_tcb_t;
 
 struct cothreads_control {
+    // array of cothreads, first index is left unused to signify root thread, len(tcbs) == max_cothreads
+
+    // HIGH PRIO TODO: rethink this design, if for example the last stack infinitely recursive, it will overwrite all the stacks
+    co_tcb_t* tcbs;
+
     int max_cothreads;
 
     // active cothreads, exclusive of root thread
@@ -50,9 +56,6 @@ struct cothreads_control {
     root_tcb_t root;
 
     allocator_t mem_allocator;
-
-    // array of cothreads, first index is left unused to signify root thread
-    co_tcb_t* tcbs;
 
     // all of these are queues of `microkit_cothread_t`
     // queue of free cothread handles
@@ -163,7 +166,7 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
     }
 
     if (co_controller->tcbs[cothread].state == cothread_blocked) {
-        return MICROKITCO_ERR_DEST_BLOCKED;
+        return MICROKITCO_ERR_DEST_NOT_READY;
     } else {
         co_controller->tcbs[co_controller->running].state = cothread_ready;
         co_controller->tcbs[cothread].state = cothread_running;
@@ -229,8 +232,6 @@ void microkit_cothread_yield(co_control_t *co_controller) {
     microkit_cothread_switch(next, co_controller);
 }
 
-// These needs work
-// Food for thoughts, do we need to memzero the stack?
 void microkit_cothread_destroy_me(co_control_t *co_controller) {
     int err = microkit_cothread_destroy_specific(co_controller->running, co_controller);
     if (err != MICROKITCO_NOERR) {
