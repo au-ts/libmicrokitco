@@ -1,5 +1,6 @@
 #include <microkit.h>
 #include <stdint.h>
+#include <sel4/sel4.h>
 
 #include "libmicrokitco.h"
 #include "coallocator.h"
@@ -128,6 +129,53 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     return MICROKITCO_NOERR;
 }
 
+void microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller) {
+    // this could be faster
+    for (microkit_cothread_t i = 0; i < co_controller->max_cothreads; i++) {
+        if (co_controller->tcbs[i].state == cothread_blocked) {
+            if (co_controller->tcbs[i].blocked_on == ch) {
+                co_controller->tcbs[i].state = cothread_ready;
+                hosted_queue_t *sched_queue;
+                if (!co_controller->tcbs[i].prioritised) {
+                    sched_queue = &co_controller->non_priority_queue;
+                } else {
+                    sched_queue = &co_controller->priority_queue;
+                }
+
+                hostedqueue_push(sched_queue, &i);
+            }
+        }
+    }
+}
+
+int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_controller) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller->init_success) {
+            return MICROKITCO_ERR_NOT_INITIALISED;
+        }
+        if (subject >= co_controller->max_cothreads || subject < 0) {
+            return MICROKITCO_ERR_INVALID_HANDLE;
+        }
+    #endif
+
+    co_controller->tcbs[subject].prioritised = 1;
+    return MICROKITCO_NOERR;
+}
+
+int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co_controller) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller->init_success) {
+            return MICROKITCO_ERR_NOT_INITIALISED;
+        }
+        if (subject >= co_controller->max_cothreads || subject < 0) {
+            return MICROKITCO_ERR_INVALID_HANDLE;
+        }
+    #endif
+
+    co_controller->tcbs[subject].prioritised = 0;
+    return MICROKITCO_NOERR;
+}
+
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller->init_success) {
@@ -225,8 +273,10 @@ microkit_cothread_t internal_schedule(co_control_t *co_controller) {
 void internal_go_next(co_control_t *co_controller) {
     microkit_channel next = internal_schedule(co_controller);
     if (next == SCHEDULER_NULL_CHOICE) {
-        // TODO
-        panic();
+        // no ready thread in the queue, go back to root execution thread to receive notifications
+        
+        // TODO switching to root context requires rethinking
+        microkit_cothread_switch(co_controller->root.cothread, co_controller);
     } else {
         microkit_cothread_switch(next, co_controller);
     }

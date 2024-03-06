@@ -34,6 +34,10 @@ typedef struct cothreads_control co_control_t;
 // Return MICROKITCO_NOERR on success.
 int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads, co_control_t *co_controller);
 
+// IMPORTANT: Put this in your notified() to map incoming notifications to waiting cothreads!
+// Returns MICROKITCO_ERR_OP_FAIL if the notification couldn't be mapped onto a waiting cothread.
+void microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller);
+
 // Allow client to select which scheduling queue a cothread is placed in. 
 // No immediate effect if the cothread is already scheduled in a queue. 
 int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_controller);
