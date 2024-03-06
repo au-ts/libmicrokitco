@@ -22,6 +22,8 @@ typedef struct cothreads_control co_control_t;
 // Cothreads should yield judiciously to ensure other cothreads are not starved.
 // The library expects a large memory region (MR) allocated to it, see microkit_cothread_init().
 
+// Unsafe: define `LIBMICROKITCO_UNSAFE` macro in your preprocessor to skip most pedantic error checking.
+
 
 // Initialise the library's internal data structure.
 // Will fail if max_cothreads is negative OR co_controller is null OR backing_memory is not at least
@@ -29,7 +31,7 @@ typedef struct cothreads_control co_control_t;
 
 // max_cothreads will be inclusive of the calling thread
 // By default, the calling thread will be prioritised in scheduling.
-// Return 0 on success.
+// Return MICROKITCO_NOERR on success.
 int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads, co_control_t *co_controller);
 
 // Allow client to select which scheduling queue a cothread is placed in. 
