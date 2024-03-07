@@ -229,9 +229,9 @@ int microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     hosted_queue_t *sched_queue;
 
     if (co_controller.tcbs[cothread].prioritised) {
-        sched_queue = &co_controller.non_priority_queue;
-    } else {
         sched_queue = &co_controller.priority_queue;
+    } else {
+        sched_queue = &co_controller.non_priority_queue;
     }
     int push_err = hostedqueue_push(sched_queue, &cothread);
     co_controller.tcbs[cothread].state = cothread_ready;
@@ -327,9 +327,9 @@ void microkit_cothread_yield() {
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue;
     if (!co_controller.tcbs[co_controller.running].prioritised) {
-        sched_queue = &co_controller.non_priority_queue;
-    } else {
         sched_queue = &co_controller.priority_queue;
+    } else {
+        sched_queue = &co_controller.non_priority_queue;
     }
 
     hostedqueue_push(sched_queue, &co_controller.running);
