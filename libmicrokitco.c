@@ -328,6 +328,9 @@ int microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_
         }
     #endif
 
+    if (hostedqueue_push(&co_controller->free_handle_queue, &cothread) != LIBHOSTEDQUEUE_NOERR) {
+        return MICROKITCO_ERR_OP_FAIL;
+    }
     co_controller->tcbs[cothread].state = cothread_not_active;
 
     return MICROKITCO_NOERR;
