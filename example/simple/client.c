@@ -31,17 +31,15 @@ void init(void) {
         microkit_dbg_puts("ERR: cannot init libmicrokitco\n");
         return;
     }
+    microkit_dbg_puts("CLIENT: libmicrokitco started\n");
 
-    int co1 = microkit_cothread_spawn(co_entry1, 0);
-    int co2 = microkit_cothread_spawn(co_entry2, 0);
-    int co3 = microkit_cothread_spawn(co_entry3, 0);
-    int co4 = microkit_cothread_spawn(co_entry4, 0);
-    int co5 = microkit_cothread_spawn(co_entry5, 0);
+    int co1 = microkit_cothread_spawn(co_entry1, 0, 1);
+    int co2 = microkit_cothread_spawn(co_entry2, 0, 1);
+    int co3 = microkit_cothread_spawn(co_entry3, 0, 1);
+    int co4 = microkit_cothread_spawn(co_entry4, 0, 1);
+    int co5 = microkit_cothread_spawn(co_entry5, 0, 1);
 
-    if (co1 != MICROKITCO_NOERR || co2 != MICROKITCO_NOERR || co3 != MICROKITCO_NOERR || co4 != MICROKITCO_NOERR || co5 != MICROKITCO_NOERR) {
-        microkit_dbg_puts("ERR: cannot init cothreads\n");
-        return;
-    }
+    microkit_dbg_puts("CLIENT: cothreads spawned\n");
 
     microkit_cothread_yield();
     // should print the `COn: hi` 5x.
