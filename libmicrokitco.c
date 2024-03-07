@@ -129,7 +129,7 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     return MICROKITCO_NOERR;
 }
 
-void microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller) {
+int microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller) {
     // this could be faster
     for (microkit_cothread_t i = 0; i < co_controller->max_cothreads; i++) {
         if (co_controller->tcbs[i].state == cothread_blocked) {
@@ -143,9 +143,11 @@ void microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controlle
                 }
 
                 hostedqueue_push(sched_queue, &i);
+                return MICROKITCO_NOERR;
             }
         }
     }
+    return MICROKITCO_ERR_OP_FAIL;
 }
 
 int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_controller) {

@@ -16,7 +16,10 @@ typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
 // A cooperative multithreading library with 2-tier scheduling for use within Microkit.
-// In essence, it allow mapping of multiple executing contexts into 1 protection domain.
+// In essence, it allow mapping of multiple executing contexts (cothreads) into 1 protection domain.
+// Then, each cothread can wait for an incoming notification from a channel, while it is waiting, other
+// cothreads can execute.
+
 // A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin
 // before non-prioritised cothreads get picked on.
 // Cothreads should yield judiciously to ensure other cothreads are not starved.
@@ -31,12 +34,13 @@ typedef struct cothreads_control co_control_t;
 
 // max_cothreads will be inclusive of the calling thread
 // By default, the calling thread will be prioritised in scheduling.
-// Return MICROKITCO_NOERR on success.
+// Return MICROKITCO_NOERR on success. 
 int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads, co_control_t *co_controller);
 
 // IMPORTANT: Put this in your notified() to map incoming notifications to waiting cothreads!
+// NOTE: This library will only return to the microkit main loop for receiving notification when there is no ready cothread.
 // Returns MICROKITCO_ERR_OP_FAIL if the notification couldn't be mapped onto a waiting cothread.
-void microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller);
+int microkit_cothread_recv_ntfn(microkit_channel ch, co_control_t *co_controller);
 
 // Allow client to select which scheduling queue a cothread is placed in. 
 // No immediate effect if the cothread is already scheduled in a queue. 
@@ -44,6 +48,7 @@ int microkit_cothread_prioritise(microkit_cothread_t subject, co_control_t *co_c
 int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co_controller);
 
 // Create a new cothread, which is prioritised in scheduling if `prioritised` is non-zero.
+// Argument passing is handled with global variables.
 // Returns a cothread handle.
 // Returns -1 on error, e.g. max_cothreads reached.
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
@@ -53,15 +58,10 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
 // Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
 
-// A co_switch() in disguise. However, before actually switching, it poll for 
-// any pending notifications and map the received notification to blocked cothreads. If 
-// the mapping is unsuccessful, notified() is invoked to handle the problem. 
+// A co_switch() in disguise that switches to the next ready thread, if no thread is ready, switch to the root executing
+// context for receiving notifications from the microkit main loop.
 
 // Then for the calling cothread, register a blocked state within the library's internal data structure for this cothread.
-// Finally, switch to another ready cothread, picked in a round-robin manner, i.e., all cothread have equal priority.
-
-// Thus this model places the onus on the developer to ensure each cothread runs in a short 
-// amount of time before yielding to ensure responsiveness.
 void microkit_cothread_wait(microkit_channel wake_on, co_control_t *co_controller);
 
 // Invoke the scheduler as described, but the calling cothread is switched to ready instead of blocked.
@@ -74,8 +74,6 @@ void microkit_cothread_yield(co_control_t *co_controller);
 void microkit_cothread_destroy_me(co_control_t *co_controller);
 // Should be sparingly used, because cothread might hold resources that needs free'ing.
 int microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller);
-
-// might need an entrypoint for notified as well... TODO
 
 // Food for thoughts on improvements:
 // HIGH PRIO - stack canary
