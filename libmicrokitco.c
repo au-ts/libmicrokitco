@@ -15,9 +15,10 @@ typedef enum cothread_state {
     // this id is not being used
     cothread_not_active = 0,
 
-    cothread_blocked = 1,
-    cothread_ready = 2,
-    cothread_running = 3,
+    cothread_initialised = 1, // but not ready, TODO: impl this.
+    cothread_blocked = 2,
+    cothread_ready = 3,
+    cothread_running = 4,
 } co_state_t;
 
 typedef struct {
