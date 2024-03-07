@@ -42,10 +42,15 @@ void init(void) {
     microkit_dbg_puts("CLIENT: cothreads spawned\n");
 
     // should print the `COn: hi` 5x.
+
+    // Currently crashes, TODO: fix
     microkit_cothread_yield();
 
     // This MUST print before the cothreads' prints because client is higher prio
+    // Currently not as expected, TODO: fix
     microkit_dbg_puts("CLIENT: done, exiting!\n");
+
+    
 }
 
 void notified(microkit_channel channel) {
