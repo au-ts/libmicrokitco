@@ -110,17 +110,17 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
 
     // initialise the queues
     int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
-    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+    if (err != LIBHOSTEDQUEUE_NOERR) {
         microkit_dbg_puts("init e3\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
     err = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
-    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+    if (err != LIBHOSTEDQUEUE_NOERR) {
         microkit_dbg_puts("init e4\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
     err = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
-    if (err != LIBHOSTEDQUEUE_ERR_INVALID_ARGS) {
+    if (err != LIBHOSTEDQUEUE_NOERR) {
         microkit_dbg_puts("init e5\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
@@ -186,12 +186,14 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject) {
     return MICROKITCO_NOERR;
 }
 
-microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised) {
+microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, int ready) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller.init_success) {
+            microkit_dbg_puts("spawn e1\n");
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
         if (!cothread_entrypoint) {
+            microkit_dbg_puts("spawn e2\n");
             return MICROKITCO_ERR_INVALID_ARGS;
         }
     #endif
@@ -201,6 +203,7 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     int pop_err = hostedqueue_pop(free_handle_queue, &new);
 
     if (pop_err != LIBHOSTEDQUEUE_NOERR) {
+        microkit_dbg_puts("spawn e3\n");
         return MICROKITCO_ERR_MAX_COTHREADS_REACHED;
     }
 
@@ -209,6 +212,16 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     co_controller.tcbs[new].cothread = co_derive(costack, DEFAULT_COSTACK_SIZE, cothread_entrypoint);
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_ready;
+
+    hosted_queue_t *sched_queue;
+    if (ready) {
+        if (prioritised) {
+            sched_queue = &co_controller.non_priority_queue;
+        } else {
+            sched_queue = &co_controller.priority_queue;
+        }
+        hostedqueue_push(sched_queue, &new);
+    }
 
     return new;
 }

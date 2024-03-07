@@ -48,10 +48,11 @@ int microkit_cothread_prioritise(microkit_cothread_t subject);
 int microkit_cothread_deprioritise(microkit_cothread_t subject);
 
 // Create a new cothread, which is prioritised in scheduling if `prioritised` is non-zero.
+// If ready is non-zero, the cothread is immediately placed in the scheduler's queue for execution.
 // Argument passing is handled with global variables.
 // Returns a cothread handle.
 // Returns -1 on error, e.g. max_cothreads reached.
-microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised);
+microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, int ready);
 
 // Explicitly switch to a another cothread, bypassing the scheduler.
 // If the destination is not in a ready state, returns MICROKITCO_ERR_DEST_NOT_READY or MICROKITCO_ERR_INVALID_HANDLE.
