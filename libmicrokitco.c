@@ -303,7 +303,7 @@ void internal_go_next() {
 void microkit_cothread_wait(microkit_channel wake_on) {
     co_controller.tcbs[co_controller.running].state = cothread_blocked;
     co_controller.tcbs[co_controller.running].blocked_on = wake_on;
-    internal_go_next(co_controller);
+    internal_go_next();
 }
 
 void microkit_cothread_yield() {
@@ -319,7 +319,7 @@ void microkit_cothread_yield() {
     co_controller.tcbs[co_controller.running].state = cothread_ready;
 
     // If the scheduling queues are empty beforehand, the caller just get runned again.
-    internal_go_next(co_controller);
+    internal_go_next();
 }
 
 void microkit_cothread_destroy_me() {
@@ -332,7 +332,7 @@ void microkit_cothread_destroy_me() {
         }
     #endif
 
-    internal_go_next(co_controller);    
+    internal_go_next();    
 }
 
 int microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
@@ -341,10 +341,6 @@ int microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
         if (cothread >= co_controller.max_cothreads || cothread < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
-        }
-        if (cothread == co_controller.running) {
-            // call microkit_cothread_destroy_me() instead.
             return MICROKITCO_ERR_INVALID_HANDLE;
         }
     #endif
