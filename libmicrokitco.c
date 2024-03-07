@@ -233,7 +233,6 @@ int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_cont
 }
 
 // pop a ready thread from a given scheduling queue, discard any destroyed thread 
-// that result from microkit_cothread_destroy_specific()
 microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_t* tcbs) {
     while (true) {
         microkit_cothread_t next_choice;
@@ -242,16 +241,12 @@ microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_
             return SCHEDULER_NULL_CHOICE;
         } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
             // queue not empty
-            if (tcbs[next_choice].state == cothread_not_active) {
-                // head thread has been destroyed, continue looking.
-                continue;
-            } else {
-                // got a ready thread!
+            if (tcbs[next_choice].state == cothread_ready) {
                 return next_choice;
             }
         } else {
             // catch other errs
-            return SCHEDULER_NULL_CHOICE;
+            panic();
         }
     }
 }
@@ -273,14 +268,14 @@ microkit_cothread_t internal_schedule(co_control_t *co_controller) {
 }
 // Switch to the next ready thread, also handle cases where there is no ready thread.
 void internal_go_next(co_control_t *co_controller) {
-    microkit_channel next = internal_schedule(co_controller);
+    microkit_cothread_t next = internal_schedule(co_controller);
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
-        
-        // TODO switching to root context requires rethinking
-        microkit_cothread_switch(co_controller->root.cothread, co_controller);
+        co_controller->root.state = cothread_running;
+        co_switch(co_controller->root.cothread);
     } else {
-        microkit_cothread_switch(next, co_controller);
+        co_controller->tcbs[next].state = cothread_running;
+        co_switch(co_controller->tcbs[next].cothread);
     }
 }
 
@@ -308,12 +303,15 @@ void microkit_cothread_yield(co_control_t *co_controller) {
 
 void microkit_cothread_destroy_me(co_control_t *co_controller) {
     int err = microkit_cothread_destroy_specific(co_controller->running, co_controller);
-    if (err != MICROKITCO_NOERR) {
-        // something went horribly wrong, halt everything.
-        panic();
-    } else {
-        internal_go_next(co_controller);
-    }
+
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (err != MICROKITCO_NOERR) {
+            // something went horribly wrong, halt everything.
+            panic();
+        }
+    #endif
+
+    internal_go_next(co_controller);    
 }
 
 int microkit_cothread_destroy_specific(microkit_cothread_t cothread, co_control_t *co_controller) {
