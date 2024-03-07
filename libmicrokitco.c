@@ -74,7 +74,6 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     co_controller.init_success = 0;
 
     if (!backing_memory || max_cothreads <= 1) {
-        microkit_dbg_puts("init e1\n");
         return MICROKITCO_ERR_INVALID_ARGS;
     }
 
@@ -83,7 +82,6 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
 
     // memory allocator for the library
     if (co_allocator_init(backing_memory, mem_size, &co_controller.mem_allocator) != 0) {
-        microkit_dbg_puts("init e2\n");
         return MICROKITCO_ERR_NOMEM;
     }
 
@@ -95,7 +93,6 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
     void *non_priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
     if (!tcbs_array || !free_handle_queue_mem || !priority_queue_mem || !non_priority_queue_mem) {
-        microkit_dbg_puts("init e2.5\n");
         return MICROKITCO_ERR_NOMEM;
     }
 
@@ -112,24 +109,20 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     // initialise the queues
     int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
-        microkit_dbg_puts("init e3\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
     err = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
-        microkit_dbg_puts("init e4\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
     err = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
-        microkit_dbg_puts("init e5\n");
         return MICROKITCO_ERR_OP_FAIL;
     }
 
     // enqueue all the free IDs
     for (microkit_cothread_t i = 1; i < max_cothreads; i++) {
         if (hostedqueue_push(&co_controller.free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
-            microkit_dbg_puts("init e6\n");
             return MICROKITCO_ERR_OP_FAIL;
         }
     }
