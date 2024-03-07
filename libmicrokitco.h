@@ -53,7 +53,7 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject, co_control_t *co
 // Returns -1 on error, e.g. max_cothreads reached.
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, co_control_t *co_controller);
 
-// Explicitly switch to a another cothread.
+// Explicitly switch to a another cothread, bypassing the scheduler.
 // If the destination is not in a ready state, returns MICROKITCO_ERR_DEST_NOT_READY or MICROKITCO_ERR_INVALID_HANDLE.
 // Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
 int microkit_cothread_switch(microkit_cothread_t cothread, co_control_t *co_controller);
