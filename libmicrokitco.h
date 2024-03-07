@@ -82,6 +82,8 @@ int microkit_cothread_destroy_specific(microkit_cothread_t cothread);
 // Food for thoughts on improvements:
 // HIGH PRIO - stack canary
 
+// - Use a typedef for err codes instead of `int`.
+
 // - Current memory model problematic for stack overrun since all the cothreads' memory are next to each others.
 
 // - Ceiling of max cothreads can't be raised or lowered at runtime. Although might be fine for static systems?
