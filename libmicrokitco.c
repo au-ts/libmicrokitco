@@ -326,7 +326,7 @@ void microkit_cothread_wait(microkit_channel wake_on) {
 void microkit_cothread_yield() {
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue;
-    if (!co_controller.tcbs[co_controller.running].prioritised) {
+    if (co_controller.tcbs[co_controller.running].prioritised) {
         sched_queue = &co_controller.priority_queue;
     } else {
         sched_queue = &co_controller.non_priority_queue;
