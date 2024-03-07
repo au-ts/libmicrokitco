@@ -31,7 +31,7 @@ int hostedqueue_init(hosted_queue_t *queue_controller, void *memory, int item_si
         return LIBHOSTEDQUEUE_ERR_INVALID_ARGS;
     }
 
-    // make sure we have enough memory
+    // make sure we have enough *valid* memory
     memzero(memory, item_size * capacity);
 
     queue_controller->memory = memory;
