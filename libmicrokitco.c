@@ -9,13 +9,11 @@
 
 #define SCHEDULER_NULL_CHOICE -1
 
-static co_control_t co_controller;
-
 typedef enum cothread_state {
     // this id is not being used
     cothread_not_active = 0,
 
-    cothread_initialised = 1, // but not ready, TODO: impl this.
+    cothread_initialised = 1, // but not ready
     cothread_blocked = 2,
     cothread_ready = 3,
     cothread_running = 4,
@@ -30,19 +28,13 @@ typedef struct {
     // non-zero means prioritised
     int prioritised;
 
+    // unused for root thread, i.e. the main PD thread that called init()
     unsigned char stack_memory[DEFAULT_COSTACK_SIZE];
 } co_tcb_t;
 
-// "TCB" of the thread that called microkit_cothread_init(), called the root thread.
-typedef struct {
-    cothread_t cothread;
-    co_state_t state;
-    microkit_channel blocked_on;
-    int prioritised;
-} root_tcb_t;
 
 struct cothreads_control {
-    // array of cothreads, first index is left unused to signify root thread, len(tcbs) == max_cothreads
+    // array of cothreads, first index is root thread AND len(tcbs) == max_cothreads
 
     // HIGH PRIO TODO: rethink this design, if for example the last stack infinitely recursive, it will overwrite all the stacks
     co_tcb_t* tcbs;
@@ -54,9 +46,6 @@ struct cothreads_control {
 
     // currently running cothread handle
     microkit_cothread_t running;
-
-    // root thread that called microkit_cothread_init()
-    root_tcb_t root;
 
     allocator_t mem_allocator;
 
@@ -70,8 +59,17 @@ struct cothreads_control {
     int init_success;
 };
 
+static co_control_t co_controller = {
+    .init_success = 0
+};
+
 int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads) {
-    co_controller.init_success = 0;
+    // Err checking cannot be disabled by the preprocessor define here because this can only be ran once per PD.
+    if (co_controller.init_success) {
+        return MICROKITCO_ERR_ALREADY_INITIALISED;
+    } else {
+        co_controller.init_success = 0;
+    }
 
     if (!backing_memory || max_cothreads <= 1) {
         return MICROKITCO_ERR_INVALID_ARGS;
@@ -95,16 +93,16 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
     if (!tcbs_array || !free_handle_queue_mem || !priority_queue_mem || !non_priority_queue_mem) {
         return MICROKITCO_ERR_NOMEM;
     }
-
     co_controller.tcbs = tcbs_array;
     for (int i = 0; i < max_cothreads; i++) {
         co_controller.tcbs[i].state = cothread_not_active;
     }
 
     // initialise the root thread's handle;
-    co_controller.root.cothread = co_active();
-    co_controller.root.state = cothread_running;
-    co_controller.root.prioritised = 1;
+    co_controller.tcbs[0].cothread = co_active();
+    co_controller.tcbs[0].state = cothread_running;
+    co_controller.tcbs[0].prioritised = 1;
+    memzero(co_controller.tcbs[0].stack_memory, DEFAULT_COSTACK_SIZE); // But we don't touch this ever.
 
     // initialise the queues
     int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
@@ -120,7 +118,7 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
         return MICROKITCO_ERR_OP_FAIL;
     }
 
-    // enqueue all the free IDs
+    // enqueue all the free cothread handle IDs.
     for (microkit_cothread_t i = 1; i < max_cothreads; i++) {
         if (hostedqueue_push(&co_controller.free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
             return MICROKITCO_ERR_OP_FAIL;
@@ -226,8 +224,11 @@ int microkit_cothread_mark_ready(microkit_cothread_t cothread) {
         }
     #endif
 
-    hosted_queue_t *sched_queue;
+    if (co_controller.tcbs[cothread].state != cothread_initialised) {
+        return MICROKITCO_ERR_OP_FAIL;
+    }
 
+    hosted_queue_t *sched_queue;
     if (co_controller.tcbs[cothread].prioritised) {
         sched_queue = &co_controller.priority_queue;
     } else {
@@ -259,15 +260,20 @@ int microkit_cothread_switch(microkit_cothread_t cothread) {
         }
     #endif
 
-    if (co_controller.tcbs[cothread].state == cothread_blocked) {
-        return MICROKITCO_ERR_DEST_NOT_READY;
+    co_controller.tcbs[co_controller.running].state = cothread_ready;
+    hosted_queue_t *sched_queue;
+    if (co_controller.tcbs[co_controller.running].prioritised) {
+        sched_queue = &co_controller.priority_queue;
     } else {
-        co_controller.tcbs[co_controller.running].state = cothread_ready;
-        co_controller.tcbs[cothread].state = cothread_running;
-        co_controller.running = cothread;
-        co_switch(co_controller.tcbs[cothread].cothread);
-        return MICROKITCO_NOERR;
+        sched_queue = &co_controller.non_priority_queue;
     }
+    int push_err = hostedqueue_push(sched_queue, &co_controller.running);
+
+    co_controller.tcbs[cothread].state = cothread_running;
+    co_controller.running = cothread;
+    co_switch(co_controller.tcbs[cothread].cothread);
+    return MICROKITCO_NOERR;
+
 }
 
 // pop a ready thread from a given scheduling queue, discard any destroyed thread 
@@ -309,10 +315,12 @@ void internal_go_next() {
     microkit_cothread_t next = internal_schedule();
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
-        co_controller.root.state = cothread_running;
-        co_switch(co_controller.root.cothread);
+        co_controller.tcbs[0].state = cothread_running;
+        co_controller.running = 0;
+        co_switch(co_controller.tcbs[0].cothread);
     } else {
         co_controller.tcbs[next].state = cothread_running;
+        co_controller.running = next;
         co_switch(co_controller.tcbs[next].cothread);
     }
 }
@@ -344,7 +352,6 @@ void microkit_cothread_destroy_me() {
 
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (err != MICROKITCO_NOERR) {
-            // something went horribly wrong, halt everything.
             panic();
         }
     #endif
@@ -362,6 +369,9 @@ int microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
         }
     #endif
 
+    if (co_controller.running == 0) {
+        panic();
+    }
     if (hostedqueue_push(&co_controller.free_handle_queue, &cothread) != LIBHOSTEDQUEUE_NOERR) {
         return MICROKITCO_ERR_OP_FAIL;
     }

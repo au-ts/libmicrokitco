@@ -11,6 +11,7 @@
 #define MICROKITCO_ERR_OP_FAIL -5
 #define MICROKITCO_ERR_DEST_NOT_READY -6
 #define MICROKITCO_ERR_MAX_COTHREADS_REACHED -7
+#define MICROKITCO_ERR_ALREADY_INITIALISED -8
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
@@ -55,6 +56,7 @@ int microkit_cothread_deprioritise(microkit_cothread_t subject);
 microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, int ready);
 
 // Does what it said on the tin and push the cothread into a scheduling queue.
+// Fails if cothread is not in the "initialised" state.
 int microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
 // Explicitly switch to a another cothread, bypassing the scheduler.

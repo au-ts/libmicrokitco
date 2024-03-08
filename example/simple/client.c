@@ -24,6 +24,13 @@ void co_entry5() {
     microkit_cothread_destroy_me();
 }
 
+void co_entry6() {
+    // should not enter
+    microkit_dbg_puts("CO6: hi\n");
+    *(char *) 0 = 0;
+    microkit_cothread_destroy_me();
+}
+
 void init(void) {
     microkit_dbg_puts("CLIENT: starting\n");
     
@@ -39,6 +46,11 @@ void init(void) {
     int co4 = microkit_cothread_spawn(co_entry4, 0, 1);
     int co5 = microkit_cothread_spawn(co_entry5, 0, 1);
 
+    if (microkit_cothread_spawn(co_entry6, 0, 1) != MICROKITCO_ERR_MAX_COTHREADS_REACHED) {
+        microkit_dbg_puts("ERR: was able to spawn more cothreads than allowed\n");
+        return;
+    }
+
     microkit_dbg_puts("CLIENT: cothreads spawned\n");
 
     // should print the `COn: hi` 5x.
@@ -48,7 +60,8 @@ void init(void) {
     // Currently not as expected, TODO: fix
     microkit_dbg_puts("CLIENT: done, exiting!\n");
 
-    
+    microkit_cothread_deprioritise(0);
+    microkit_cothread_yield();
 }
 
 void notified(microkit_channel channel) {
