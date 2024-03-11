@@ -7,10 +7,6 @@
 #include "coallocator.h"
 #include "libhostedqueue/libhostedqueue.h"
 #include "libco/libco.h"
-#include "printf.h"
-void _putchar(char character) {
-    microkit_dbg_putc(character);
-}
 
 #define SCHEDULER_NULL_CHOICE -1
 #define MINIMUM_STACK_SIZE 0x1000
