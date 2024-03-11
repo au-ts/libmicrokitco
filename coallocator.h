@@ -16,7 +16,7 @@ typedef struct allocator {
 } allocator_t;
 
 void *co_alloc(allocator_t *allocator, word_t size) {
-    if (size < 1 || allocator->brk + size >= allocator->size + (word_t) allocator->backing_memory) {
+    if (size < 1 || allocator->brk + size > allocator->size + (word_t) allocator->backing_memory) {
         return 0;
     } else {
         word_t ret = allocator->brk;
@@ -31,6 +31,11 @@ int co_allocator_init(void *backing_memory, int size, allocator_t *allocator) {
     }
 
     // memzero(backing_memory, size);
+    
+    // quick sanity check
+    unsigned char *mem = (unsigned char *) backing_memory;
+    mem[0] = 0;
+    mem[size] = size;
 
     allocator->backing_memory = backing_memory;
     allocator->size = size;
