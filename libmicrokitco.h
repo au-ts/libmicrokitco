@@ -16,19 +16,6 @@
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
-// A cooperative multithreading library with 2-tier scheduling for use within Microkit.
-// In essence, it allow mapping of multiple executing contexts (cothreads) into 1 protection domain.
-// Then, each cothread can wait for an incoming notification from a channel, while it is waiting, other
-// cothreads can execute.
-
-// A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin
-// before non-prioritised cothreads get picked on.
-// Cothreads should yield judiciously to ensure other cothreads are not starved.
-// The library expects a large memory region (MR) allocated to it, see microkit_cothread_init().
-
-// Unsafe: define `LIBMICROKITCO_UNSAFE` macro in your preprocessor to skip most pedantic error checking.
-
-
 // Initialise the library's internal data structure.
 // Will fail if max_cothreads is negative OR co_controller is null OR backing_memory is not at least
 // (sizeof(co_tcb_t) * max_cothreads) + 3*(sizeof(microkit_cothread_t) * max_cothreads) bytes large!
