@@ -26,16 +26,16 @@ include $(LIBMICROKITCO_PATH)/Makefile
 And link your object files against `$(BUILD_DIR)/libmicrokitco.o`.
 
 ## API
-#### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int num_cothreads, ...)`
+#### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
 Initialise the library's internal data structure.
 ##### Arguments
 Expects:
 - `controller_memory` points to the base of an MR that is at least:
-`(sizeof(co_tcb_t) * num_cothreads + (sizeof(microkit_cothread_t) * 3) * num_cothreads)` bytes large for internal data structures, and
+`(sizeof(co_tcb_t) * max_cothreads + (sizeof(microkit_cothread_t) * 3) * max_cothreads)` bytes large for internal data structures, and
 - `co_stack_size` to be >= 0x1000 bytes.
-- `num_cothreads` to be >= 1, which is exclusive of the calling thread.
+- `max_cothreads` to be >= 1, which is exclusive of the calling thread.
 
-Then, it expect `num_cothreads` of `uintptr_t` that signify where each co-stacks start.
+Then, it expect `max_cothreads` of `uintptr_t` that signify where each co-stacks start.
 
 ##### Example
 ```C
@@ -44,8 +44,8 @@ Then, it expect `num_cothreads` of `uintptr_t` that signify where each co-stacks
 
 // These are set in the system config file.
 uintptr_t co_mem;
-uintptr_t stack_size;
 // Stacks should have a GUARD PAGE between them!
+uintptr_t stack_size;
 uintptr_t stack_1_start;
 uintptr_t stack_2_start;
 
