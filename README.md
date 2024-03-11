@@ -26,15 +26,16 @@ include $(LIBMICROKITCO_PATH)/Makefile
 And link your object files against `$(BUILD_DIR)/libmicrokitco.o`.
 
 ## API
-#### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
+#### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int num_cothreads, ...)`
 Initialise the library's internal data structure.
 ##### Arguments
 Expects:
 - `controller_memory` points to the base of an MR that is at least:
-`(sizeof(co_tcb_t) * max_cothreads + (sizeof(microkit_cothread_t) * 3) * max_cothreads)` bytes large for internal data structures, and
-- `max_cothreads` to be > 1 as it is inclusive of the calling thread. By default, the calling thread will be prioritised in scheduling.
+`(sizeof(co_tcb_t) * num_cothreads + (sizeof(microkit_cothread_t) * 3) * num_cothreads)` bytes large for internal data structures, and
+- `co_stack_size` to be >= 0x1000 bytes.
+- `num_cothreads` to be >= 1, which is exclusive of the calling thread.
 
-Then, it expect `max_cothreads - 1` of `uintptr_t` that signify where each co-stacks start.
+Then, it expect `num_cothreads` of `uintptr_t` that signify where each co-stacks start.
 
 ##### Example
 ```C
@@ -49,7 +50,7 @@ uintptr_t stack_1_start;
 uintptr_t stack_2_start;
 
 void init(void) {
-    if (microkit_cothread_init(co_mem, stack_size, 3, stack_1_start, stack_2_start) != MICROKITCO_NOERR) {
+    if (microkit_cothread_init(co_mem, stack_size, 2, stack_1_start, stack_2_start) != MICROKITCO_NOERR) {
         // handle err
     } else {
         // success
