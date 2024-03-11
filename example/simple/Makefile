@@ -32,7 +32,8 @@ CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
-CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-variable -Wno-unused-function -Werror
+CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/include
+CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-variable -Wno-unused-function -Werror $(CC_INCLUDE_MICROKIT_FLAG)
 LDFLAGS := -L$(BOARD_DIR)/lib
 LIBS := -lmicrokit -Tmicrokit.ld
 
@@ -42,7 +43,7 @@ directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
 $(BUILD_DIR)/client.o: client.c
-	$(CC) $(CFLAGS) -I$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/include -I$(LIBMICROKITCO_PATH) -DBOARD_$(BOARD) $< -o $@
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $< -o $@
 
 $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o
 	$(LD) -L$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ) $(BUILD_DIR)/client.o $(LIBS) -o $(BUILD_DIR)/client.elf
