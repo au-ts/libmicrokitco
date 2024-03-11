@@ -26,4 +26,33 @@ include $(LIBMICROKITCO_PATH)/Makefile
 And link your object files against `$(BUILD_DIR)/libmicrokitco.o`.
 
 ## API
-TODO!
+#### `libmicrokit_co_err microkit_cothread_init(uintptr_t controller_memory, int max_cothreads, ...)`
+Initialise the library's internal data structure.
+##### Arguments
+Expects `max_cothreads` > 1 as it is inclusive of the calling thread. By default, the calling thread will be prioritised in scheduling.
+Expects `controller_memory` points to the base of an MR that is at least:
+`(sizeof(co_tcb_t) * max_cothreads + (sizeof(microkit_cothread_t) * 3) * max_cothreads)` bytes large for internal data structures.
+
+Then, it expect `max_cothreads` pairs of uintptr_t that signify the memory region of each thread.
+
+For example:
+```C
+#include <microkit.h>
+#include <libmicrokitco.h>
+
+// These are set in the system config file.
+uintptr_t co_mem;
+// Stacks should have a GUARD PAGE between them, before the first stack and after the last stack!
+uintptr_t stack_1_left;
+uintptr_t stack_1_right;
+uintptr_t stack_2_left;
+uintptr_t stack_2_right;
+
+void init(void) {
+    if (microkit_cothread_init(co_mem, 2, stack_1_left, stack_1_right, stack_2_left, stack_2_right) != MICROKITCO_NOERR) {
+        // handle err
+    } else {
+        // success
+    }
+}
+```
