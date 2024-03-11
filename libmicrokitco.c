@@ -7,6 +7,10 @@
 #include "coallocator.h"
 #include "libhostedqueue/libhostedqueue.h"
 #include "libco/libco.h"
+#include "printf.h"
+void _putchar(char character) {
+    microkit_dbg_putc(character);
+}
 
 #define SCHEDULER_NULL_CHOICE -1
 #define MINIMUM_STACK_SIZE 0x1000
@@ -77,6 +81,8 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     int real_max_cothreads = max_cothreads + 1;
     co_controller.max_cothreads = real_max_cothreads;
 
+    co_controller.co_stack_size = co_stack_size;
+
     // memory allocator for the library
     unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
@@ -138,7 +144,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     return MICROKITCO_NOERR;
 }
 
-int microkit_cothread_recv_ntfn(microkit_channel ch) {
+co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
     // TODO: this could be faster
     for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
         if (co_controller.tcbs[i].state == cothread_blocked) {
@@ -159,7 +165,7 @@ int microkit_cothread_recv_ntfn(microkit_channel ch) {
     return MICROKITCO_ERR_OP_FAIL;
 }
 
-int microkit_cothread_prioritise(microkit_cothread_t subject) {
+co_err_t microkit_cothread_prioritise(microkit_cothread_t subject) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
@@ -173,7 +179,7 @@ int microkit_cothread_prioritise(microkit_cothread_t subject) {
     return MICROKITCO_NOERR;
 }
 
-int microkit_cothread_deprioritise(microkit_cothread_t subject) {
+co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
@@ -223,7 +229,7 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
     return new;
 }
 
-int microkit_cothread_mark_ready(microkit_cothread_t cothread) {
+co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
@@ -253,7 +259,7 @@ int microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     }
 }
 
-int microkit_cothread_switch(microkit_cothread_t cothread) {
+co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
@@ -323,14 +329,12 @@ void internal_go_next() {
     microkit_cothread_t next = internal_schedule();
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
-        co_controller.tcbs[0].state = cothread_running;
-        co_controller.running = 0;
-        co_switch(co_controller.tcbs[0].cothread);
-    } else {
-        co_controller.tcbs[next].state = cothread_running;
-        co_controller.running = next;
-        co_switch(co_controller.tcbs[next].cothread);
+        next = 0;
     }
+
+    co_controller.tcbs[next].state = cothread_running;
+    co_controller.running = next;
+    co_switch(co_controller.tcbs[next].cothread);
 }
 
 void microkit_cothread_wait(microkit_channel wake_on) {
@@ -367,7 +371,7 @@ void microkit_cothread_destroy_me() {
     internal_go_next();    
 }
 
-int microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
+co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;

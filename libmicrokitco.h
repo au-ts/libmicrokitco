@@ -22,12 +22,12 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 // IMPORTANT: Put this in your notified() to map incoming notifications to waiting cothreads!
 // NOTE: This library will only return to the microkit main loop for receiving notification when there is no ready cothread.
 // Returns MICROKITCO_ERR_OP_FAIL if the notification couldn't be mapped onto a waiting cothread.
-int microkit_cothread_recv_ntfn(microkit_channel ch);
+co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 
 // Allow client to select which scheduling queue a cothread is placed in. 
 // No immediate effect if the cothread is already scheduled in a queue. 
-int microkit_cothread_prioritise(microkit_cothread_t subject);
-int microkit_cothread_deprioritise(microkit_cothread_t subject);
+co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
+co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 
 // Create a new cothread, which is prioritised in scheduling if `prioritised` is non-zero.
 // If ready is non-zero, the cothread is immediately placed in the scheduler's queue for execution.
@@ -38,12 +38,12 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
 
 // Does what it said on the tin and push the cothread into a scheduling queue.
 // Fails if cothread is not in the "initialised" state.
-int microkit_cothread_mark_ready(microkit_cothread_t cothread);
+co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
 // Explicitly switch to a another cothread, bypassing the scheduler.
 // If the destination is not in a ready state, returns MICROKITCO_ERR_DEST_NOT_READY or MICROKITCO_ERR_INVALID_HANDLE.
 // Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
-int microkit_cothread_switch(microkit_cothread_t cothread);
+co_err_t microkit_cothread_switch(microkit_cothread_t cothread);
 
 // A co_switch() in disguise that switches to the next ready thread, if no thread is ready, switch to the root executing
 // context for receiving notifications from the microkit main loop.
@@ -60,7 +60,7 @@ void microkit_cothread_yield();
 // Must be called when a coroutine finishes, Undefined Behaviour otherwise!
 void microkit_cothread_destroy_me();
 // Should be sparingly used, because cothread might hold resources that needs free'ing.
-int microkit_cothread_destroy_specific(microkit_cothread_t cothread);
+co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
 
 // Food for thoughts on improvements:
 // HIGH PRIO - stack canary
