@@ -44,7 +44,7 @@ Then, it expect `max_cothreads - 1` of `uintptr_t` that signify where each co-st
 // These are set in the system config file.
 uintptr_t co_mem;
 uintptr_t stack_size;
-// Stacks should have a GUARD PAGE between them, before the first stack and after the last stack!
+// Stacks should have a GUARD PAGE between them!
 uintptr_t stack_1_start;
 uintptr_t stack_2_start;
 
