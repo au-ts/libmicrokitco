@@ -49,7 +49,7 @@ uintptr_t stack_1_start;
 uintptr_t stack_2_start;
 
 void init(void) {
-    if (microkit_cothread_init(co_mem, 3, stack_1_left, stack_1_right, stack_2_left, stack_2_right) != MICROKITCO_NOERR) {
+    if (microkit_cothread_init(co_mem, 3, stack_1_start, stack_2_start) != MICROKITCO_NOERR) {
         // handle err
     } else {
         // success
