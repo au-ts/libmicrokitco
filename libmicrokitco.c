@@ -72,7 +72,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
         return MICROKITCO_ERR_INVALID_ARGS;
     }
 
-    co_controller.num_cothreads = 0;
+    co_controller.num_cothreads = 1;
     // Includes root thread.
     int real_max_cothreads = max_cothreads + 1;
     co_controller.max_cothreads = real_max_cothreads;
@@ -111,17 +111,18 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.tcbs[0].state = cothread_running;
     co_controller.tcbs[0].prioritised = 1;
     co_controller.tcbs[0].stack_left = 0;
+    co_controller.running = 0;
 
     // initialise the queues
-    int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
         return MICROKITCO_ERR_OP_FAIL;
     }
-    err = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    err = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
         return MICROKITCO_ERR_OP_FAIL;
     }
-    err = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
+    err = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
     if (err != LIBHOSTEDQUEUE_NOERR) {
         return MICROKITCO_ERR_OP_FAIL;
     }
@@ -281,7 +282,6 @@ int microkit_cothread_switch(microkit_cothread_t cothread) {
     co_controller.running = cothread;
     co_switch(co_controller.tcbs[cothread].cothread);
     return MICROKITCO_NOERR;
-
 }
 
 // pop a ready thread from a given scheduling queue, discard any destroyed thread 

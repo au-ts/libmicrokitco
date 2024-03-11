@@ -1,7 +1,5 @@
 #pragma once
 
-#define DEFAULT_COSTACK_SIZE 0x2000
-
 #define MICROKITCO_NOERR 0
 
 #define MICROKITCO_ERR_INVALID_ARGS -1
