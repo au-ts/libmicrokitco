@@ -1,5 +1,6 @@
 #include <microkit.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <sel4/sel4.h>
 
 #include "libmicrokitco.h"
@@ -8,6 +9,7 @@
 #include "libco/libco.h"
 
 #define SCHEDULER_NULL_CHOICE -1
+#define MINIMUM_STACK_SIZE 0x1000
 
 typedef enum cothread_state {
     // this id is not being used
@@ -28,21 +30,19 @@ typedef struct {
     // non-zero means prioritised
     int prioritised;
 
-    // unused for root thread, i.e. the main PD thread that called init()
-    unsigned char stack_memory[DEFAULT_COSTACK_SIZE];
+    uintptr_t stack_left;
 } co_tcb_t;
 
-
 struct cothreads_control {
-    // array of cothreads, first index is root thread AND len(tcbs) == max_cothreads
-
-    // HIGH PRIO TODO: rethink this design, if for example the last stack infinitely recursive, it will overwrite all the stacks
+    // array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
     co_tcb_t* tcbs;
 
+    // both is inclusive of root thread!!!
     int max_cothreads;
-
-    // active cothreads, exclusive of root thread
+    // active cothreads
     int num_cothreads;
+
+    int co_stack_size;
 
     // currently running cothread handle
     microkit_cothread_t running;
@@ -63,46 +63,54 @@ static co_control_t co_controller = {
     .init_success = 0
 };
 
-int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads) {
-    // Err checking cannot be disabled by the preprocessor define here because this can only be ran once per PD.
+co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...) {
+    // Err checking cannot be disabled by the preprocessor define here for safety because this can only be ran once per PD.
     if (co_controller.init_success) {
         return MICROKITCO_ERR_ALREADY_INITIALISED;
-    } else {
-        co_controller.init_success = 0;
     }
-
-    if (!backing_memory || max_cothreads <= 1) {
+    if (co_stack_size < MINIMUM_STACK_SIZE || max_cothreads < 1) {
         return MICROKITCO_ERR_INVALID_ARGS;
     }
 
     co_controller.num_cothreads = 0;
-    co_controller.max_cothreads = max_cothreads;
+    // Includes root thread.
+    int real_max_cothreads = max_cothreads + 1;
+    co_controller.max_cothreads = real_max_cothreads;
 
     // memory allocator for the library
-    if (co_allocator_init(backing_memory, mem_size, &co_controller.mem_allocator) != 0) {
+    unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
+    if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
         return MICROKITCO_ERR_NOMEM;
     }
-
     allocator_t *allocator = &co_controller.mem_allocator;
 
-    // allocate all the buffers we could possibly need, also checks if backing_memory is large enough
-    void *tcbs_array = allocator->alloc(allocator, sizeof(co_tcb_t) * max_cothreads);
-    void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
-    void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
-    void *non_priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * max_cothreads);
+    // allocate all the buffers we could possibly need, also checks if controller_memory is large enough
+    void *tcbs_array = allocator->alloc(allocator, sizeof(co_tcb_t) * real_max_cothreads);
+    void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
+    void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
+    void *non_priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     if (!tcbs_array || !free_handle_queue_mem || !priority_queue_mem || !non_priority_queue_mem) {
         return MICROKITCO_ERR_NOMEM;
     }
     co_controller.tcbs = tcbs_array;
-    for (int i = 0; i < max_cothreads; i++) {
+    for (int i = 0; i < real_max_cothreads; i++) {
         co_controller.tcbs[i].state = cothread_not_active;
     }
+
+    // parses all the valid stack memory regions 
+    // TODO, check that we actually have `max_cothreads` extra args.
+    va_list ap;
+    va_start (ap, max_cothreads);
+    for (int i = 0; i < max_cothreads; i++) {
+        co_controller.tcbs[i + 1].stack_left = va_arg(ap, uintptr_t);
+    }
+    va_end(ap);
 
     // initialise the root thread's handle;
     co_controller.tcbs[0].cothread = co_active();
     co_controller.tcbs[0].state = cothread_running;
     co_controller.tcbs[0].prioritised = 1;
-    memzero(co_controller.tcbs[0].stack_memory, DEFAULT_COSTACK_SIZE); // But we don't touch this ever.
+    co_controller.tcbs[0].stack_left = 0;
 
     // initialise the queues
     int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), max_cothreads);
@@ -118,8 +126,8 @@ int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_
         return MICROKITCO_ERR_OP_FAIL;
     }
 
-    // enqueue all the free cothread handle IDs.
-    for (microkit_cothread_t i = 1; i < max_cothreads; i++) {
+    // enqueue all the free cothread handle IDs. Exclude root thread.
+    for (microkit_cothread_t i = 1; i < real_max_cothreads; i++) {
         if (hostedqueue_push(&co_controller.free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
             return MICROKITCO_ERR_OP_FAIL;
         }
@@ -196,9 +204,9 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
         return MICROKITCO_ERR_MAX_COTHREADS_REACHED;
     }
 
-    unsigned char *costack = co_controller.tcbs[new].stack_memory;
-    memzero(costack, DEFAULT_COSTACK_SIZE);
-    co_controller.tcbs[new].cothread = co_derive(costack, DEFAULT_COSTACK_SIZE, cothread_entrypoint);
+    unsigned char *costack = (unsigned char *) co_controller.tcbs[new].stack_left;
+    memzero(costack, co_controller.co_stack_size);
+    co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, cothread_entrypoint);
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_initialised;
 

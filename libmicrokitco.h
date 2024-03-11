@@ -15,15 +15,11 @@
 
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
+typedef int co_err_t;
 
-// Initialise the library's internal data structure.
-// Will fail if max_cothreads is negative OR co_controller is null OR backing_memory is not at least
-// (sizeof(co_tcb_t) * max_cothreads) + 3*(sizeof(microkit_cothread_t) * max_cothreads) bytes large!
+co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...);
 
-// max_cothreads will be inclusive of the calling thread
-// By default, the calling thread will be prioritised in scheduling.
-// Return MICROKITCO_NOERR on success. 
-int microkit_cothread_init(void *backing_memory, unsigned int mem_size, int max_cothreads);
+// TODO: move these docs into readme!
 
 // IMPORTANT: Put this in your notified() to map incoming notifications to waiting cothreads!
 // NOTE: This library will only return to the microkit main loop for receiving notification when there is no ready cothread.
