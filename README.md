@@ -32,7 +32,7 @@ include $(LIBMICROKITCO_PATH)/Makefile
 Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco`.
 
 ## API
-#### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
+### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
 Initialises the library's internal data structure.
 
 ##### Arguments
@@ -77,7 +77,7 @@ void init(void) {
 
 ---
 
-#### `co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret)`
+### `co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret)`
 Creates a new cothread, but does not switch to it.
 
 ##### Arguments
@@ -98,7 +98,7 @@ On success:
 
 --- 
 
-#### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
+### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
 Marks an initialised but not ready cothread created from `init()` as ready and schedule it, but does not switch to it.
 
 ##### Arguments
@@ -115,12 +115,12 @@ On success:
 
 --- 
 
-#### `void microkit_cothread_yield()`
+### `void microkit_cothread_yield()`
 Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running. Don't use this while editing shared data structures. 
 
 ---
 
-#### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
+### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
 Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications.
 
 ##### Returns
@@ -134,7 +134,7 @@ On success:
 
 ---
 
-#### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
+### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
 Maps an incoming notification to a blocked cothread *then switches* to it. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 ##### Returns
