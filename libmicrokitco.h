@@ -17,11 +17,6 @@ typedef int co_err_t;
 
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...);
 
-// TODO: move these docs into readme!
-
-// IMPORTANT: Put this in your notified() to map incoming notifications to waiting cothreads!
-// NOTE: This library will only return to the microkit main loop for receiving notification when there is no ready cothread.
-// Returns MICROKITCO_ERR_OP_FAIL if the notification couldn't be mapped onto a waiting cothread.
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 
 // Allow client to select which scheduling queue a cothread is placed in. 
@@ -29,15 +24,8 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
 co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 
-// Create a new cothread, which is prioritised in scheduling if `prioritised` is non-zero.
-// If ready is non-zero, the cothread is immediately placed in the scheduler's queue for execution.
-// Argument passing is handled with global variables.
-// Returns a cothread handle.
-// Returns -1 on error, e.g. max_cothreads reached.
 co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret);
 
-// Does what it said on the tin and push the cothread into a scheduling queue.
-// Fails if cothread is not in the "initialised" state.
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
 // Explicitly switch to a another cothread, bypassing the scheduler.
@@ -48,11 +36,8 @@ co_err_t microkit_cothread_switch(microkit_cothread_t cothread);
 // A co_switch() in disguise that switches to the next ready thread, if no thread is ready, switch to the root executing
 // context for receiving notifications from the microkit main loop.
 
-// Then for the calling cothread, register a blocked state within the library's internal data structure for this cothread.
-void microkit_cothread_wait(microkit_channel wake_on);
+co_err_t microkit_cothread_wait(microkit_channel wake_on);
 
-// Invoke the scheduler as described, but the calling cothread is switched to ready instead of blocked.
-// However, if there is no ready cothread, the caller keeps running.
 void microkit_cothread_yield();
 
 // Destroys the calling cothread and return the cothread's local memory into the available pool.
@@ -61,12 +46,3 @@ void microkit_cothread_yield();
 void microkit_cothread_destroy_me();
 // Should be sparingly used, because cothread might hold resources that needs free'ing.
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
-
-// Food for thoughts on improvements:
-// HIGH PRIO - stack canary
-
-// - Use a typedef for err codes instead of `int`.
-
-// - Current memory model problematic for stack overrun since all the cothreads' memory are next to each others.
-
-// - Ceiling of max cothreads can't be raised or lowered at runtime. Although might be fine for static systems?
