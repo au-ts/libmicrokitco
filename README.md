@@ -8,7 +8,7 @@ A cothread can be "prioritised" or not. All ready "prioritised" cothreads are pi
 
 When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
-### Memmory model
+### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
 
 ## Usage
@@ -21,7 +21,7 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 6. `MICROKIT_CONFIG`: one of `debug` or `release`, and
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`.
 
-##### Danger zone
+> ##### Danger zone
 > Define `LIBMICROKITCO_UNSAFE` to skip most pedantic error checking.
 
 Then, add this to your Makefile after the declarations:
@@ -29,7 +29,7 @@ Then, add this to your Makefile after the declarations:
 include $(LIBMICROKITCO_PATH)/Makefile
 ```
 
-And link your object files against `$(BUILD_DIR)/libmicrokitco.o`.
+Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco`.
 
 ## API
 #### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
