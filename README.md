@@ -109,7 +109,7 @@ On error:
 On success:
 - `MICROKITCO_NOERR`.
 
-#### Examples
+##### Example
 ```C
 #include <microkit.h>
 #include <libmicrokitco.h>
