@@ -35,7 +35,7 @@ int co_allocator_init(void *backing_memory, int size, allocator_t *allocator) {
     // quick sanity check
     unsigned char *mem = (unsigned char *) backing_memory;
     mem[0] = 0;
-    mem[size] = size;
+    mem[size - 1] = size;
 
     allocator->backing_memory = backing_memory;
     allocator->size = size;
