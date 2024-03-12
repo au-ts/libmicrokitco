@@ -19,8 +19,6 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 
-// Allow client to select which scheduling queue a cothread is placed in. 
-// No immediate effect if the cothread is already scheduled in a queue. 
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
 co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 
@@ -28,21 +26,12 @@ co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
-// Explicitly switch to a another cothread, bypassing the scheduler.
-// If the destination is not in a ready state, returns MICROKITCO_ERR_DEST_NOT_READY or MICROKITCO_ERR_INVALID_HANDLE.
-// Returns MICROKITCO_NOERR when the switch was successful AND the scheduler picked the calling thread in the future.
 co_err_t microkit_cothread_switch(microkit_cothread_t cothread);
-
-// A co_switch() in disguise that switches to the next ready thread, if no thread is ready, switch to the root executing
-// context for receiving notifications from the microkit main loop.
 
 co_err_t microkit_cothread_wait(microkit_channel wake_on);
 
 void microkit_cothread_yield();
 
-// Destroys the calling cothread and return the cothread's local memory into the available pool.
-// Then invokes the scheduler to run the next cothread.
-// Must be called when a coroutine finishes, Undefined Behaviour otherwise!
 void microkit_cothread_destroy_me();
-// Should be sparingly used, because cothread might hold resources that needs free'ing.
+
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
