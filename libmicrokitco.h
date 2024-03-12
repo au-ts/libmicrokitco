@@ -34,7 +34,7 @@ co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 // Argument passing is handled with global variables.
 // Returns a cothread handle.
 // Returns -1 on error, e.g. max_cothreads reached.
-microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, int ready);
+co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret);
 
 // Does what it said on the tin and push the cothread into a scheduling queue.
 // Fails if cothread is not in the "initialised" state.

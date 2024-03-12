@@ -189,12 +189,12 @@ co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject) {
     return MICROKITCO_NOERR;
 }
 
-microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), int prioritised, int ready) {
+co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
-        if (!cothread_entrypoint) {
+        if (!entry) {
             return MICROKITCO_ERR_INVALID_ARGS;
         }
     #endif
@@ -209,7 +209,7 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
 
     unsigned char *costack = (unsigned char *) co_controller.tcbs[new].stack_left;
     memzero(costack, co_controller.co_stack_size);
-    co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, cothread_entrypoint);
+    co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, entry);
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_initialised;
 
@@ -222,7 +222,8 @@ microkit_cothread_t microkit_cothread_spawn(void (*cothread_entrypoint)(void), i
         }
     }
 
-    return new;
+    *ret = new;
+    return MICROKITCO_NOERR;
 }
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
