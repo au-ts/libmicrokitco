@@ -55,11 +55,31 @@ On success:
 - `MICROKITCO_NOERR`.
 
 ##### Example
+Configuration file:
+```xml
+<system>
+    <!-- Define your system here -->
+    <memory_region name="co_mem" size="0x2000"/>
+    <memory_region name="stack1" size="0x1000"/>
+    <memory_region name="stack2" size="0x1000"/>
+
+    <protection_domain name="example">
+        <program_image path="example.elf" />
+
+        <map mr="co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack_1_start" />
+        <map mr="stack2" vaddr="0x2006000" perms="rw" setvar_vaddr="stack_2_start" />
+
+    </protection_domain>
+</system>
+
+```
+Implementation:
 ```C
 #include <microkit.h>
 #include <libmicrokitco.h>
 
-int stack_size;
+int stack_size = 0x1000;
 // These are set in the system config file.
 uintptr_t co_mem;
 // Stacks should have a GUARD PAGE between them!
