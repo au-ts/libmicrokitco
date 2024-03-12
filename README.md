@@ -116,7 +116,7 @@ On success:
 --- 
 
 ### `void microkit_cothread_yield()`
-Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running. Don't use this while editing shared data structures. 
+Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running. Don't use this or any other APIs that take away your control while editing shared data structures to prevent data race. 
 
 ---
 
@@ -128,6 +128,20 @@ On error:
 - `MICROKITCO_ERR_NOT_INITIALISED`,
 - `MICROKITCO_ERR_INVALID_ARGS`,
 - `MICROKITCO_ERR_OP_FAIL`.
+
+On success:
+- `MICROKITCO_NOERR`.
+
+---
+
+### `co_err_t microkit_cothread_switch(microkit_cothread_t cothread)`
+Explicitly switches to another ready cothread, bypassing the scheduler. A cothread cannot switch to itself.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_DEST_NOT_READY`,
+- `MICROKITCO_ERR_INVALID_HANDLE`.
 
 On success:
 - `MICROKITCO_NOERR`.
