@@ -336,13 +336,28 @@ void internal_go_next() {
     co_switch(co_controller.tcbs[next].cothread);
 }
 
-void microkit_cothread_wait(microkit_channel wake_on) {
+co_err_t microkit_cothread_wait(microkit_channel wake_on) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return MICROKITCO_ERR_NOT_INITIALISED;
+        }
+
+        // TODO: check if channel is valid, otherwise cothread can block forever.
+    #endif
+
     co_controller.tcbs[co_controller.running].state = cothread_blocked;
     co_controller.tcbs[co_controller.running].blocked_on = wake_on;
     internal_go_next();
+    return MICROKITCO_NOERR;
 }
 
 void microkit_cothread_yield() {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return;
+        }
+    #endif
+
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue;
     if (co_controller.tcbs[co_controller.running].prioritised) {
@@ -359,6 +374,12 @@ void microkit_cothread_yield() {
 }
 
 void microkit_cothread_destroy_me() {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return;
+        }
+    #endif
+
     int err = microkit_cothread_destroy_specific(co_controller.running);
 
     #if !defined(LIBMICROKITCO_UNSAFE)
