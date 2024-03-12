@@ -30,6 +30,7 @@ typedef struct {
     // non-zero means prioritised
     int prioritised;
 
+    // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
 } co_tcb_t;
 
@@ -59,6 +60,7 @@ struct cothreads_control {
     int init_success;
 };
 
+// each PD can only have one "instance" of this library running.
 static co_control_t co_controller = {
     .init_success = 0
 };
@@ -72,21 +74,20 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
         return MICROKITCO_ERR_INVALID_ARGS;
     }
 
-    co_controller.num_cothreads = 1;
+    co_controller.co_stack_size = co_stack_size;
+
     // Includes root thread.
+    co_controller.num_cothreads = 1;
     int real_max_cothreads = max_cothreads + 1;
     co_controller.max_cothreads = real_max_cothreads;
 
-    co_controller.co_stack_size = co_stack_size;
-
-    // memory allocator for the library
+    // This part will VMFault on write if mem is not large enough.
     unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
         return MICROKITCO_ERR_NOMEM;
     }
     allocator_t *allocator = &co_controller.mem_allocator;
 
-    // allocate all the buffers we could possibly need, also checks if controller_memory is large enough
     void *tcbs_array = allocator->alloc(allocator, sizeof(co_tcb_t) * real_max_cothreads);
     void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
@@ -101,6 +102,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 
     // parses all the valid stack memory regions 
     // TODO, check that we actually have `max_cothreads` extra args.
+    //       hmm... this is not possible with gnu c????
     va_list ap;
     va_start (ap, max_cothreads);
     for (int i = 0; i < max_cothreads; i++) {
@@ -116,20 +118,14 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.running = 0;
 
     // initialise the queues
-    int err = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
-    if (err != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_OP_FAIL;
-    }
-    err = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
-    if (err != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_OP_FAIL;
-    }
-    err = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
-    if (err != LIBHOSTEDQUEUE_NOERR) {
+    int err_hq = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
+    int err_pq = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
+    int err_nq = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
+    if (err_hq != LIBHOSTEDQUEUE_NOERR || err_pq != LIBHOSTEDQUEUE_NOERR || err_nq != LIBHOSTEDQUEUE_NOERR ) {
         return MICROKITCO_ERR_OP_FAIL;
     }
 
-    // enqueue all the free cothread handle IDs. Exclude root thread.
+    // enqueue all the free cothread handle IDs but exclude the root thread.
     for (microkit_cothread_t i = 1; i < real_max_cothreads; i++) {
         if (hostedqueue_push(&co_controller.free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
             return MICROKITCO_ERR_OP_FAIL;
