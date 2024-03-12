@@ -141,19 +141,21 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 }
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return MICROKITCO_ERR_NOT_INITIALISED;
+        }
+    #endif
+
+
     // TODO: this could be faster
     for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
         if (co_controller.tcbs[i].state == cothread_blocked) {
             if (co_controller.tcbs[i].blocked_on == ch) {
                 co_controller.tcbs[i].state = cothread_ready;
-                hosted_queue_t *sched_queue;
-                if (!co_controller.tcbs[i].prioritised) {
-                    sched_queue = &co_controller.non_priority_queue;
-                } else {
-                    sched_queue = &co_controller.priority_queue;
+                if (microkit_cothread_switch(i) != MICROKITCO_NOERR) {
+                    panic();
                 }
-
-                hostedqueue_push(sched_queue, &i);
                 return MICROKITCO_NOERR;
             }
         }

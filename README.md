@@ -99,15 +99,54 @@ On success:
 --- 
 
 #### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
-Maps an incoming notification to a blocked cothread then switches to it. ***Call this in your `notified()`***, otherwise, co-threads will never wake up if they blocks.
+Maps an incoming notification to a blocked cothread *then switches* to it. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 ##### Returns
 On error:
 - `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_ARGS`,
 - `MICROKITCO_ERR_OP_FAIL` if no cothread is blocked on this channel.
 
 On success:
 - `MICROKITCO_NOERR`.
+
+#### Examples
+```C
+#include <microkit.h>
+#include <libmicrokitco.h>
+
+int stack_size;
+uintptr_t co_mem;
+uintptr_t stack_1_start;
+
+microkit_channel patron_signal = 42;
+
+void waiter() {
+    while (1) {
+        microkit_dbg_puts("Waiter: waiting...\n");
+
+        // will switch back to root PD thread for recv'ing notification if no other ready cothread.
+        microkit_cothread_wait(patron_signal);
+
+        microkit_dbg_puts("Waiter: coming!\n");
+        microkit_cothread_yield();
+    }
+}
+
+void init(void) {
+    microkit_cothread_init(co_mem, stack_size, 1, stack_1_start);
+    microkit_cothread_t co_handle;
+    microkit_cothread_spawn(waiter, 1, 1, &co_handle);
+    microkit_cothread_yield();
+}
+
+void notified(microkit_channel ch) {
+    if (microkit_cothread_recv_ntfn(ch) != MICROKITCO_NOERR) {
+        // No cothread blocked, handle the unknown notification...
+    } else {
+        // map successful -> switch -> when we get run again, go back to Microkit's event loop.
+        return;
+    }
+}
+```
 
 ---
