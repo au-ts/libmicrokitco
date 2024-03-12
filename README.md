@@ -8,7 +8,7 @@ The library expects a large memory region (MR) for it's internal data structures
 ### Scheduling
 A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously to ensure other cothreads are not starved. 
 
----
+When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD (Protection Domain) thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
 ## Usage
 To use `libmicrokitco` in your project, define these in your Makefile:
@@ -29,8 +29,6 @@ include $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 And link your object files against `$(BUILD_DIR)/libmicrokitco.o`.
-
----
 
 ## API
 #### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
@@ -65,6 +63,8 @@ void init(void) {
 }
 ```
 
+---
+
 #### `co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret)`
 Creates a new cothread, but does not jump to it.
 ##### Arguments
@@ -72,3 +72,5 @@ Creates a new cothread, but does not jump to it.
 - `prioritised` indicates which scheduling queue your cothread will be placed into. Pass non-zero for priority queue and vice versa.
 - `ready` indicates whether to schedule your cothread for execution. If you pass non-zero, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields. If you pass zero, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
+
+--- 
