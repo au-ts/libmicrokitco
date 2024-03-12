@@ -115,6 +115,25 @@ On success:
 
 --- 
 
+#### `void microkit_cothread_yield()`
+Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running. Don't use this while editing shared data structures. 
+
+---
+
+#### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
+Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_INVALID_ARGS`,
+- `MICROKITCO_ERR_OP_FAIL`.
+
+On success:
+- `MICROKITCO_NOERR`.
+
+---
+
 #### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
 Maps an incoming notification to a blocked cothread *then switches* to it. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
