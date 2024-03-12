@@ -1,12 +1,12 @@
 # Client Programming Model for Microkit
 
 ## Overview
-A cooperative multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 protection domain. Then, cothreads can wait for an incoming notification from a channel, while some cothreads are waiting, other cothreads can execute. 
+A cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, cothreads can wait for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
 
 ### Scheduling
 A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously to ensure other cothreads are not starved. 
 
-When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD (Protection Domain) thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
+When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
 ### Memmory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
