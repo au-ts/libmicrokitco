@@ -78,7 +78,7 @@ void init(void) {
 ---
 
 #### `co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret)`
-Creates a new cothread, but does not jump to it.
+Creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `entry` points to your cothread's function. Arguments passing are done via global variables.
@@ -91,6 +91,23 @@ On error:
 - `MICROKITCO_ERR_NOT_INITIALISED`,
 - `MICROKITCO_ERR_INVALID_ARGS`,
 - `MICROKITCO_ERR_MAX_COTHREADS_REACHED`,
+- `MICROKITCO_ERR_OP_FAIL`.
+
+On success:
+- `MICROKITCO_NOERR`.
+
+--- 
+
+#### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
+Marks an initialised but not ready cothread created from `init()` as ready and schedule it, but does not switch to it.
+
+##### Arguments
+- `cothread` is the subject cothread handle.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_INVALID_HANDLE`,
 - `MICROKITCO_ERR_OP_FAIL`.
 
 On success:
