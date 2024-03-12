@@ -200,3 +200,39 @@ void notified(microkit_channel ch) {
 ```
 
 ---
+
+### `void microkit_cothread_destroy_me()`
+Destroy the calling cothread and invoke the scheduler. **IMPORTANT**, your cothread cannot return, it must call `destroy_me()` instead of returning. Otherwise, it is undefined behaviour if your cothread returns.
+
+Not needed if your cothread is in an infinite loop.
+
+No effect if called in a non-cothread context.
+
+---
+
+### `co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread)`
+Destroy a specific cothread. Should be sparingly used because cothread might hold resources that needs free'ing.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_INVALID_HANDLE`,
+- `MICROKITCO_ERR_OP_FAIL`.
+
+On success:
+- `MICROKITCO_NOERR`.
+
+---
+
+### `co_err_t microkit_cothread_prioritise(microkit_cothread_t subject)`
+### `co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject)`
+
+Select which scheduling queue the `subject` cothread will be placed into in the future. No immediate effect if the cothread is already scheduled.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_INVALID_HANDLE`,
+
+On success:
+- `MICROKITCO_NOERR`.
