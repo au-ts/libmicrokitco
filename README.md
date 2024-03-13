@@ -157,6 +157,8 @@ Yield the CPU to another cothread. If there are no other ready cothreads, the ca
 ### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
 Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications.
 
+> ⚠️ Work in progress, subject to change.
+
 ##### Returns
 On error:
 - `MICROKITCO_ERR_NOT_INITIALISED`,
