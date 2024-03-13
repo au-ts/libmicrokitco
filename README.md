@@ -1,7 +1,17 @@
 # Client Programming Model for Microkit
 
-## Overview
-A cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, cothreads can wait for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
+## Problem
+<!-- Lifted from the ToR project brief -->
+The [seL4 Microkit](https://trustworthy.systems/projects/microkit/) prescribes an event-handler programming model, which is appropriate for implementing OS services, as well as for reactive clients, which are common in real-time systems. However, it is not the right model for clients that are not reactive, but are built around a computation for which OS services are incidental.
+
+Such a (more traditional) programming model can be implemented on top of the existing event-oriented model through a library that provides a synchronous API over the asynchronous event handlers.
+
+## Aim
+Design, implementation and performance evaluation of a library that provides a non-reactive (active process) programming model on top of the Microkit API.
+
+## Solution
+### Overview
+`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, cothreads can wait for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
 
 ### Scheduling
 A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously to ensure other cothreads are not starved. 
