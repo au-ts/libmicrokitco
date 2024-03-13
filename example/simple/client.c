@@ -23,7 +23,6 @@ void co_entry3() {
 void co_entry4() {
     // should not enter
     *(char *) 0 = 0;
-    microkit_cothread_destroy_me();
 }
 
 void init(void) {
@@ -49,15 +48,15 @@ void init(void) {
 
     microkit_dbg_puts("CLIENT: cothreads spawned\n");
 
-    // should print the `COn: hi` 3x.
     microkit_cothread_yield();
 
-    // This MUST print before the cothreads' prints because client is higher prio
-    // Currently not as expected, TODO: fix
+    // This prints before the cothreads' prints because root thread is higher priority.
     microkit_dbg_puts("CLIENT: done, exiting!\n");
 
     microkit_cothread_deprioritise(0);
     microkit_cothread_yield();
+
+    // returns to Microkit event loop for recv'ing notifications.
 }
 
 void notified(microkit_channel channel) {
