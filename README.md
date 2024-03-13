@@ -185,6 +185,8 @@ On success:
 ### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
 Maps an incoming notification to a blocked cothread *then switches* to it. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
+> ⚠️ Work in progress, subject to change.
+
 ##### Returns
 On error:
 - `MICROKITCO_ERR_NOT_INITIALISED`,
@@ -227,7 +229,7 @@ void notified(microkit_channel ch) {
     if (microkit_cothread_recv_ntfn(ch) != MICROKITCO_NOERR) {
         // No cothread blocked, handle the unknown notification...
     } else {
-        // map successful -> switch -> when we get run again, go back to Microkit's event loop.
+        // map successful -> switched -> when we get run again, go back to Microkit's event loop.
         return;
     }
 }
