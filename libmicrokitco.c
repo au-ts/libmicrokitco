@@ -141,8 +141,11 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
+        if (!co_controller.running) {
+            // called from a cothread context
+            panic();
+        }
     #endif
-
 
     // TODO: this could be faster
     for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
