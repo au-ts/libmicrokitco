@@ -22,7 +22,8 @@ When the scheduler is invoked and no cothreads are ready, the scheduler will ret
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
 
 ### State transition
-A cothread is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follows:
+> ⚠️ Work in progress, subject to change.
+A cothread is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
 ![state transition diagram](./docs/state_diagram.png)
 
 ## Usage
