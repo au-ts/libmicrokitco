@@ -43,7 +43,7 @@ Then, add this to your Makefile after the declarations:
 include $(LIBMICROKITCO_PATH)/Makefile
 ```
 
-Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco`.
+Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco.o`.
 
 ## API
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
