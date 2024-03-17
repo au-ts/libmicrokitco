@@ -376,6 +376,10 @@ void microkit_cothread_destroy_me() {
         }
     #endif
 
+    if (co_controller.running == 0) {
+        return;
+    }
+
     int err = microkit_cothread_destroy_specific(co_controller.running);
 
     #if !defined(LIBMICROKITCO_UNSAFE)
