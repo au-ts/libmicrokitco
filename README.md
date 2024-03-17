@@ -18,6 +18,8 @@ A cothread can be "prioritised" or not. All ready "prioritised" cothreads are pi
 
 When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
+The scheduler can be overidden at times by the client, see `microkit_cothread_switch()`.
+
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
 
@@ -151,8 +153,7 @@ On success:
 --- 
 
 ### `void microkit_cothread_yield()`
-Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running. Don't use this or any other APIs that take away your control while editing shared data structures to prevent data race. 
-
+Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running.
 ---
 
 ### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
@@ -172,7 +173,8 @@ On success:
 ---
 
 ### `co_err_t microkit_cothread_switch(microkit_cothread_t cothread)`
-Explicitly switches to another ready cothread, bypassing the scheduler. A cothread cannot switch to itself.
+Explicitly switches to another ready cothread, overriding the scheduler and priority level. A cothread cannot switch to itself. Do not use `yield()`, `wait()` or `switch()` while editing shared data structures to prevent race. 
+
 
 ##### Returns
 On error:
@@ -250,7 +252,7 @@ No effect if called in a non-cothread context.
 ---
 
 ### `co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread)`
-Destroy a specific cothread. Should be sparingly used because cothread might hold resources that needs free'ing.
+Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
 
 ##### Returns
 On error:
