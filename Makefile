@@ -14,8 +14,8 @@ ifndef BUILD_DIR
 $(error TOOLCHAIN is not set)
 endif
 
-ifndef BOARD 
-$(error BOARD is not set)
+ifndef MICROKIT_BOARD 
+$(error MICROKIT_BOARD is not set)
 endif
 
 ifndef MICROKIT_CONFIG 
@@ -36,7 +36,7 @@ CO_CC := $(TOOLCHAIN)-gcc
 CO_LD := $(TOOLCHAIN)-ld
 
 CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-stringop-overflow -Wno-unused-function
-CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/include
+CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 
 all: directories $(BUILD_DIR)/libmicrokitco.o
 

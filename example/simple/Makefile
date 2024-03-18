@@ -19,7 +19,7 @@ ifndef TOOLCHAIN
 	endif
 endif
 
-BOARD := qemu_arm_virt
+MICROKIT_BOARD := qemu_arm_virt
 MICROKIT_CONFIG := debug
 BUILD_DIR := build
 CPU := cortex-a53
@@ -32,7 +32,7 @@ CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
-CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/include
+CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-variable -Wno-unused-function -Werror $(CC_INCLUDE_MICROKIT_FLAG)
 LDFLAGS := -L$(BOARD_DIR)/lib
 LIBS := -lmicrokit -Tmicrokit.ld
@@ -46,7 +46,7 @@ $(BUILD_DIR)/client.o: client.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $< -o $@
 
 $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o
-	$(LD) -L$(MICROKIT_SDK)/board/$(BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ) $(BUILD_DIR)/client.o $(LIBS) -o $(BUILD_DIR)/client.elf
+	$(LD) -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ) $(BUILD_DIR)/client.o $(LIBS) -o $(BUILD_DIR)/client.elf
 
 $(BUILD_DIR)/loader.img: $(BUILD_DIR)/client.elf
-	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
