@@ -214,7 +214,6 @@ co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_initialised;
 
-    hosted_queue_t *sched_queue;
     if (ready) {
         int err = microkit_cothread_mark_ready(new);
         if (err != MICROKITCO_NOERR) {
@@ -281,6 +280,12 @@ co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
         sched_queue = &co_controller.non_priority_queue;
     }
     int push_err = hostedqueue_push(sched_queue, &co_controller.running);
+
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (push_err != LIBHOSTEDQUEUE_NOERR) {
+            panic();
+        }
+    #endif
 
     co_controller.tcbs[cothread].state = cothread_running;
     co_controller.running = cothread;
