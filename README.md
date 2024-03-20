@@ -114,13 +114,13 @@ void init(void) {
 
 ---
 
-### `co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret)`
+### `co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret)`
 Creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `entry` points to your cothread's function. Arguments passing are done via global variables.
-- `prioritised` indicates which scheduling queue your cothread will be placed into. Pass non-zero for priority queue and vice versa.
-- `ready` indicates whether to schedule your cothread for execution. If you pass non-zero, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields. If you pass zero, you must later call `mark_ready()` for this cothread to be scheduled.
+- `prioritised` indicates which scheduling queue your cothread will be placed into.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
 
 ##### Returns
