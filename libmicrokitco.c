@@ -190,7 +190,7 @@ co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject) {
     return MICROKITCO_NOERR;
 }
 
-co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret) {
+co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;

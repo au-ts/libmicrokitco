@@ -15,6 +15,16 @@ typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 typedef int co_err_t;
 
+typedef enum {
+    priority_false,
+    priority_true
+} priority_level_t;
+
+typedef enum {
+    ready_false,
+    ready_true
+} ready_status_t;
+
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...);
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
@@ -22,7 +32,7 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
 co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 
-co_err_t microkit_cothread_spawn(void (*entry)(void), int prioritised, int ready, microkit_cothread_t *ret);
+co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret);
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
