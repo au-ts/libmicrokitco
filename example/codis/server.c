@@ -123,7 +123,7 @@ void notified(microkit_channel channel) {
     co_err_t err = microkit_cothread_recv_ntfn(channel);
 
     if (err == MICROKITCO_NOERR) {
-        ;
+        printf("SERVER: notification %u mapped\n", channel);
     } else if (err == MICROKITCO_ERR_OP_FAIL) {
         printf("SERVER: received notification from unknown channel: %d\n", channel);
         // You can handle ntfns from other channels here:
