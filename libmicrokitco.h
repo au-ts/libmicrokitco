@@ -25,10 +25,10 @@ const char *err_strs[] = {
     "libmicrokitco: destination cothread not ready.\n",
     "libmicrokitco: cothreads ceiling reached.\n",
     "libmicrokitco: library already initialised.\n",
-}
+};
 
 // Return a string of human friendly error message.
-char *microkit_cothread_pretty_error(co_err_t err_num) {
+const char *microkit_cothread_pretty_error(co_err_t err_num) {
     int abs_err = err_num * -1;
     if (err_num > 0 || abs_err >= ERR_COMBINATIONS) {
         return "libmicrokitco: unknown error!\n";
