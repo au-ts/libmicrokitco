@@ -50,7 +50,11 @@ typedef struct {
     cothread_t cothread;
 
     co_state_t state;
-    microkit_channel blocked_on;
+    
+    // the next tcb that is blocked on the same channel as this tcb.
+    // -1 means this tcb is the tail.
+    // only checked when state == cothread_blocked.
+    microkit_cothread_t next_blocked;
 
     // non-zero means prioritised
     int prioritised;
@@ -58,6 +62,11 @@ typedef struct {
     // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
 } co_tcb_t;
+
+struct blocked_list {
+    microkit_cothread_t head;
+    microkit_cothread_t tail;
+};
 
 struct cothreads_control {
     // array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
@@ -81,6 +90,8 @@ struct cothreads_control {
     // queues for scheduling
     hosted_queue_t priority_queue;
     hosted_queue_t non_priority_queue;
+
+    struct blocked_list blocked_map[MICROKIT_MAX_CHANNELS];
 
     int init_success;
 };
@@ -106,7 +117,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     int real_max_cothreads = max_cothreads + 1;
     co_controller.max_cothreads = real_max_cothreads;
 
-    // This part will VMFault on write if mem is not large enough.
+    // This part will VMFault on write if your memory is not large enough.
     unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
         return MICROKITCO_ERR_NOMEM;
@@ -157,6 +168,12 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
         }
     }
 
+    // initialised the blocked table
+    for (int i = 0; i < MICROKIT_MAX_CHANNELS; i++) {
+        co_controller.blocked_map[i].head = -1;
+        co_controller.blocked_map[i].tail = -1;
+    }
+
     co_controller.init_success = 1;
     return MICROKITCO_NOERR;
 }
@@ -172,19 +189,45 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
         }
     #endif
 
-    // TODO: this could be faster
-    for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
-        if (co_controller.tcbs[i].state == cothread_blocked) {
-            if (co_controller.tcbs[i].blocked_on == ch) {
-                co_controller.tcbs[i].state = cothread_ready;
-                if (microkit_cothread_switch(i) != MICROKITCO_NOERR) {
-                    panic();
-                }
-                return MICROKITCO_NOERR;
+    if (co_controller.blocked_map[ch].head == -1) {
+        return MICROKITCO_ERR_OP_FAIL;
+    } else {
+        microkit_cothread_t cur = co_controller.blocked_map[ch].head;
+
+        // iterate over the "linked list", unblocks all the cothreads and schedule them
+        while (cur != -1) {
+            co_err_t err = microkit_cothread_mark_ready(cur);
+            if (err != MICROKITCO_NOERR) {
+                return err;
             }
+
+            microkit_cothread_t next = co_controller.tcbs[cur].next_blocked;
+            co_controller.tcbs[cur].next_blocked = -1;
+            cur = next;
         }
+ 
+        co_controller.blocked_map[ch].head = -1;
+        co_controller.blocked_map[ch].tail = -1;
+
+        // run the cothreads
+        microkit_cothread_yield();
+
+        return MICROKITCO_NOERR;
     }
-    return MICROKITCO_ERR_OP_FAIL;
+
+    // // TODO: this could be faster
+    // for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
+    //     if (co_controller.tcbs[i].state == cothread_blocked) {
+    //         if (co_controller.tcbs[i].blocked_on == ch) {
+    //             co_controller.tcbs[i].state = cothread_ready;
+    //             if (microkit_cothread_switch(i) != MICROKITCO_NOERR) {
+    //                 panic();
+    //             }
+    //             return MICROKITCO_NOERR;
+    //         }
+    //     }
+    // }
+    // return MICROKITCO_ERR_OP_FAIL;
 }
 
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject) {
@@ -238,6 +281,7 @@ co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritis
     co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, entry);
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_initialised;
+    co_controller.tcbs[new].next_blocked = -1;
 
     if (ready) {
         int err = microkit_cothread_mark_ready(new);
@@ -261,7 +305,7 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
         }
     #endif
 
-    if (co_controller.tcbs[cothread].state != cothread_initialised) {
+    if (co_controller.tcbs[cothread].state == cothread_not_active) {
         return MICROKITCO_ERR_OP_FAIL;
     }
 
@@ -375,7 +419,16 @@ co_err_t microkit_cothread_wait(microkit_channel wake_on) {
     #endif
 
     co_controller.tcbs[co_controller.running].state = cothread_blocked;
-    co_controller.tcbs[co_controller.running].blocked_on = wake_on;
+    
+    // push into the waiting linked list (if any)
+    if (co_controller.blocked_map[wake_on].head == -1) {
+        co_controller.blocked_map[wake_on].head = co_controller.running;
+    } else {
+        co_controller.tcbs[co_controller.blocked_map[wake_on].tail].next_blocked = co_controller.running;
+    }
+    co_controller.blocked_map[wake_on].tail = co_controller.running;
+    co_controller.tcbs[co_controller.running].next_blocked = -1;
+
     internal_go_next();
     return MICROKITCO_NOERR;
 }
