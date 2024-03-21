@@ -11,7 +11,7 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, cothreads can wait for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
 
 ### Scheduling
 A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously to ensure other cothreads are not starved. 
@@ -24,7 +24,7 @@ The scheduler can be overidden at times by the client, see `microkit_cothread_sw
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
 
 ### State transition
-> ⚠️ Work in progress, subject to change.
+
 A cothread is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
 ![state transition diagram](./docs/state_diagram.png)
 
@@ -156,13 +156,13 @@ On success:
 --- 
 
 ### `void microkit_cothread_yield()`
+
 Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running.
+
 ---
 
 ### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
-Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications.
-
-> ⚠️ Work in progress, subject to change.
+Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel.
 
 ##### Returns
 On error:
@@ -191,9 +191,7 @@ On success:
 ---
 
 ### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
-Maps an incoming notification to a blocked cothread *then switches* to it. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
-
-> ⚠️ Work in progress, subject to change.
+Maps an incoming notification to blocked cothreads then yields to let the newly ready cothread(s) execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 ##### Returns
 On error:
