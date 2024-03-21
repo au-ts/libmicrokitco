@@ -49,7 +49,7 @@ include $(LIBMICROKITCO_PATH)/Makefile
 Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco/libmicrokitco.o`.
 
 ## API
-### `char *microkit_cothread_pretty_error(co_err_t err_num)`
+### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
 Map the error number returned by this library's functions into a human friendly error message string.
 
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
