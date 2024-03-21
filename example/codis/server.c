@@ -97,6 +97,9 @@ void init(void) {
     // client handler thread #4 now execute.
     microkit_cothread_yield();
 
+    // nothing happens since all 4 cothreads are waiting for channel ntfn.
+    microkit_cothread_yield();
+
     // returns to Microkit event loop for recv'ing notifications.
     printf("SERVER: init done!\n");
 
