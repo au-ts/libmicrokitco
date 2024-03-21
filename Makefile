@@ -38,13 +38,16 @@ CO_LD := $(TOOLCHAIN)-ld
 CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-stringop-overflow -Wno-unused-function
 CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 
-all: directories $(BUILD_DIR)/libmicrokitco.o
+all: libmicrokitco_directory $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
 
-$(BUILD_DIR)/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
+libmicrokitco_directory: 
+	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))	
+
+$(BUILD_DIR)/libmicrokitco/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
 	$(CO_CC) $(CO_CFLAGS) -w $< -o $@
 
-$(BUILD_DIR)/libmicrokitco_bare.o: $(LIBMICROKITCO_PATH)/libmicrokitco.c
+$(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o: $(LIBMICROKITCO_PATH)/libmicrokitco.c
 	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $< -o $@
 
-$(BUILD_DIR)/libmicrokitco.o: $(BUILD_DIR)/libco.o $(BUILD_DIR)/libmicrokitco_bare.o
-	$(CO_LD) -r $(BUILD_DIR)/libco.o $(BUILD_DIR)/libmicrokitco_bare.o -o $(BUILD_DIR)/libmicrokitco.o
+$(BUILD_DIR)/libmicrokitco/libmicrokitco.o: $(BUILD_DIR)/libmicrokitco/libco.o $(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o
+	$(CO_LD) -r $(BUILD_DIR)/libmicrokitco/libco.o $(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o -o $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
