@@ -30,8 +30,8 @@ A cothread is in 1 distinct state at any given point in time, interaction with t
 
 ## Usage
 To use `libmicrokitco` in your project, define these in your Makefile:
-1. `LIBMICROKITCO_PATH`: path to root of this library,
-2. `MICROKIT_SDK`: path to Microkit SDK,
+1. `LIBMICROKITCO_PATH`: absolute path to root of this library,
+2. `MICROKIT_SDK`: absolute path to Microkit SDK,
 3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-linux-gnu`,
 4. `BUILD_DIR`,
 5. `BOARD`: one of Microkit's supported board, e.g. `qemu_arm_virt`,
@@ -46,9 +46,12 @@ Then, add this to your Makefile after the declarations:
 include $(LIBMICROKITCO_PATH)/Makefile
 ```
 
-Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco.o`.
+Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco/libmicrokitco.o`.
 
 ## API
+### `char *microkit_cothread_pretty_error(co_err_t err_num)`
+Map the error number returned by this library's functions into a human friendly error message string.
+
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
 Initialises the library's internal data structure.
 
