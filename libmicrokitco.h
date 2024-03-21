@@ -1,7 +1,9 @@
 #pragma once
 
-#define MICROKITCO_NOERR 0
+// Error handling
+typedef int co_err_t;
 
+#define MICROKITCO_NOERR 0
 #define MICROKITCO_ERR_INVALID_ARGS -1
 #define MICROKITCO_ERR_INVALID_HANDLE -2
 #define MICROKITCO_ERR_NOT_INITIALISED -3
@@ -11,9 +13,36 @@
 #define MICROKITCO_ERR_MAX_COTHREADS_REACHED -7
 #define MICROKITCO_ERR_ALREADY_INITIALISED -8
 
+#define ERR_COMBINATIONS 9
+
+const char *err_strs[] = {
+    "libmicrokitco: no error.\n",
+    "libmicrokitco: invalid arguments.\n",
+    "libmicrokitco: invalid cothread handle.\n",
+    "libmicrokitco: library not initialised before usage.\n",
+    "libmicrokitco: not enough memory internally.\n",
+    "libmicrokitco: operation failed.\n", // catch all err
+    "libmicrokitco: destination cothread not ready.\n",
+    "libmicrokitco: cothreads ceiling reached.\n",
+    "libmicrokitco: library already initialised.\n",
+}
+
+// Return a string of human friendly error message.
+char *microkit_cothread_pretty_error(co_err_t err_num) {
+    int abs_err = err_num * -1;
+    if (err_num < 0 || abs_err >= ERR_COMBINATIONS) {
+        return "libmicrokitco: unknown error!\n";
+    } else {
+        return err_strs[abs_err];
+    }
+}
+
+
+// Business logic
+#define MICROKITCO_ROOT_THREAD 0
+
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
-typedef int co_err_t;
 
 typedef enum {
     priority_false,
