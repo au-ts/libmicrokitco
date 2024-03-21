@@ -37,11 +37,11 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry1, 0, 1, &co1);
-    microkit_cothread_spawn(co_entry2, 0, 1, &co2);
-    microkit_cothread_spawn(co_entry3, 0, 1, &co3);
+    microkit_cothread_spawn(co_entry1, priority_false, ready_true, &co1);
+    microkit_cothread_spawn(co_entry2, priority_false, ready_true, &co2);
+    microkit_cothread_spawn(co_entry3, priority_false, ready_true, &co3);
 
-    if (microkit_cothread_spawn(co_entry4, 0, 1, &co4) != MICROKITCO_ERR_MAX_COTHREADS_REACHED) {
+    if (microkit_cothread_spawn(co_entry4, priority_false, ready_true, &co4) != MICROKITCO_ERR_MAX_COTHREADS_REACHED) {
         microkit_dbg_puts("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
