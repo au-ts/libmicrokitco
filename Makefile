@@ -32,6 +32,8 @@ else
 UNSAFE :=  
 endif
 
+LIBMICROKITCO_BUILD_DIR := $(BUILD_DIR)/libmicrokitco
+
 CO_CC := $(TOOLCHAIN)-gcc
 CO_LD := $(TOOLCHAIN)-ld
 
@@ -43,11 +45,11 @@ all: libmicrokitco_directory $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
 libmicrokitco_directory: 
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))	
 
-$(BUILD_DIR)/libmicrokitco/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
+$(LIBMICROKITCO_BUILD_DIR)/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
 	$(CO_CC) $(CO_CFLAGS) -w $< -o $@
 
-$(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o: $(LIBMICROKITCO_PATH)/libmicrokitco.c
+$(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o: $(LIBMICROKITCO_PATH)/libmicrokitco.c
 	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $< -o $@
 
-$(BUILD_DIR)/libmicrokitco/libmicrokitco.o: $(BUILD_DIR)/libmicrokitco/libco.o $(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o
-	$(CO_LD) -r $(BUILD_DIR)/libmicrokitco/libco.o $(BUILD_DIR)/libmicrokitco/libmicrokitco_bare.o -o $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
+$(LIBMICROKITCO_BUILD_DIR)/libmicrokitco.o: $(LIBMICROKITCO_BUILD_DIR)/libco.o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o
+	$(CO_LD) -r $(LIBMICROKITCO_BUILD_DIR)/libco.o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o -o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco.o

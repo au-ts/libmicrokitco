@@ -25,7 +25,7 @@ BUILD_DIR := build
 CPU := cortex-a53
 
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_OBJ := libmicrokitco.o
+LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
 include $(LIBMICROKITCO_PATH)/Makefile
 
 CC := $(TOOLCHAIN)-gcc
