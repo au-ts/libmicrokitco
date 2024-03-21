@@ -11,6 +11,31 @@
 #define SCHEDULER_NULL_CHOICE -1
 #define MINIMUM_STACK_SIZE 0x1000
 
+// Error handling
+const char *err_strs[] = {
+    "libmicrokitco: no error.\n",
+    "libmicrokitco: invalid arguments.\n",
+    "libmicrokitco: invalid cothread handle.\n",
+    "libmicrokitco: library not initialised before usage.\n",
+    "libmicrokitco: not enough memory internally.\n",
+    "libmicrokitco: operation failed.\n", // catch all err
+    "libmicrokitco: destination cothread not ready.\n",
+    "libmicrokitco: cothreads ceiling reached.\n",
+    "libmicrokitco: library already initialised.\n",
+};
+
+// Return a string of human friendly error message.
+const char *microkit_cothread_pretty_error(co_err_t err_num) {
+    int abs_err = err_num * -1;
+    if (err_num > 0 || abs_err >= ERR_COMBINATIONS) {
+        return "libmicrokitco: unknown error!\n";
+    } else {
+        return err_strs[abs_err];
+    }
+}
+
+
+// Business logic
 typedef enum cothread_state {
     // this id is not being used
     cothread_not_active = 0,
