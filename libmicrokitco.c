@@ -166,7 +166,7 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
-        if (!co_controller.running) {
+        if (co_controller.running) {
             // called from a cothread context
             panic();
         }
