@@ -39,7 +39,7 @@ MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-function -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
 LDFLAGS := -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
-LIBS := -lmicrokit -Tmicrokit.ld
+LIBS := -lmicrokit -Tmicrokit.ld -L. -lc
 
 all: directories $(BUILD_DIR)/loader.img
 
@@ -55,11 +55,20 @@ $(BUILD_DIR)/client.o: client.c
 $(BUILD_DIR)/server.o: server.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) server.c -o $(BUILD_DIR)/server.o
 
-$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client.elf
+$(BUILD_DIR)/client1.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client1.elf
+
+$(BUILD_DIR)/client2.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client2.elf
+
+$(BUILD_DIR)/client3.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client3.elf
+
+$(BUILD_DIR)/client4.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client4.elf
 
 $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
 	$(LD) $(LDFLAGS) $(BUILD_DIR)/libmicrokitco/libmicrokitco.o $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/server.elf
 
-$(BUILD_DIR)/loader.img: $(BUILD_DIR)/client.elf $(BUILD_DIR)/server.elf
+$(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client1.elf $(BUILD_DIR)/client2.elf $(BUILD_DIR)/client3.elf $(BUILD_DIR)/client4.elf
 	$(MICROKIT_TOOL) codis.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt

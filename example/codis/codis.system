@@ -12,10 +12,14 @@
     <memory_region name="client3_ipc" size="0x1000"/>
     <memory_region name="client4_ipc" size="0x1000"/>
 
+    <!-- the in memory cache, 255 "buckets", 4k for each bucket -->
+    <memory_region name="serv_priv_data" size="0xFF000"/>
+
     <protection_domain name="server" priority="250">
         <program_image path="server.elf" />
 
         <map mr="serv_co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="serv_priv_data" vaddr="0x3000000" perms="rw" setvar_vaddr="db" />
 
         <!-- guard page between the stacks! -->
         <map mr="serv_stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack1" />
@@ -31,25 +35,25 @@
 
     </protection_domain>
 
-    <protection_domain name="client1" priority="200">
-        <program_image path="client.elf" />
+    <protection_domain name="client1" priority="203">
+        <program_image path="client1.elf" />
         <!-- trick to pass the client number to the singular executable -->
-        <map mr="client1_ipc" vaddr="0x201000" perms="rw" setvar_vaddr="ipc" />
+        <map mr="client1_ipc" vaddr="0x2001000" perms="rw" setvar_vaddr="ipc" />
     </protection_domain>
 
-    <protection_domain name="client2" priority="200">
-        <program_image path="client.elf" />
-        <map mr="client2_ipc" vaddr="0x202000" perms="rw" setvar_vaddr="ipc" />
+    <protection_domain name="client2" priority="202">
+        <program_image path="client2.elf" />
+        <map mr="client2_ipc" vaddr="0x2002000" perms="rw" setvar_vaddr="ipc" />
     </protection_domain>
 
-    <protection_domain name="client3" priority="200">
-        <program_image path="client.elf" />
-        <map mr="client3_ipc" vaddr="0x203000" perms="rw" setvar_vaddr="ipc" />
+    <protection_domain name="client3" priority="201">
+        <program_image path="client3.elf" />
+        <map mr="client3_ipc" vaddr="0x2003000" perms="rw" setvar_vaddr="ipc" />
     </protection_domain>
 
     <protection_domain name="client4" priority="200">
-        <program_image path="client.elf" />
-        <map mr="client4_ipc" vaddr="0x204000" perms="rw" setvar_vaddr="ipc" />
+        <program_image path="client4.elf" />
+        <map mr="client4_ipc" vaddr="0x2004000" perms="rw" setvar_vaddr="ipc" />
     </protection_domain>
 
     <channel>
