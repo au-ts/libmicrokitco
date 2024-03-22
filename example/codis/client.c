@@ -1,5 +1,6 @@
 #include <microkit.h>
 #include <printf.h>
+#include <libmicrokitco.h>
 
 #define SERVER_CHANNEL 0
 
@@ -7,7 +8,7 @@ uintptr_t ipc;
 
 char words[] = {
     
-}
+};
 
 // each client does a different thing in this example:
 void client1_tasks(char *ipc) {
