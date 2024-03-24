@@ -120,6 +120,9 @@ void init(void) {
 ---
 
 ### `co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret)`
+
+TODO: argument passing!
+
 Creates a new cothread, but does not switch to it.
 
 ##### Arguments
@@ -246,6 +249,9 @@ void notified(microkit_channel ch) {
 ---
 
 ### `void microkit_cothread_destroy_me()`
+
+TODO: this is not needed if we just have a "wrapper function" around the entry point that calls this internally after the entrypoint return
+
 Destroy the calling cothread and invoke the scheduler. **IMPORTANT**, your cothread cannot return, it must call `destroy_me()` instead of returning. Otherwise, it is undefined behaviour if your cothread returns.
 
 Not needed if your cothread is in an infinite loop.
