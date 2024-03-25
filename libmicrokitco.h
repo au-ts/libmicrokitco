@@ -47,6 +47,7 @@ typedef enum {
     co_err_yield_cannot_schedule_caller,
 
     co_err_destroy_specific_cannot_release_handle,
+    co_err_destroy_specific_cannot_destroy_self,
 
     // this must be last to "count" how many errors combinations we have
     co_num_errors

@@ -53,6 +53,7 @@ const char *err_strs[] = {
     "libmicrokitco: yield(): cannot schedule caller.\n",
 
     "libmicrokitco: destroy_specific(): cannot release free handle back into queue.\n",
+    "libmicrokitco: destroy_specific(): caller cannot destroy self.\n",
 };
 
 // Return a string of human friendly error message.
@@ -588,6 +589,9 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
         }
         if (cothread >= co_controller.max_cothreads || cothread < 0) {
             return co_err_generic_invalid_handle;
+        }
+        if (cothread == co_controller.running) {
+            return co_err_destroy_specific_cannot_destroy_self;
         }
     #endif
 
