@@ -9,7 +9,6 @@
 #include "libco/libco.h"
 
 #define SCHEDULER_NULL_CHOICE -1
-#define MINIMUM_STACK_SIZE 0x1000
 
 // Error handling
 const char *err_strs[] = {
@@ -48,6 +47,7 @@ typedef enum cothread_state {
 
 typedef struct {
     cothread_t cothread;
+    client_entry_t client_entry;
 
     co_state_t state;
     
@@ -61,6 +61,9 @@ typedef struct {
 
     // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
+
+    int num_priv_args;
+    size_t priv_args[MAXIMUM_CO_ARGS];
 } co_tcb_t;
 
 struct blocked_list {
@@ -102,7 +105,7 @@ static co_control_t co_controller = {
 };
 
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...) {
-    // Err checking cannot be disabled by the preprocessor define here for safety because this can only be ran once per PD.
+    // We don't allow skipping error checking here for safety because this can only be ran once per PD.
     if (co_controller.init_success) {
         return MICROKITCO_ERR_ALREADY_INITIALISED;
     }
@@ -151,6 +154,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.tcbs[0].state = cothread_running;
     co_controller.tcbs[0].prioritised = 1;
     co_controller.tcbs[0].stack_left = 0;
+    memzero(co_controller.tcbs[0].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
     co_controller.running = 0;
 
     // initialise the queues
@@ -214,20 +218,6 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
 
         return MICROKITCO_NOERR;
     }
-
-    // // TODO: this could be faster
-    // for (microkit_cothread_t i = 0; i < co_controller.max_cothreads; i++) {
-    //     if (co_controller.tcbs[i].state == cothread_blocked) {
-    //         if (co_controller.tcbs[i].blocked_on == ch) {
-    //             co_controller.tcbs[i].state = cothread_ready;
-    //             if (microkit_cothread_switch(i) != MICROKITCO_NOERR) {
-    //                 panic();
-    //             }
-    //             return MICROKITCO_NOERR;
-    //         }
-    //     }
-    // }
-    // return MICROKITCO_ERR_OP_FAIL;
 }
 
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject) {
@@ -258,12 +248,18 @@ co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject) {
     return MICROKITCO_NOERR;
 }
 
-co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret) {
+void microkit_cothread_destroy_me();
+void cothread_entry_wrapper() {
+    co_controller.tcbs[co_controller.running].client_entry();
+    microkit_cothread_destroy_me();
+}
+
+co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller.init_success) {
             return MICROKITCO_ERR_NOT_INITIALISED;
         }
-        if (!entry) {
+        if (!client_entry || num_args < 0 || num_args > MAXIMUM_CO_ARGS) {
             return MICROKITCO_ERR_INVALID_ARGS;
         }
     #endif
@@ -278,10 +274,20 @@ co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritis
 
     unsigned char *costack = (unsigned char *) co_controller.tcbs[new].stack_left;
     memzero(costack, co_controller.co_stack_size);
-    co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, entry);
+    co_controller.tcbs[new].client_entry = client_entry;
+    co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, cothread_entry_wrapper);
     co_controller.tcbs[new].prioritised = prioritised;
     co_controller.tcbs[new].state = cothread_initialised;
     co_controller.tcbs[new].next_blocked = -1;
+    co_controller.tcbs[new].num_priv_args = num_args;
+    memzero(co_controller.tcbs[new].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
+
+    va_list ap;
+    va_start (ap, num_args);
+    for (int i = 0; i < num_args; i++) {
+        co_controller.tcbs[new].priv_args[i] = va_arg(ap, size_t);
+    }
+    va_end(ap);
 
     if (ready) {
         int err = microkit_cothread_mark_ready(new);
@@ -292,6 +298,20 @@ co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritis
     }
 
     *ret = new;
+    return MICROKITCO_NOERR;
+}
+
+co_err_t microkit_cothread_get_arg(int nth, size_t *ret) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return MICROKITCO_ERR_NOT_INITIALISED;
+        }
+        if (!co_controller.running || nth >= MAXIMUM_CO_ARGS || nth < 0) {
+            return MICROKITCO_ERR_INVALID_ARGS;
+        }
+    #endif
+
+    *ret = co_controller.tcbs[co_controller.running].priv_args[nth];
     return MICROKITCO_NOERR;
 }
 

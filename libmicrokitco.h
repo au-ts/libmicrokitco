@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 // Error handling
 typedef int co_err_t;
 
@@ -20,7 +22,10 @@ const char *microkit_cothread_pretty_error(co_err_t err_num);
 
 // Business logic
 #define MICROKITCO_ROOT_THREAD 0
+#define MINIMUM_STACK_SIZE 0x1000
+#define MAXIMUM_CO_ARGS 4
 
+typedef void (*client_entry_t)(void);
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
@@ -41,7 +46,8 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
 co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
 
-co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret);
+co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);
+co_err_t microkit_cothread_get_arg(int nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
@@ -52,6 +58,7 @@ co_err_t microkit_cothread_wait(microkit_channel wake_on);
 
 void microkit_cothread_yield();
 
-void microkit_cothread_destroy_me();
-
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
+
+// race?
+// co_err_t microkit_cothread_join(microkit_cothread_t cothread);
