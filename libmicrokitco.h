@@ -87,7 +87,7 @@ co_err_t microkit_cothread_get_arg(int nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
 
-co_err_t microkit_cothread_switch(microkit_cothread_t cothread);
+// co_err_t microkit_cothread_switch(microkit_cothread_t cothread);
 
 // @billn: this needs some rethinking for case where client waits on an async api that fires a callback.
 co_err_t microkit_cothread_wait(microkit_channel wake_on);

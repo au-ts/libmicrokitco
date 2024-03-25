@@ -11,16 +11,16 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel, while some cothreads are waiting, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel or a callback to be fired, while some cothreads are waiting, another cothread can execute. 
 
 ### Scheduling
-A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously to ensure other cothreads are not starved. 
+A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved. 
 
 When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
+<!-- 
+The scheduler can be overidden at times by the client, see `microkit_cothread_switch()`. -->
 
-The scheduler can be overidden at times by the client, see `microkit_cothread_switch()`.
-
-IMPORTANT: you should not perform any blocking calls while using this library. If the PD's Thread Control Block (TCB) is blocked in seL4, none of your cothreads will execute even if it is ready. 
+IMPORTANT: you should not perform any seL4 blocking calls while using this library. If the PD is blocked in seL4, none of your cothreads will execute even if it is ready. 
 
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
@@ -54,70 +54,18 @@ Finally, for any of your object files that uses this library, link it against `$
 ### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
 Map the error number returned by this library's functions into a human friendly error message string.
 
-TODO: more informative messages once all the APIs are stable.
+---
 
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
-A variadic function that initialises the library's internal data structure.
+A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-Expects:
 - `controller_memory` points to the base of an MR that is at least:
 `(sizeof(co_tcb_t) * (max_cothreads + 1) + (sizeof(microkit_cothread_t) * 3) * (max_cothreads + 1))` bytes large for internal data structures, and
 - `co_stack_size` to be >= 0x1000 bytes.
 - `max_cothreads` to be >= 1, which is exclusive of the calling thread.
 
-Then, it expect `max_cothreads` of `uintptr_t` that signify where each co-stacks start.
-
-##### Returns
-On error:
-- `MICROKITCO_ERR_ALREADY_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_ARGS`,
-- `MICROKITCO_ERR_NOMEM`,
-- `MICROKITCO_ERR_OP_FAIL`.
-
-On success:
-- `MICROKITCO_NOERR`.
-
-##### Example
-Configuration file:
-```xml
-<system>
-    <!-- Define your system here -->
-    <memory_region name="co_mem" size="0x2000"/>
-    <memory_region name="stack1" size="0x1000"/>
-    <memory_region name="stack2" size="0x1000"/>
-
-    <protection_domain name="example">
-        <program_image path="example.elf" />
-
-        <map mr="co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
-        <map mr="stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack_1_start" />
-        <map mr="stack2" vaddr="0x2006000" perms="rw" setvar_vaddr="stack_2_start" />
-
-    </protection_domain>
-</system>
-
-```
-Implementation:
-```C
-#include <microkit.h>
-#include <libmicrokitco.h>
-
-int stack_size = 0x1000;
-// These are set in the system config file.
-uintptr_t co_mem;
-// Stacks should have a GUARD PAGE between them!
-uintptr_t stack_1_start;
-uintptr_t stack_2_start;
-
-void init(void) {
-    if (microkit_cothread_init(co_mem, stack_size, 2, stack_1_start, stack_2_start) != MICROKITCO_NOERR) {
-        // handle err
-    } else {
-        // success, spawn cothreads...
-    }
-}
-```
+Then, it expect `max_cothreads` of `uintptr_t` that point to where each co-stack starts.
 
 ---
 
@@ -132,151 +80,60 @@ A variadic function that creates a new cothread, but does not switch to it.
 - `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of word size each.
 - `num_args` arguments.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_ARGS`,
-- `MICROKITCO_ERR_MAX_COTHREADS_REACHED`,
-- `MICROKITCO_ERR_OP_FAIL`.
-
-On success:
-- `MICROKITCO_NOERR`.
-
 --- 
 
 ### `co_err_t microkit_cothread_get_arg(int nth, size_t *ret)`
-Fetch the argument of the calling cothread.
+Fetch the argument of the calling cothread, returns error if called from the root thread.
 
 ##### Arguments
 - `nth` argument to fetch.
 - `*ret` points to a variable in the caller's stack to write the argument to.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_ARGS`,
-
-On success:
-- `MICROKITCO_NOERR`.
-
 ---
 
 ### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
-Marks an initialised but not ready cothread created from `init()` as ready and schedule it, but does not switch to it.
+Marks an initialised but not ready cothread as ready and schedule it, but does not switch to it.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
-
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_HANDLE`,
-- `MICROKITCO_ERR_OP_FAIL`.
-
-On success:
-- `MICROKITCO_NOERR`.
 
 --- 
 
 ### `void microkit_cothread_yield()`
 
-Yield the CPU to another cothread. If there are no other ready cothreads, the caller cothread keeps running.
+Yield the kernel thread to another cothread. If there are no other ready cothreads, the caller cothread keeps running.
 
 ---
 
 ### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
 Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_ARGS`,
-- `MICROKITCO_ERR_OP_FAIL`.
-
-On success:
-- `MICROKITCO_NOERR`.
+##### Arguments
+- `wake_on` channel number. Make sure this channel is known to the PD, otherwise, the calling cothreads will block forever.
 
 ---
 
-### `co_err_t microkit_cothread_switch(microkit_cothread_t cothread)`
+<!-- ### `co_err_t microkit_cothread_switch(microkit_cothread_t cothread)`
 Explicitly switches to another ready cothread, overriding the scheduler and priority level. A cothread cannot switch to itself. Do not use `yield()`, `wait()` or `switch()` while editing shared data structures to prevent race. 
 
-
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_DEST_NOT_READY`,
-- `MICROKITCO_ERR_INVALID_HANDLE`.
-
-On success:
-- `MICROKITCO_NOERR`.
+##### Arguments
+- `cothread` is the destination cothread handle. -->
 
 ---
 
 ### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
 Maps an incoming notification to blocked cothreads then yields to let the newly ready cothread(s) execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_OP_FAIL` if no cothread is blocked on this channel.
-
-On success:
-- `MICROKITCO_NOERR`.
-
-##### Example
-```C
-#include <microkit.h>
-#include <libmicrokitco.h>
-
-int stack_size;
-uintptr_t co_mem;
-uintptr_t stack_1_start;
-
-microkit_channel patron_signal = 42;
-
-void waiter() {
-    while (1) {
-        microkit_dbg_puts("Waiter: waiting...\n");
-
-        // will switch back to root PD thread for recv'ing notification if no other ready cothread.
-        microkit_cothread_wait(patron_signal);
-
-        microkit_dbg_puts("Waiter: coming!\n");
-        microkit_cothread_yield();
-    }
-}
-
-void init(void) {
-    microkit_cothread_init(co_mem, stack_size, 1, stack_1_start);
-    microkit_cothread_t co_handle;
-    microkit_cothread_spawn(waiter, 1, 1, &co_handle, 0);
-    microkit_cothread_yield();
-}
-
-void notified(microkit_channel ch) {
-    if (microkit_cothread_recv_ntfn(ch) != MICROKITCO_NOERR) {
-        // No cothread blocked, handle the unknown notification...
-    } else {
-        // map successful -> switched -> when we get run again, go back to Microkit's event loop.
-        return;
-    }
-}
-```
+##### Arguments
+- `ch` number that the notification came from.
 
 ---
 
 ### `co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread)`
 Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_HANDLE`,
-- `MICROKITCO_ERR_OP_FAIL`.
-
-On success:
-- `MICROKITCO_NOERR`.
+##### Arguments
+- `cothread` is the subject cothread handle.
 
 ---
 
@@ -285,11 +142,5 @@ On success:
 
 Select which scheduling queue the `subject` cothread will be placed into in the future. No immediate effect if the cothread is already scheduled.
 
-##### Returns
-On error:
-- `MICROKITCO_ERR_NOT_INITIALISED`,
-- `MICROKITCO_ERR_INVALID_HANDLE`,
-
-On success:
-- `MICROKITCO_NOERR`.
-
+##### Arguments
+- `cothread` is the subject cothread handle.
