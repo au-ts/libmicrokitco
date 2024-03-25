@@ -15,12 +15,10 @@ typedef enum {
     co_err_init_allocator_init_fail,
     co_err_init_tcbs_alloc_fail,
     co_err_init_free_handles_alloc_fail,
-    co_err_init_prio_alloc_fail,
-    co_err_init_non_prio_alloc_fail,
+    co_err_init_sched_alloc_fail,
     co_err_init_co_stack_null,
     co_err_init_free_handles_init_fail,
-    co_err_init_prio_init_fail,
-    co_err_init_non_prio_init_fail,
+    co_err_init_sched_init_fail,
     co_err_init_free_handles_populate_fail,
 
     co_err_recv_ntfn_no_blocked,
@@ -67,11 +65,6 @@ typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
 typedef enum {
-    priority_false,
-    priority_true
-} priority_level_t;
-
-typedef enum {
     ready_false,
     ready_true
 } ready_status_t;
@@ -80,10 +73,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 
-co_err_t microkit_cothread_prioritise(microkit_cothread_t subject);
-co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject);
-
-co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);
+co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);
 co_err_t microkit_cothread_get_arg(int nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
