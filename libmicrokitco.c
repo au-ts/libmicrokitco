@@ -477,6 +477,9 @@ microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_
             // queue not empty
             if (tcbs[next_choice].state == cothread_ready) {
                 return next_choice;
+            } else if (tcbs[next_choice].state != cothread_not_active) {
+                // something went horribly wrong here
+                panic();
             }
         } else {
             // catch other errs
