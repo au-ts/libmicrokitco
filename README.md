@@ -54,8 +54,10 @@ Finally, for any of your object files that uses this library, link it against `$
 ### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
 Map the error number returned by this library's functions into a human friendly error message string.
 
+TODO: more informative messages once all the APIs are stable.
+
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
-Initialises the library's internal data structure.
+A variadic function that initialises the library's internal data structure.
 
 ##### Arguments
 Expects:
@@ -119,14 +121,16 @@ void init(void) {
 
 ---
 
-### `co_err_t microkit_cothread_spawn(void (*entry)(void), priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret)`
-Creates a new cothread, but does not switch to it.
+### `co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);`
+A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
-- `entry` points to your cothread's function. Arguments passing are done via global variables.
+- `client_entry` points to your cothread's entrypoint.
 - `prioritised` indicates which scheduling queue your cothread will be placed into.
-- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
+- `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of word size each.
+- `num_args` arguments.
 
 ##### Returns
 On error:
@@ -139,6 +143,23 @@ On success:
 - `MICROKITCO_NOERR`.
 
 --- 
+
+### `co_err_t microkit_cothread_get_arg(int nth, size_t *ret)`
+Fetch the argument of the calling cothread.
+
+##### Arguments
+- `nth` argument to fetch.
+- `*ret` points to a variable in the caller's stack to write the argument to.
+
+##### Returns
+On error:
+- `MICROKITCO_ERR_NOT_INITIALISED`,
+- `MICROKITCO_ERR_INVALID_ARGS`,
+
+On success:
+- `MICROKITCO_NOERR`.
+
+---
 
 ### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
 Marks an initialised but not ready cothread created from `init()` as ready and schedule it, but does not switch to it.
@@ -229,7 +250,7 @@ void waiter() {
 void init(void) {
     microkit_cothread_init(co_mem, stack_size, 1, stack_1_start);
     microkit_cothread_t co_handle;
-    microkit_cothread_spawn(waiter, 1, 1, &co_handle);
+    microkit_cothread_spawn(waiter, 1, 1, &co_handle, 0);
     microkit_cothread_yield();
 }
 
@@ -242,15 +263,6 @@ void notified(microkit_channel ch) {
     }
 }
 ```
-
----
-
-### `void microkit_cothread_destroy_me()`
-Destroy the calling cothread and invoke the scheduler. **IMPORTANT**, your cothread cannot return, it must call `destroy_me()` instead of returning. Otherwise, it is undefined behaviour if your cothread returns.
-
-Not needed if your cothread is in an infinite loop.
-
-No effect if called in a non-cothread context.
 
 ---
 
