@@ -2,21 +2,55 @@
 
 #include <stddef.h>
 
-// Error handling
-typedef int co_err_t;
+// Error numbers and their meanings
+typedef enum {
+    co_no_err,
 
-#define MICROKITCO_NOERR 0
-#define MICROKITCO_ERR_INVALID_ARGS -1
-#define MICROKITCO_ERR_INVALID_HANDLE -2
-#define MICROKITCO_ERR_NOT_INITIALISED -3
-#define MICROKITCO_ERR_NOMEM -4
-#define MICROKITCO_ERR_OP_FAIL -5
-#define MICROKITCO_ERR_DEST_NOT_READY -6
-#define MICROKITCO_ERR_MAX_COTHREADS_REACHED -7
-#define MICROKITCO_ERR_ALREADY_INITIALISED -8
+    co_err_generic_not_initialised,
+    co_err_generic_invalid_handle,
 
-#define ERR_COMBINATIONS 9
+    co_err_init_already_initialised,
+    co_err_init_stack_too_small,
+    co_err_init_max_cothreads_too_small,
+    co_err_init_allocator_init_fail,
+    co_err_init_tcbs_alloc_fail,
+    co_err_init_free_handles_alloc_fail,
+    co_err_init_prio_alloc_fail,
+    co_err_init_non_prio_alloc_fail,
+    co_err_init_co_stack_null,
+    co_err_init_free_handles_init_fail,
+    co_err_init_prio_init_fail,
+    co_err_init_non_prio_init_fail,
+    co_err_init_free_handles_populate_fail,
 
+    co_err_recv_ntfn_no_blocked,
+
+    // All of the below will not get thrown if you compile with LIBMICROKITCO_UNSAFE.
+    co_err_spawn_client_entry_null,
+    co_err_spawn_num_args_negative,
+    co_err_spawn_num_args_too_much,
+    co_err_spawn_max_cothreads_reached,
+    co_err_spawn_cannot_schedule,
+
+    co_err_get_arg_called_from_root,
+    co_err_get_arg_nth_is_negative,
+    co_err_get_arg_nth_is_greater_than_max,
+
+    co_err_mark_ready_cannot_schedule,
+
+    co_err_switch_to_self,
+
+    co_err_wait_invalid_channel,
+
+    co_err_yield_cannot_schedule_caller,
+
+    co_err_destroy_specific_cannot_release_handle,
+
+    // this must be last to "count" how many errors combinations we have
+    co_num_errors
+} co_err_t;
+
+// Returns a human friendly error message corresponding with the given err code.
 const char *microkit_cothread_pretty_error(co_err_t err_num);
 
 

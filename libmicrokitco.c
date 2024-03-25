@@ -13,20 +13,50 @@
 // Error handling
 const char *err_strs[] = {
     "libmicrokitco: no error.\n",
-    "libmicrokitco: invalid arguments.\n",
+    "libmicrokitco: not initialised.\n",
     "libmicrokitco: invalid cothread handle.\n",
-    "libmicrokitco: library not initialised before usage.\n",
-    "libmicrokitco: not enough memory internally.\n",
-    "libmicrokitco: operation failed.\n", // catch all err
-    "libmicrokitco: destination cothread not ready.\n",
-    "libmicrokitco: cothreads ceiling reached.\n",
-    "libmicrokitco: library already initialised.\n",
+
+    "libmicrokitco: init(): already initialised.\n",
+    "libmicrokitco: init(): co-stack size too small.\n",
+    "libmicrokitco: init(): max_cothreads too small.\n",
+    "libmicrokitco: init(): cannot initialise private memory allocator.\n",
+    "libmicrokitco: init(): failed to allocate memory for TCB array from private mem allocator.\n",
+    "libmicrokitco: init(): failed to allocate memory for free handles queue from private mem allocator.\n",
+    "libmicrokitco: init(): failed to allocate memory for priority queue from private mem allocator.\n",
+    "libmicrokitco: init(): failed to allocate memory for non priority queue from private mem allocator.\n",
+    "libmicrokitco: init(): got a NULL co-stack pointer.\n",
+    "libmicrokitco: init(): failed to initialise free handles queue.\n",
+    "libmicrokitco: init(): failed to initialise priority queue.\n",
+    "libmicrokitco: init(): failed to initialise non priority queue.\n",
+    "libmicrokitco: init(): failed to fill free handles queue.\n",
+
+    "libmicrokitco: recv_ntfn(): no cothreads are blocked on this channel.\n",
+
+    "libmicrokitco: spawn(): client entrypoint is NULL.\n",
+    "libmicrokitco: spawn(): number of arguments is negative.\n",
+    "libmicrokitco: spawn(): number of arguments is greater than maximum.\n",
+    "libmicrokitco: spawn(): maximum amount of cothreads reached.\n",
+    "libmicrokitco: spawn(): cannot schedule the new cothread.\n",
+
+    "libmicrokitco: get_arg(): called from root thread.\n",
+    "libmicrokitco: get_arg(): argument index is negative.\n",
+    "libmicrokitco: get_arg(): argument index is out of bound.\n",
+
+    "libmicrokitco: mark_ready(): cannot schedule subject cothread.\n",
+
+    "libmicrokitco: switch(): cannot switch to self.\n",
+
+    "libmicrokitco: wait(): invalid channel.\n",
+
+    "libmicrokitco: yield(): cannot schedule caller.\n",
+
+    "libmicrokitco: destroy_specific(): cannot release free handle back into queue.\n",
 };
 
 // Return a string of human friendly error message.
 const char *microkit_cothread_pretty_error(co_err_t err_num) {
     int abs_err = err_num * -1;
-    if (err_num > 0 || abs_err >= ERR_COMBINATIONS) {
+    if (err_num < 0 || abs_err >= co_num_errors) {
         return "libmicrokitco: unknown error!\n";
     } else {
         return err_strs[abs_err];
@@ -107,10 +137,13 @@ static co_control_t co_controller = {
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...) {
     // We don't allow skipping error checking here for safety because this can only be ran once per PD.
     if (co_controller.init_success) {
-        return MICROKITCO_ERR_ALREADY_INITIALISED;
+        return co_err_init_already_initialised;
     }
-    if (co_stack_size < MINIMUM_STACK_SIZE || max_cothreads < 1) {
-        return MICROKITCO_ERR_INVALID_ARGS;
+    if (co_stack_size < MINIMUM_STACK_SIZE) {
+        return co_err_init_stack_too_small;
+    }
+    if (max_cothreads < 1) {
+        return co_err_init_max_cothreads_too_small;
     }
 
     co_controller.co_stack_size = co_stack_size;
@@ -123,7 +156,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     // This part will VMFault on write if your memory is not large enough.
     unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
-        return MICROKITCO_ERR_NOMEM;
+        return co_err_init_allocator_init_fail;
     }
     allocator_t *allocator = &co_controller.mem_allocator;
 
@@ -131,21 +164,38 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     void *priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     void *non_priority_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
-    if (!tcbs_array || !free_handle_queue_mem || !priority_queue_mem || !non_priority_queue_mem) {
-        return MICROKITCO_ERR_NOMEM;
+    if (!tcbs_array) {
+        return co_err_init_tcbs_alloc_fail;
     }
+    if (!free_handle_queue_mem) {
+        return co_err_init_free_handles_alloc_fail;
+    }
+    if (!priority_queue_mem) {
+        return co_err_init_prio_alloc_fail;
+    }
+    if (!non_priority_queue_mem) {
+        return co_err_init_non_prio_alloc_fail;
+    }
+
     co_controller.tcbs = tcbs_array;
     for (int i = 0; i < real_max_cothreads; i++) {
         co_controller.tcbs[i].state = cothread_not_active;
     }
 
     // parses all the valid stack memory regions 
-    // TODO, check that we actually have `max_cothreads` extra args.
-    //       hmm... this is not possible with gnu c????
     va_list ap;
     va_start (ap, max_cothreads);
     for (int i = 0; i < max_cothreads; i++) {
         co_controller.tcbs[i + 1].stack_left = va_arg(ap, uintptr_t);
+
+        if (!co_controller.tcbs[i + 1].stack_left) {
+            return co_err_init_co_stack_null;
+        }
+
+        // sanity check the stacks, crash if stack not as big as we think
+        char *stack = (char *) co_controller.tcbs[i + 1].stack_left;
+        stack[0] = 0;
+        stack[co_stack_size - 1] = 0;
     }
     va_end(ap);
 
@@ -161,14 +211,20 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     int err_hq = hostedqueue_init(&co_controller.free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
     int err_pq = hostedqueue_init(&co_controller.priority_queue, priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
     int err_nq = hostedqueue_init(&co_controller.non_priority_queue, non_priority_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
-    if (err_hq != LIBHOSTEDQUEUE_NOERR || err_pq != LIBHOSTEDQUEUE_NOERR || err_nq != LIBHOSTEDQUEUE_NOERR ) {
-        return MICROKITCO_ERR_OP_FAIL;
+    if (err_hq != LIBHOSTEDQUEUE_NOERR) {
+        return co_err_init_free_handles_init_fail;
+    }
+    if (err_pq != LIBHOSTEDQUEUE_NOERR) {
+        return co_err_init_prio_init_fail;
+    }
+    if (err_nq != LIBHOSTEDQUEUE_NOERR) {
+        return co_err_init_non_prio_init_fail;
     }
 
     // enqueue all the free cothread handle IDs but exclude the root thread.
     for (microkit_cothread_t i = 1; i < real_max_cothreads; i++) {
         if (hostedqueue_push(&co_controller.free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
-            return MICROKITCO_ERR_OP_FAIL;
+            return co_err_init_free_handles_populate_fail;
         }
     }
 
@@ -179,29 +235,30 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     }
 
     co_controller.init_success = 1;
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
+    if (co_controller.running) {
+        // called from a cothread context
+        panic();
+    }
+
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
-        }
-        if (co_controller.running) {
-            // called from a cothread context
-            panic();
+            return co_err_generic_not_initialised;
         }
     #endif
 
     if (co_controller.blocked_map[ch].head == -1) {
-        return MICROKITCO_ERR_OP_FAIL;
+        return co_err_recv_ntfn_no_blocked;
     } else {
         microkit_cothread_t cur = co_controller.blocked_map[ch].head;
 
         // iterate over the "linked list", unblocks all the cothreads and schedule them
         while (cur != -1) {
             co_err_t err = microkit_cothread_mark_ready(cur);
-            if (err != MICROKITCO_NOERR) {
+            if (err != co_no_err) {
                 return err;
             }
 
@@ -216,51 +273,66 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
         // run the cothreads
         microkit_cothread_yield();
 
-        return MICROKITCO_NOERR;
+        return co_no_err;
     }
 }
 
 co_err_t microkit_cothread_prioritise(microkit_cothread_t subject) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
         if (subject >= co_controller.max_cothreads || subject < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
+        }
+        if (co_controller.tcbs[subject].state == cothread_not_active) {
+            return co_err_generic_invalid_handle;
         }
     #endif
 
     co_controller.tcbs[subject].prioritised = 1;
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
         if (subject >= co_controller.max_cothreads || subject < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
+        }
+        if (co_controller.tcbs[subject].state == cothread_not_active) {
+            return co_err_generic_invalid_handle;
         }
     #endif
 
     co_controller.tcbs[subject].prioritised = 0;
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
-void microkit_cothread_destroy_me();
+void internal_destroy_me();
 void cothread_entry_wrapper() {
     co_controller.tcbs[co_controller.running].client_entry();
-    microkit_cothread_destroy_me();
+    internal_destroy_me();
+
+    // should not return!
+    panic();
 }
 
 co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
-        if (!client_entry || num_args < 0 || num_args > MAXIMUM_CO_ARGS) {
-            return MICROKITCO_ERR_INVALID_ARGS;
+        if (!client_entry) {
+            return co_err_spawn_client_entry_null;
+        }
+        if (num_args < 0) {
+            return co_err_spawn_num_args_negative;
+        }
+        if (num_args > MAXIMUM_CO_ARGS) {
+            return co_err_spawn_num_args_too_much;
         }
     #endif
 
@@ -269,7 +341,7 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t p
     int pop_err = hostedqueue_pop(free_handle_queue, &new);
 
     if (pop_err != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_MAX_COTHREADS_REACHED;
+        return co_err_spawn_max_cothreads_reached;
     }
 
     unsigned char *costack = (unsigned char *) co_controller.tcbs[new].stack_left;
@@ -291,43 +363,48 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t p
 
     if (ready) {
         int err = microkit_cothread_mark_ready(new);
-        if (err != MICROKITCO_NOERR) {
+        if (err != co_no_err) {
             co_controller.tcbs[new].state = cothread_not_active;
-            return MICROKITCO_ERR_OP_FAIL;
+            return co_err_spawn_cannot_schedule;
         }
     }
 
     *ret = new;
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 co_err_t microkit_cothread_get_arg(int nth, size_t *ret) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
-        if (!co_controller.running || nth >= MAXIMUM_CO_ARGS || nth < 0) {
-            return MICROKITCO_ERR_INVALID_ARGS;
+        if (!co_controller.running) {
+            return co_err_get_arg_called_from_root;
+        }
+        if (nth >= MAXIMUM_CO_ARGS) {
+            return co_err_get_arg_nth_is_greater_than_max;
+        }
+        if (nth < 0) {
+            return co_err_get_arg_nth_is_negative;
         }
     #endif
 
     *ret = co_controller.tcbs[co_controller.running].priv_args[nth];
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
         if (cothread >= co_controller.max_cothreads || cothread < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
+        }
+        if (co_controller.tcbs[cothread].state == cothread_not_active) {
+            return co_err_generic_invalid_handle;
         }
     #endif
-
-    if (co_controller.tcbs[cothread].state == cothread_not_active) {
-        return MICROKITCO_ERR_OP_FAIL;
-    }
 
     hosted_queue_t *sched_queue;
     if (co_controller.tcbs[cothread].prioritised) {
@@ -339,25 +416,25 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     co_controller.tcbs[cothread].state = cothread_ready;
 
     if (push_err != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_OP_FAIL;
+        return co_err_mark_ready_cannot_schedule;
     } else {
-        return MICROKITCO_NOERR;
+        return co_no_err;
     }
 }
 
 co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
         if (cothread >= co_controller.max_cothreads || cothread < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
         }
         if (cothread == co_controller.running) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_switch_to_self;
         }
         if (co_controller.tcbs[cothread].state == cothread_not_active) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
         }
     #endif
 
@@ -372,6 +449,7 @@ co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
 
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (push_err != LIBHOSTEDQUEUE_NOERR) {
+            // cannot schedule caller, something horrifically wrong with implementation.
             panic();
         }
     #endif
@@ -379,7 +457,7 @@ co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
     co_controller.tcbs[cothread].state = cothread_running;
     co_controller.running = cothread;
     co_switch(co_controller.tcbs[cothread].cothread);
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 // pop a ready thread from a given scheduling queue, discard any destroyed thread 
@@ -432,10 +510,11 @@ void internal_go_next() {
 co_err_t microkit_cothread_wait(microkit_channel wake_on) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
-
-        // TODO: check if channel is valid, otherwise cothread can block forever.
+        if (wake_on >= MICROKIT_MAX_CHANNELS) {
+            return co_err_wait_invalid_channel;
+        }
     #endif
 
     co_controller.tcbs[co_controller.running].state = cothread_blocked;
@@ -450,7 +529,7 @@ co_err_t microkit_cothread_wait(microkit_channel wake_on) {
     co_controller.tcbs[co_controller.running].next_blocked = -1;
 
     internal_go_next();
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
 
 void microkit_cothread_yield() {
@@ -475,7 +554,7 @@ void microkit_cothread_yield() {
     internal_go_next();
 }
 
-void microkit_cothread_destroy_me() {
+void internal_destroy_me() {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
             return;
@@ -489,7 +568,7 @@ void microkit_cothread_destroy_me() {
     int err = microkit_cothread_destroy_specific(co_controller.running);
 
     #if !defined(LIBMICROKITCO_UNSAFE)
-        if (err != MICROKITCO_NOERR) {
+        if (err != co_no_err) {
             panic();
         }
     #endif
@@ -500,20 +579,21 @@ void microkit_cothread_destroy_me() {
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (!co_controller.init_success) {
-            return MICROKITCO_ERR_NOT_INITIALISED;
+            return co_err_generic_not_initialised;
         }
         if (cothread >= co_controller.max_cothreads || cothread < 0) {
-            return MICROKITCO_ERR_INVALID_HANDLE;
+            return co_err_generic_invalid_handle;
         }
     #endif
 
     if (co_controller.running == 0) {
+        // cannot destroy root thread
         panic();
     }
     if (hostedqueue_push(&co_controller.free_handle_queue, &cothread) != LIBHOSTEDQUEUE_NOERR) {
-        return MICROKITCO_ERR_OP_FAIL;
+        return co_err_destroy_specific_cannot_release_handle;
     }
     co_controller.tcbs[cothread].state = cothread_not_active;
 
-    return MICROKITCO_NOERR;
+    return co_no_err;
 }
