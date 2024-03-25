@@ -42,6 +42,8 @@ const char *err_strs[] = {
     "libmicrokitco: get_arg(): argument index is negative.\n",
     "libmicrokitco: get_arg(): argument index is out of bound.\n",
 
+    "libmicrokitco: mark_ready(): subject cothread is already ready.\n",
+    "libmicrokitco: mark_ready(): cannot mark self as ready.\n",
     "libmicrokitco: mark_ready(): cannot schedule subject cothread.\n",
 
     "libmicrokitco: switch(): cannot switch to self.\n",
@@ -398,11 +400,14 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
         if (!co_controller.init_success) {
             return co_err_generic_not_initialised;
         }
-        if (cothread >= co_controller.max_cothreads || cothread < 0) {
+        if (cothread >= co_controller.max_cothreads || cothread < 0 || co_controller.tcbs[cothread].state == cothread_not_active) {
             return co_err_generic_invalid_handle;
         }
-        if (co_controller.tcbs[cothread].state == cothread_not_active) {
-            return co_err_generic_invalid_handle;
+        if (co_controller.tcbs[cothread].state == cothread_ready) {
+            return co_err_mark_ready_already_ready;
+        }
+        if (co_controller.running == cothread) {
+            return co_err_mark_ready_cannot_mark_self;
         }
     #endif
 

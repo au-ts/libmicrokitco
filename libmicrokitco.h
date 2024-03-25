@@ -36,6 +36,8 @@ typedef enum {
     co_err_get_arg_nth_is_negative,
     co_err_get_arg_nth_is_greater_than_max,
 
+    co_err_mark_ready_already_ready,
+    co_err_mark_ready_cannot_mark_self,
     co_err_mark_ready_cannot_schedule,
 
     co_err_switch_to_self,
