@@ -11,14 +11,12 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with 2-tier scheduling for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel or a callback to be fired, while some cothreads are waiting, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel or a callback to be fired, while some cothreads are waiting, another cothread can execute. 
 
 ### Scheduling
-A cothread can be "prioritised" or not. All ready "prioritised" cothreads are picked to execute in round robin before non-prioritised cothreads get picked on. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved. 
+All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time. 
 
-When the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
-<!-- 
-The scheduler can be overidden at times by the client, see `microkit_cothread_switch()`. -->
+If when the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
 IMPORTANT: you should not perform any seL4 blocking calls while using this library. If the PD is blocked in seL4, none of your cothreads will execute even if it is ready. 
 
@@ -69,13 +67,12 @@ Then, it expect `max_cothreads` of `uintptr_t` that point to where each co-stack
 
 ---
 
-### `co_err_t microkit_cothread_spawn(client_entry_t client_entry, priority_level_t prioritised, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);`
+### `co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);`
 A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint.
-- `prioritised` indicates which scheduling queue your cothread will be placed into.
-- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the appropriate scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
 - `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of word size each.
 - `num_args` arguments.
@@ -92,7 +89,7 @@ Fetch the argument of the calling cothread, returns error if called from the roo
 ---
 
 ### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
-Marks an initialised but not ready cothread as ready and schedule it, but does not switch to it.
+Marks an initialised but but not ready cothread as ready and schedule it, but does not switch to it.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
@@ -101,7 +98,7 @@ Marks an initialised but not ready cothread as ready and schedule it, but does n
 
 ### `void microkit_cothread_yield()`
 
-Yield the kernel thread to another cothread. If there are no other ready cothreads, the caller cothread keeps running.
+Yield the kernel thread to another cothread and place the caller at the back of the scheduling queue. If there are no other ready cothreads, the caller cothread keeps running.
 
 ---
 
@@ -113,16 +110,8 @@ Blocks the calling cothread on a notification of a specific Microkit channel the
 
 ---
 
-<!-- ### `co_err_t microkit_cothread_switch(microkit_cothread_t cothread)`
-Explicitly switches to another ready cothread, overriding the scheduler and priority level. A cothread cannot switch to itself. Do not use `yield()`, `wait()` or `switch()` while editing shared data structures to prevent race. 
-
-##### Arguments
-- `cothread` is the destination cothread handle. -->
-
----
-
 ### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
-Maps an incoming notification to blocked cothreads then yields to let the newly ready cothread(s) execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
+Maps an incoming notification to blocked cothreads, schedule them then yields to let the newly ready cothreads execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 ##### Arguments
 - `ch` number that the notification came from.
@@ -131,16 +120,6 @@ Maps an incoming notification to blocked cothreads then yields to let the newly 
 
 ### `co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread)`
 Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
-
-##### Arguments
-- `cothread` is the subject cothread handle.
-
----
-
-### `co_err_t microkit_cothread_prioritise(microkit_cothread_t subject)`
-### `co_err_t microkit_cothread_deprioritise(microkit_cothread_t subject)`
-
-Select which scheduling queue the `subject` cothread will be placed into in the future. No immediate effect if the cothread is already scheduled.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
