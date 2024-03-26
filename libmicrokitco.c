@@ -149,7 +149,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.max_cothreads = real_max_cothreads;
 
     // This part will VMFault on write if your memory is not large enough.
-    unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 3) * real_max_cothreads);
+    unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 2) * real_max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
         return co_err_init_allocator_init_fail;
     }
