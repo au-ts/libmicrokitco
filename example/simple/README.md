@@ -1,0 +1,1 @@
+A simple toy example showing `libmicrokitco` in action.
