@@ -26,11 +26,11 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, priority_false, ready_true, &co1, 1, 1);
-    microkit_cothread_spawn(co_entry, priority_false, ready_true, &co2, 1, 2);
-    microkit_cothread_spawn(co_entry, priority_false, ready_true, &co3, 1, 3);
+    microkit_cothread_spawn(co_entry, ready_true, &co1, 1, 1);
+    microkit_cothread_spawn(co_entry, ready_true, &co2, 1, 2);
+    microkit_cothread_spawn(co_entry, ready_true, &co3, 1, 3);
 
-    if (microkit_cothread_spawn(co_entry, priority_false, ready_true, &co4, 1, 4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, ready_true, &co4, 1, 4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
@@ -41,8 +41,6 @@ void init(void) {
 
     // This prints before the cothreads' prints because root thread is higher priority.
     printf("CLIENT: done, exiting!\n");
-
-    microkit_cothread_yield();
 
     // returns to Microkit event loop for recv'ing notifications.
 }
