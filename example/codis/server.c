@@ -8,40 +8,17 @@
 
 #include <printf.h>
 
+#include "protocol.h"
+
 #define CLIENT1_CHANNEL 1
 #define CLIENT2_CHANNEL 2
 #define CLIENT3_CHANNEL 3
-#define CLIENT4_CHANNEL 4
 
 // database things
-#define N_BUCKETS 0xFF // 255
-#define BUCKET_SIZE 0x1000
 // large buffer storing N_BUCKETS of 4k strings
 uintptr_t db;
-// length of the string in each bucket
+// length of the string in each bucket (exclusive of null terminator)
 int data_len[N_BUCKETS] = {0};
-
-// database protocol:
-// first 8 bits in ipc buff is command number
-#define COMMAND_IPC_IDX 0
-// next 8 bits is bucket number
-#define COMMAND_BUCKET_IDX 1
-// the rest is the string input (if applicable)
-#define COMMAND_DATA_START_IDX 2
-
-// commands:
-#define READ_CMD 0
-#define APPEND_CMD 1
-#define APPEND_CMD_MAX_PAYLOAD_LEN (BUCKET_SIZE - 2)
-
-#define DELETE_CMD 2
-
-// return:
-// cmd 0: string occupy entire ipc buff
-// cmd 1: first 16 bits indicate new length of the string in bucket, zero if the 
-//        concatenation would cause the string to overflow the bucket.
-// cmd 2: first 16 bits is a flag, non zero means the string was deleted successfully.
-
 
 // cothread things
 uintptr_t co_mem;
@@ -49,44 +26,44 @@ int stack_size = 0x2000;
 uintptr_t stack1;
 uintptr_t stack2;
 uintptr_t stack3;
-uintptr_t stack4;
 
-unsigned int chn_arg_pass;
-uintptr_t ipc_arg_pass;
-
+// shared buffer for data passing
 uintptr_t client1_ipc;
 uintptr_t client2_ipc;
 uintptr_t client3_ipc;
-uintptr_t client4_ipc;
 
 char *bucket_to_db_vaddr(int bucket) {
-    return (char *)((uint64_t)bucket * BUCKET_SIZE + &db);
+    return (char *)((bucket * BUCKET_SIZE) + (char *) db);
 }
 
 void client_handler() {
-    microkit_channel client_channel = chn_arg_pass;
-    char *client_ipc = (char *) ipc_arg_pass;
-    printf("SERVER: client #%d cothread: starting with ipc %p\n", client_channel, client_ipc);
+    microkit_channel this_client_channel;
+    char *this_client_ipc;
+
+    microkit_cothread_get_arg(0, (size_t *) &this_client_channel);
+    microkit_cothread_get_arg(1, (size_t *) &this_client_ipc);
+
+    printf("SERVER: client #%d cothread: starting with ipc %p\n", this_client_channel, this_client_ipc);
 
     while (1) {
-        microkit_cothread_wait(client_channel);
+        microkit_cothread_wait(this_client_channel);
 
         // got a req from the specific client
-        char cmd = client_ipc[COMMAND_IPC_IDX];
-        int bucket = client_ipc[COMMAND_BUCKET_IDX];
-        char *ipc_data_start = &client_ipc[COMMAND_DATA_START_IDX];
+        char cmd = this_client_ipc[COMMAND_IPC_IDX];
+        int bucket = this_client_ipc[COMMAND_BUCKET_IDX];
+        char *ipc_data_start = &this_client_ipc[COMMAND_DATA_START_IDX];
         if (cmd == READ_CMD) {
-            printf("SERVER: client #%d cothread: executing read cmd on bucket %d...", client_channel, bucket);
-            strncpy(client_ipc, bucket_to_db_vaddr(bucket), data_len[bucket]);
+            printf("SERVER: client #%d cothread: executing read cmd on bucket %d...", this_client_channel, bucket);
+            strncpy(this_client_ipc, bucket_to_db_vaddr(bucket), data_len[bucket] + 1);
             printf("done.\n");
 
         } else if (cmd == APPEND_CMD) {
-            printf("SERVER: client #%d cothread: executing append cmd on bucket %d...", client_channel, bucket);
+            printf("SERVER: client #%d cothread: executing append cmd on bucket %d...", this_client_channel, bucket);
             int input_len = strnlen(ipc_data_start, APPEND_CMD_MAX_PAYLOAD_LEN);
             int new_bucket_len = data_len[bucket] + input_len;
             int new_bucket_len_with_null = data_len[bucket] + input_len + 1;
 
-            uint16_t *retval = (uint16_t *) client_ipc;
+            uint16_t *retval = (uint16_t *) this_client_ipc;
             if (new_bucket_len_with_null > BUCKET_SIZE) {
                 printf("rejected\n");
                 *retval = 0;
@@ -94,23 +71,21 @@ void client_handler() {
                 strcat(bucket_to_db_vaddr(bucket), ipc_data_start);
                 data_len[bucket] = new_bucket_len;
                 *retval = new_bucket_len;
-                printf("done\n");
+                printf("done.\n");
             }
         } else if (cmd == DELETE_CMD) {
-            printf("SERVER: client #%d cothread: got delete cmd on bucket %d...", client_channel, bucket);
-            uint16_t *retval = (uint16_t *) client_ipc;
+            printf("SERVER: client #%d cothread: got delete cmd on bucket %d...", this_client_channel, bucket);
+            uint16_t *retval = (uint16_t *) this_client_ipc;
             data_len[bucket] = 0;
             bucket_to_db_vaddr(bucket)[0] = '\0';
             *retval = 1;
             printf("done\n");
         } else {
-            printf("SERVER: client #%d cothread: got UNKNOWN cmd\n", client_channel);
+            printf("SERVER: client #%d cothread: got UNKNOWN cmd\n", this_client_channel);
         }
 
-        microkit_notify(client_channel);
+        microkit_notify(this_client_channel);
     }
-
-    // there must be a `destroy_me()` here if we dont have an infinite loop.
 }
 
 void init(void) {
@@ -118,69 +93,45 @@ void init(void) {
 
     printf("SERVER: starting\n");
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, 4, stack1, stack2, stack3, stack4);
-    if (err != MICROKITCO_NOERR) {
+    co_err_t err = microkit_cothread_init(co_mem, stack_size, 3, stack1, stack2, stack3);
+    if (err != co_no_err) {
         printf("SERVER: ERR: cannot init libmicrokitco, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
+        microkit_internal_crash(err);
     }
     printf("SERVER: libmicrokitco started\n");
 
     microkit_cothread_t _handle;
 
     printf("SERVER: starting first cothread\n");
-    chn_arg_pass = CLIENT1_CHANNEL;
-    ipc_arg_pass = client1_ipc;
-    err = microkit_cothread_spawn(client_handler, priority_false, ready_true, &_handle);
-    if (err != MICROKITCO_NOERR) {
+    err = microkit_cothread_spawn(client_handler, ready_true, &_handle, 2, CLIENT1_CHANNEL, client1_ipc);
+    if (err != co_no_err) {
         printf("SERVER: ERR: cannot init first cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
+        microkit_internal_crash(err);
     }
 
-    // we deprioritise ourselves to let the cothread have a chance to execute right after spawn for
-    // args passing.
-    microkit_cothread_deprioritise(MICROKITCO_ROOT_THREAD);
     // client handler thread #1 now execute.
     microkit_cothread_yield();
-
+    // we get back here after the handler thread does the wait()
 
     printf("SERVER: starting second cothread\n");
-    chn_arg_pass = CLIENT2_CHANNEL;
-    ipc_arg_pass = client2_ipc;
-    err = microkit_cothread_spawn(client_handler, priority_false, ready_true, &_handle);
-    if (err != MICROKITCO_NOERR) {
+    err = microkit_cothread_spawn(client_handler, ready_true, &_handle, 2, CLIENT2_CHANNEL, client2_ipc);
+    if (err != co_no_err) {
         printf("SERVER: ERR: cannot init second cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
+        microkit_internal_crash(err);
     }
-    // client handler thread #2 now execute.
     microkit_cothread_yield();
 
 
     printf("SERVER: starting third cothread\n");
-    chn_arg_pass = CLIENT3_CHANNEL;
-    ipc_arg_pass = client3_ipc;
-    err = microkit_cothread_spawn(client_handler, priority_false, ready_true, &_handle);
-    if (err != MICROKITCO_NOERR) {
+    err = microkit_cothread_spawn(client_handler, ready_true, &_handle, 2, CLIENT3_CHANNEL, client3_ipc);
+    if (err != co_no_err) {
         printf("SERVER: ERR: cannot init third cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
+        microkit_internal_crash(err);
     }
-    // client handler thread #3 now execute.
-    microkit_cothread_yield();
-
-
-    printf("SERVER: starting fourth cothread\n");
-    chn_arg_pass = CLIENT4_CHANNEL;
-    ipc_arg_pass = client4_ipc;
-    err = microkit_cothread_spawn(client_handler, priority_false, ready_true, &_handle);
-    if (err != MICROKITCO_NOERR) {
-        printf("SERVER: ERR: cannot init fourth cothread, err:\n");
-        printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
-    }
-    // client handler thread #4 now execute.
     microkit_cothread_yield();
 
     // nothing happens since all 4 cothreads are waiting for channel ntfn.
@@ -188,35 +139,19 @@ void init(void) {
 
     // returns to Microkit event loop for recv'ing notifications.
     printf("SERVER: init done!\n");
-
-
-    // Correct print order:
-
-    // SERVER: starting
-    // SERVER: libmicrokitco started
-    // SERVER: starting first cothread
-    // SERVER: client #1 cothread: starting
-    // SERVER: starting second cothread
-    // SERVER: client #2 cothread: starting
-    // SERVER: starting third cothread
-    // SERVER: client #3 cothread: starting
-    // SERVER: starting fourth cothread
-    // SERVER: client #4 cothread: starting
-    // SERVER: init done!
 }
 
 void notified(microkit_channel channel) {
     co_err_t err = microkit_cothread_recv_ntfn(channel);
 
-    if (err == MICROKITCO_NOERR) {
-        printf("SERVER: notification %u mapped\n", channel);
-    } else if (err == MICROKITCO_ERR_OP_FAIL) {
+    if (err == co_no_err) {
+        // printf("SERVER: notification %u mapped\n", channel);
+    } else if (err == co_err_recv_ntfn_no_blocked) {
         printf("SERVER: received notification from unknown channel: %d\n", channel);
         // You can handle ntfns from other channels here:
     } else {
-        printf("SERVER: ERR: mapping notification encountered err:\n");
+        printf("SERVER: ERR: mapping notification encountered err: ");
         printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(0);
+        microkit_internal_crash(err);
     }
-
 }
