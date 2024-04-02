@@ -15,7 +15,7 @@ uintptr_t co_stack;
 
 int our_client_num;
 
-void co_main(void) {
+size_t co_main(void) {
     char *our_ipc = (char *) ipc;
 
     our_ipc[COMMAND_IPC_IDX] = APPEND_CMD;
@@ -39,6 +39,7 @@ void co_main(void) {
     printf("done, bucket new len is: %d\n", ((uint16_t *) our_ipc)[0]);
 
     // cothread get destroyed after we return.
+    return 0;
 }
 
 void init(void) {

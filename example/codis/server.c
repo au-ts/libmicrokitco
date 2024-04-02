@@ -36,7 +36,7 @@ char *bucket_to_db_vaddr(int bucket) {
     return (char *)((bucket * BUCKET_SIZE) + (char *) db);
 }
 
-void client_handler() {
+size_t client_handler() {
     microkit_channel this_client_channel;
     char *this_client_ipc;
 
@@ -86,6 +86,8 @@ void client_handler() {
 
         microkit_notify(this_client_channel);
     }
+
+    return 0;
 }
 
 void init(void) {
