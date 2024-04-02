@@ -26,7 +26,7 @@ void *co_alloc(allocator_t *allocator, size_t size) {
     }
 }
 
-int co_allocator_init(void *backing_memory, int size, allocator_t *allocator) {
+int co_allocator_init(void *backing_memory, size_t size, allocator_t *allocator) {
     if (!backing_memory || size < 1) {
         return 1;
     }
