@@ -23,7 +23,7 @@ size_t co_entry1() {
     } else {
         printf("Many to one PD: co1: awaken with correct magic\n");
     }
-    return retval;
+    return retval >> 4;
 };
 
 size_t co_entry2() {
@@ -37,7 +37,7 @@ size_t co_entry2() {
     } else {
         printf("Many to one PD: co2: awaken with correct magic\n");
     }
-    return retval;
+    return retval >> 8;
 };
 
 size_t co_entry3() {
@@ -51,7 +51,7 @@ size_t co_entry3() {
     } else {
         printf("Many to one PD: co3: awaken with correct magic\n");
     }
-    return retval;
+    return retval >> 12;
 };
 
 size_t co_entry4() {
@@ -82,20 +82,28 @@ void init(void) {
     microkit_cothread_yield();
     microkit_cothread_yield();
 
-    // size_t retval1, retval2, retval3;
-    // printf("Many to one PD: root: joining co1\n");
-    // co_err_t join_err1 = microkit_cothread_join(1, &retval1);
-    // co_err_t join_err2 = microkit_cothread_join(2, &retval2);
-    // co_err_t join_err3 = microkit_cothread_join(3, &retval3);
-    // if (join_err1 != co_no_err || join_err2 != co_no_err || join_err3 != co_no_err) {
-    //     printf("Many to one PD: root: cannot do one or more joins, errs are %d %d %d\n", join_err1, join_err2, join_err3);
-    //     microkit_internal_crash(0);
-    // }
+    size_t retval1, retval2, retval3;
+    printf("Many to one PD: root: joining co1\n");
+    co_err_t join_err1 = microkit_cothread_join(1, &retval1);
+    co_err_t join_err2 = microkit_cothread_join(2, &retval2);
+    co_err_t join_err3 = microkit_cothread_join(3, &retval3);
+    if (join_err1 != co_no_err || join_err2 != co_no_err || join_err3 != co_no_err) {
+        printf("Many to one PD: root: cannot do one or more joins, errs are %d %d %d\n", join_err1, join_err2, join_err3);
+        microkit_internal_crash(0);
+    }
 
-    // if (retval1 != MAGIC || retval2 != MAGIC || retval3 != MAGIC) {
-    //     printf("Many to one PD: root: one or more retval does not match magic %p %p %p\n", retval1, retval2, retval3);
-    //     microkit_internal_crash(0);
-    // }
+    if (retval1 != MAGIC >> 4 || retval2 != MAGIC >> 8 || retval3 != MAGIC >> 12) {
+        printf("Many to one PD: root: one or more retval does not match magic %p %p %p\n", retval1, retval2, retval3);
+        microkit_internal_crash(0);
+    }
+
+    // joining again after reading the retval should yield err
+    if (microkit_cothread_join(1, &retval1) != co_err_generic_not_initialised) {
+        printf("Many to one PD: root: was able to re-read retval\n");
+        microkit_internal_crash(0);
+    }
+
+    printf("Many to one PD: root: finished OK\n");
 }
 
 void notified(microkit_channel channel) {
