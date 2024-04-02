@@ -14,6 +14,7 @@ typedef enum {
     co_err_init_max_cothreads_too_small,
     co_err_init_allocator_init_fail,
     co_err_init_tcbs_alloc_fail,
+    co_err_init_join_alloc_fail,
     co_err_init_free_handles_alloc_fail,
     co_err_init_sched_alloc_fail,
     co_err_init_co_stack_null,
@@ -47,6 +48,9 @@ typedef enum {
     co_err_destroy_specific_cannot_release_handle,
     co_err_destroy_specific_cannot_destroy_self,
 
+    co_err_join_cannot_join_to_root_thread,
+    co_err_join_deadlock_detected,
+
     // this must be last to "count" how many errors combinations we have
     co_num_errors
 } co_err_t;
@@ -60,7 +64,7 @@ const char *microkit_cothread_pretty_error(co_err_t err_num);
 #define MINIMUM_STACK_SIZE 0x1000
 #define MAXIMUM_CO_ARGS 4
 
-typedef void (*client_entry_t)(void);
+typedef size_t (*client_entry_t)(void);
 typedef int microkit_cothread_t;
 typedef struct cothreads_control co_control_t;
 
@@ -68,6 +72,8 @@ typedef enum {
     ready_false,
     ready_true
 } ready_status_t;
+
+size_t microkit_cothread_derive_memsize(int max_cothreads);
 
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...);
 
@@ -87,5 +93,4 @@ void microkit_cothread_yield();
 
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
 
-// race?
-// co_err_t microkit_cothread_join(microkit_cothread_t cothread);
+co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval);

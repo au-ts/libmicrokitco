@@ -1,3 +1,5 @@
+// @billn: needs some cleaning up
+
 #include <microkit.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -21,6 +23,7 @@ const char *err_strs[] = {
     "libmicrokitco: init(): max_cothreads too small.\n",
     "libmicrokitco: init(): cannot initialise private memory allocator.\n",
     "libmicrokitco: init(): failed to allocate memory for TCB array from private mem allocator.\n",
+    "libmicrokitco: init(): failed to allocate memory for join map from private mem allocator.\n",
     "libmicrokitco: init(): failed to allocate memory for free handles queue from private mem allocator.\n",
     "libmicrokitco: init(): failed to allocate memory for scheduling queue from private mem allocator.\n",
     "libmicrokitco: init(): got a NULL co-stack pointer.\n",
@@ -52,6 +55,9 @@ const char *err_strs[] = {
 
     "libmicrokitco: destroy_specific(): cannot release free handle back into queue.\n",
     "libmicrokitco: destroy_specific(): caller cannot destroy self.\n",
+
+    "libmicrokitco: join(): cannot join to root PD thread as it does not return!.\n",
+    "libmicrokitco: join(): detected deadlock.\n",
 };
 
 // Return a string of human friendly error message.
@@ -71,9 +77,10 @@ typedef enum cothread_state {
     cothread_not_active = 0,
 
     cothread_initialised = 1, // but not ready
-    cothread_blocked = 2,
-    cothread_ready = 3,
-    cothread_running = 4,
+    cothread_blocked_on_channel = 2,
+    cothread_blocked_on_join = 3,
+    cothread_ready = 4,
+    cothread_running = 5,
 } co_state_t;
 
 typedef struct {
@@ -82,10 +89,16 @@ typedef struct {
 
     co_state_t state;
     
-    // the next tcb that is blocked on the same channel as this tcb.
+    // the next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
     // -1 means this tcb is the tail.
-    // only checked when state == cothread_blocked.
-    microkit_cothread_t next_blocked;
+    // only checked when state == cothread_blocked_on_channel or cothread_blocked_on_join.
+    microkit_cothread_t next_blocked_on_same_channel;
+
+    // the cothread that this cothread is waiting on to return
+    microkit_cothread_t joined_on;
+    // only checked when state == cothread_blocked_on_join.
+    microkit_cothread_t next_joined_on_same_cothread;
+    size_t joined_retval;
 
     // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
@@ -94,10 +107,10 @@ typedef struct {
     size_t priv_args[MAXIMUM_CO_ARGS];
 } co_tcb_t;
 
-struct blocked_list {
+typedef struct {
     microkit_cothread_t head;
     microkit_cothread_t tail;
-};
+} blocked_list_t;
 
 struct cothreads_control {
     // array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
@@ -119,7 +132,11 @@ struct cothreads_control {
     hosted_queue_t free_handle_queue;
     hosted_queue_t scheduling_queue;
 
-    struct blocked_list blocked_map[MICROKIT_MAX_CHANNELS];
+    // a map of linked list on what cothreads are blocked on which channel.
+    blocked_list_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
+
+    // a map of linked list on what cothreads are joined to which cothread.
+    blocked_list_t *joined_map;
 
     int init_success;
 };
@@ -128,6 +145,19 @@ struct cothreads_control {
 static co_control_t co_controller = {
     .init_success = 0
 };
+
+size_t microkit_cothread_derive_memsize(int max_cothreads) {
+    // Includes root PD thread.
+    int real_max_cothreads = max_cothreads + 1;
+
+    size_t tcb_table_size = sizeof(co_tcb_t) * real_max_cothreads;
+    size_t joined_table_size = sizeof(blocked_list_t) * real_max_cothreads;
+
+    // Scheduling and free handle queue 
+    size_t queues_size = (sizeof(microkit_cothread_t) * 2) * real_max_cothreads;
+
+    return tcb_table_size + joined_table_size + queues_size;
+}
 
 co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...) {
     // We don't allow skipping error checking here for safety because this can only be ran once per PD.
@@ -149,17 +179,21 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.max_cothreads = real_max_cothreads;
 
     // This part will VMFault on write if your memory is not large enough.
-    unsigned int derived_mem_size = (sizeof(co_tcb_t) * real_max_cothreads) + ((sizeof(microkit_cothread_t) * 2) * real_max_cothreads);
+    size_t derived_mem_size = microkit_cothread_derive_memsize(max_cothreads);
     if (co_allocator_init((void *) controller_memory, derived_mem_size, &co_controller.mem_allocator) != 0) {
         return co_err_init_allocator_init_fail;
     }
     allocator_t *allocator = &co_controller.mem_allocator;
 
     void *tcbs_array = allocator->alloc(allocator, sizeof(co_tcb_t) * real_max_cothreads);
+    void *joined_array = allocator->alloc(allocator, sizeof(blocked_list_t) * real_max_cothreads);
     void *free_handle_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     void *scheduling_queue_mem = allocator->alloc(allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
     if (!tcbs_array) {
         return co_err_init_tcbs_alloc_fail;
+    }
+    if (!joined_array) {
+        return co_err_init_join_alloc_fail;
     }
     if (!free_handle_queue_mem) {
         return co_err_init_free_handles_alloc_fail;
@@ -169,6 +203,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     }
 
     co_controller.tcbs = tcbs_array;
+    co_controller.joined_map = joined_array;
     for (int i = 0; i < real_max_cothreads; i++) {
         co_controller.tcbs[i].state = cothread_not_active;
     }
@@ -194,6 +229,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller.tcbs[0].cothread = co_active();
     co_controller.tcbs[0].state = cothread_running;
     co_controller.tcbs[0].stack_left = 0;
+    co_controller.tcbs[0].next_blocked_on_same_channel = -1;
     memzero(co_controller.tcbs[0].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
     co_controller.running = 0;
 
@@ -214,10 +250,16 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
         }
     }
 
-    // initialised the blocked table
+    // initialise the blocked table
     for (int i = 0; i < MICROKIT_MAX_CHANNELS; i++) {
-        co_controller.blocked_map[i].head = -1;
-        co_controller.blocked_map[i].tail = -1;
+        co_controller.blocked_channel_map[i].head = -1;
+        co_controller.blocked_channel_map[i].tail = -1;
+    }
+
+    // initialised the joined table
+    for (int j = 0; j < real_max_cothreads; j++) {
+        co_controller.joined_map[j].head = -1;
+        co_controller.joined_map[j].tail = -1;
     }
 
     co_controller.init_success = 1;
@@ -236,25 +278,25 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
         }
     #endif
 
-    if (co_controller.blocked_map[ch].head == -1) {
+    if (co_controller.blocked_channel_map[ch].head == -1) {
         return co_err_recv_ntfn_no_blocked;
     } else {
-        microkit_cothread_t cur = co_controller.blocked_map[ch].head;
+        microkit_cothread_t cur = co_controller.blocked_channel_map[ch].head;
 
-        // iterate over the "linked list", unblocks all the cothreads and schedule them
+        // iterate over the blocked linked list, unblocks all the cothreads and schedule them
         while (cur != -1) {
             co_err_t err = microkit_cothread_mark_ready(cur);
             if (err != co_no_err) {
                 return err;
             }
 
-            microkit_cothread_t next = co_controller.tcbs[cur].next_blocked;
-            co_controller.tcbs[cur].next_blocked = -1;
+            microkit_cothread_t next = co_controller.tcbs[cur].next_blocked_on_same_channel;
+            co_controller.tcbs[cur].next_blocked_on_same_channel = -1;
             cur = next;
         }
  
-        co_controller.blocked_map[ch].head = -1;
-        co_controller.blocked_map[ch].tail = -1;
+        co_controller.blocked_channel_map[ch].head = -1;
+        co_controller.blocked_channel_map[ch].tail = -1;
 
         // run the cothreads
         microkit_cothread_yield();
@@ -264,11 +306,36 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
 }
 
 void internal_destroy_me();
-void cothread_entry_wrapper() {
-    co_controller.tcbs[co_controller.running].client_entry();
-    internal_destroy_me();
+void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
+    // Wake all the joined cothreads on this cothread (if any)
 
-    // should not return!
+    microkit_cothread_t cur = co_controller.joined_map[cothread].head;
+    while (cur != -1) {
+        co_err_t err = microkit_cothread_mark_ready(cur);
+        if (err != co_no_err) {
+            microkit_internal_crash(err);
+        }
+        co_controller.tcbs[cur].joined_retval = retval;
+
+        microkit_cothread_t next = co_controller.tcbs[cur].next_joined_on_same_cothread;
+        co_controller.tcbs[cur].next_joined_on_same_cothread = -1;
+        cur = next;
+    }
+
+    co_controller.joined_map[cothread].head = -1;
+    co_controller.joined_map[cothread].tail = -1;
+
+    internal_destroy_me();
+}
+void cothread_entry_wrapper() {
+    // Execute the client entry point
+    size_t retval = co_controller.tcbs[co_controller.running].client_entry();
+
+    // After the client entry point return, wake any joined cothreads and clean up after ourselves.
+    internal_entry_return(co_controller.running, retval);
+
+    // should not get here.
+    // UB in libco if cothread returns normally!
     panic();
 }
 
@@ -301,7 +368,9 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
     co_controller.tcbs[new].client_entry = client_entry;
     co_controller.tcbs[new].cothread = co_derive(costack, co_controller.co_stack_size, cothread_entry_wrapper);
     co_controller.tcbs[new].state = cothread_initialised;
-    co_controller.tcbs[new].next_blocked = -1;
+    co_controller.tcbs[new].next_blocked_on_same_channel = -1;
+    co_controller.tcbs[new].next_joined_on_same_cothread = -1;
+    co_controller.tcbs[new].joined_on = -1;
     co_controller.tcbs[new].num_priv_args = num_args;
     memzero(co_controller.tcbs[new].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
 
@@ -453,16 +522,16 @@ co_err_t microkit_cothread_wait(microkit_channel wake_on) {
         }
     #endif
 
-    co_controller.tcbs[co_controller.running].state = cothread_blocked;
+    co_controller.tcbs[co_controller.running].state = cothread_blocked_on_channel;
     
     // push into the waiting linked list (if any)
-    if (co_controller.blocked_map[wake_on].head == -1) {
-        co_controller.blocked_map[wake_on].head = co_controller.running;
+    if (co_controller.blocked_channel_map[wake_on].head == -1) {
+        co_controller.blocked_channel_map[wake_on].head = co_controller.running;
     } else {
-        co_controller.tcbs[co_controller.blocked_map[wake_on].tail].next_blocked = co_controller.running;
+        co_controller.tcbs[co_controller.blocked_channel_map[wake_on].tail].next_blocked_on_same_channel = co_controller.running;
     }
-    co_controller.blocked_map[wake_on].tail = co_controller.running;
-    co_controller.tcbs[co_controller.running].next_blocked = -1;
+    co_controller.blocked_channel_map[wake_on].tail = co_controller.running;
+    co_controller.tcbs[co_controller.running].next_blocked_on_same_channel = -1;
 
     internal_go_next();
     return co_no_err;
@@ -503,7 +572,8 @@ void internal_destroy_me() {
         }
     #endif
 
-    internal_go_next();    
+    // Should not return
+    panic();
 }
 
 co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
@@ -528,6 +598,59 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
     if (cothread == co_controller.running) {
         internal_go_next();
     }
+
+    return co_no_err;
+}
+
+int internal_detect_deadlock(microkit_cothread_t caller, microkit_cothread_t joinee) {
+    microkit_cothread_t cur = co_controller.tcbs[joinee].joined_on;
+    while (cur != -1) {
+        if (cur == caller) {
+            return 1;
+        } else {
+            cur = co_controller.tcbs[cur].joined_on;
+        }
+    }
+
+    return 0;
+}
+
+co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (!co_controller.init_success) {
+            return co_err_generic_not_initialised;
+        }
+        if (cothread >= co_controller.max_cothreads || cothread < 0) {
+            return co_err_generic_invalid_handle;
+        }
+    #endif
+
+    if (co_controller.tcbs[cothread].state == cothread_not_active) {
+        return co_err_generic_not_initialised;
+    }
+    if (cothread == 0) {
+        return co_err_join_cannot_join_to_root_thread;
+    }
+
+    if (cothread == co_controller.running || internal_detect_deadlock(co_controller.running, cothread)) {
+        return co_err_join_deadlock_detected;
+    }
+
+    co_controller.tcbs[co_controller.running].state = cothread_blocked_on_join;
+    
+    // push into the waiting linked list (if any)
+    if (co_controller.joined_map[cothread].head == -1) {
+        co_controller.joined_map[cothread].head = co_controller.running;
+    } else {
+        co_controller.tcbs[co_controller.joined_map[cothread].tail].next_joined_on_same_cothread = co_controller.running;
+    }
+    co_controller.joined_map[cothread].tail = co_controller.running;
+    co_controller.tcbs[co_controller.running].next_joined_on_same_cothread = -1;
+    co_controller.tcbs[co_controller.running].joined_on = cothread;
+
+    internal_go_next();
+    
+    *retval = co_controller.tcbs[co_controller.running].joined_retval;
 
     return co_no_err;
 }
