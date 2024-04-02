@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system>
+    <protection_domain name="server" priority="254">
+        <program_image path="server.elf" />
+    </protection_domain>
+
+    <protection_domain name="client" priority="200">
+        <program_image path="client.elf" />
+    </protection_domain>
+
+    <channel>
+        <end pd="client" id="0" />
+        <end pd="server" id="1" />
+    </channel>
+</system>
