@@ -8,10 +8,11 @@ uintptr_t stack1;
 uintptr_t stack2;
 uintptr_t stack3;
 
-void co_entry() {
+size_t co_entry() {
     size_t our_id;
     microkit_cothread_get_arg(0, &our_id);
     printf("CO%ld: hi\n", our_id);
+    return 0;
 }
 
 void init(void) {
