@@ -91,14 +91,23 @@ typedef struct {
     
     // the next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
     // -1 means this tcb is the tail.
-    // only checked when state == cothread_blocked_on_channel or cothread_blocked_on_join.
+
+    // only checked when state == cothread_blocked_on_channel.
     microkit_cothread_t next_blocked_on_same_channel;
+
+    // only checked when state == cothread_blocked_on_join.
+    microkit_cothread_t next_joined_on_same_cothread;
+
 
     // the cothread that this cothread is waiting on to return
     microkit_cothread_t joined_on;
-    // only checked when state == cothread_blocked_on_join.
-    microkit_cothread_t next_joined_on_same_cothread;
+    // retval of cothread that this TCB joined on
     size_t joined_retval;
+
+    size_t this_retval;
+    // zero if this TCB never returned before
+    int retval_valid;
+
 
     // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
@@ -307,8 +316,11 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
 
 void internal_destroy_me();
 void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
-    // Wake all the joined cothreads on this cothread (if any)
+    // Save retval in TCB to handle case where thread is joined after it returns
+    co_controller.tcbs[cothread].retval_valid = 1;
+    co_controller.tcbs[cothread].this_retval = retval;
 
+    // Wake all the joined cothreads on this cothread (if any)
     microkit_cothread_t cur = co_controller.joined_map[cothread].head;
     while (cur != -1) {
         co_err_t err = microkit_cothread_mark_ready(cur);
@@ -371,6 +383,7 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
     co_controller.tcbs[new].next_blocked_on_same_channel = -1;
     co_controller.tcbs[new].next_joined_on_same_cothread = -1;
     co_controller.tcbs[new].joined_on = -1;
+    co_controller.tcbs[new].retval_valid = 0;
     co_controller.tcbs[new].num_priv_args = num_args;
     memzero(co_controller.tcbs[new].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
 
@@ -624,6 +637,13 @@ co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval) {
             return co_err_generic_invalid_handle;
         }
     #endif
+
+    if (co_controller.tcbs[cothread].retval_valid) {
+        // Cothread returned before join
+        co_controller.tcbs[cothread].retval_valid = 0;
+        *retval = co_controller.tcbs[cothread].this_retval;
+        return co_no_err;
+    }
 
     if (co_controller.tcbs[cothread].state == cothread_not_active) {
         return co_err_generic_not_initialised;
