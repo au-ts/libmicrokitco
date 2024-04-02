@@ -2,7 +2,7 @@
 
 CPU='cortex-a53'
 
-make && qemu-system-aarch64 -machine virt,virtualization=on \
+rm -rfd build && make && qemu-system-aarch64 -machine virt,virtualization=on \
     -cpu "$CPU" \
     -serial mon:stdio \
     -device loader,file=build/loader.img,addr=0x70000000,cpu-num=0 \
