@@ -25,6 +25,8 @@ The library expects a large memory region (MR) for it's internal data structures
 
 ### State transition
 
+TODO: add join() after concrete implementation
+
 A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
 ![state transition diagram](./docs/state_diagram.png)
 
@@ -125,3 +127,14 @@ Destroy a specific cothread regardless of their running state. Should be sparing
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
+
+---
+
+### `co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval)`
+Blocks the caller until the #`cothread` thread returns, then write it's return value to `retval`. This API is able to detect simple deadlock scenario such as #1 joins #2, #2 joins #3 then #3 joins #1. A thread cannot join itself. 
+
+Take special care when joining in the root PD thread as you will not be able to receive notifications from seL4.
+
+##### Arguments
+- `cothread` is the subject cothread handle.
+- `retval` points to a variable on the caller's stack to write the cothread return value to.
