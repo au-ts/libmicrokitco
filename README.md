@@ -60,8 +60,7 @@ Map the error number returned by this library's functions into a human friendly 
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-- `controller_memory` points to the base of an MR that is at least:
-`(sizeof(co_tcb_t) * (max_cothreads + 1) + (sizeof(microkit_cothread_t) * (max_cothreads + 1) * 2)` bytes large for internal data structures, and
+- `controller_memory` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large. See line 151 of `libmicrokitco.c`.
 - `co_stack_size` to be >= 0x1000 bytes.
 - `max_cothreads` to be >= 1, which is exclusive of the calling thread.
 
