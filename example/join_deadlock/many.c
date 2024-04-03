@@ -78,10 +78,6 @@ void init(void) {
 
     printf("Many to one PD: cothreads %d %d %d %d spawned\n", co1, co2, co3, co4);
 
-    microkit_cothread_yield();
-    microkit_cothread_yield();
-    microkit_cothread_yield();
-
     size_t retval1, retval2, retval3;
     printf("Many to one PD: root: joining co1\n");
     co_err_t join_err1 = microkit_cothread_join(1, &retval1);
