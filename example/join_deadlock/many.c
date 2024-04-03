@@ -85,7 +85,9 @@ void init(void) {
     size_t retval1, retval2, retval3;
     printf("Many to one PD: root: joining co1\n");
     co_err_t join_err1 = microkit_cothread_join(1, &retval1);
+    printf("Many to one PD: root: joining co2\n");
     co_err_t join_err2 = microkit_cothread_join(2, &retval2);
+    printf("Many to one PD: root: joining co3\n");
     co_err_t join_err3 = microkit_cothread_join(3, &retval3);
     if (join_err1 != co_no_err || join_err2 != co_no_err || join_err3 != co_no_err) {
         printf("Many to one PD: root: cannot do one or more joins, errs are %d %d %d\n", join_err1, join_err2, join_err3);
@@ -98,7 +100,7 @@ void init(void) {
     }
 
     // joining again after reading the retval should yield err
-    if (microkit_cothread_join(1, &retval1) != co_err_generic_not_initialised) {
+    if (microkit_cothread_join(3, &retval3) != co_err_generic_not_initialised) {
         printf("Many to one PD: root: was able to re-read retval\n");
         microkit_internal_crash(0);
     }
