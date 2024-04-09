@@ -81,15 +81,15 @@ Microkit-bare round trip notify (validation_notify):
         (249 + 271 + 252) / 3 = 257 cycles
 
 libmicrokitco (unsafe build) round trip notify-cowait-notify:
-    Dryrun 9/Apr/24 @ 9ed90e1dca1635eea92c71dda07a5b49eb243d14:
-        Pass #0: 2716 cycles
-        Pass #1: 1016 cycles
-        Pass #2: 811 cycles
-        Pass #3: 742 cycles
-        Pass #4: 785 cycles
-        Pass #5: 751 cycles
+    Dryrun 9/Apr/24 @ cb104acb42bbc20e454c9afbc749c8c0a7ad6de8:
+        Pass #0: 2481 cycles
+        Pass #1: 1031 cycles
+        Pass #2: 719 cycles
+        Pass #3: 747 cycles
+        Pass #4: 737 cycles
+        Pass #5: 710 cycles
         Pass #6: 730 cycles
-        Pass #7: 783 cycles
-        Pass #8: 704 cycles
-        Pass #9: 719 cycles
-        Average: 975 cycles
+        Pass #7: 729 cycles
+        Pass #8: 676 cycles
+        Pass #9: 693 cycles
+        Average: 925 cycles
