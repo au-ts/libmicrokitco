@@ -37,7 +37,7 @@ LIBMICROKITCO_BUILD_DIR := $(BUILD_DIR)/libmicrokitco
 CO_CC := $(TOOLCHAIN)-gcc
 CO_LD := $(TOOLCHAIN)-ld
 
-CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-stringop-overflow -Wno-unused-function
+CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-stringop-overflow -Wno-unused-function -Wno-unused-variable -Wno-array-bounds
 CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 
 all: libmicrokitco_directory $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
