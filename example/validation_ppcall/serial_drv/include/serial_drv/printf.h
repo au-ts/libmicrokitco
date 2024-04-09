@@ -29,8 +29,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PRINTF_H_
-#define _PRINTF_H_
+#ifndef _SDDF_PRINTF_H_
+#define _SDDF_PRINTF_H_
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -40,13 +40,18 @@
 extern "C" {
 #endif
 
+#ifdef CONFIG_DEBUG_BUILD
+#define sddf_dprintf(fmt, ...) sddf_printf(fmt, ##__VA_ARGS__);
+#else
+#define sddf_dprintf(...)
+#endif
 
 /**
  * Output a character to a custom device like UART, used by the printf() function
  * This function is declared here only. You have to write your custom implementation somewhere
  * \param character Character to output
  */
-void _putchar(char character);
+void _sddf_putchar(char character);
 
 
 /**
@@ -57,9 +62,8 @@ void _putchar(char character);
  * \param format A string that specifies the format of the output
  * \return The number of characters that are written into the array, not counting the terminating null character
  */
-#define printf printf_
-int printf_(const char* format, ...) __attribute__((format(gnu_printf, 1, 2)));
-
+#define sddf_printf sddf_printf_
+int sddf_printf_(const char* format, ...) __attribute__((format(__printf__, 1, 2)));
 
 /**
  * Tiny sprintf implementation
@@ -68,8 +72,8 @@ int printf_(const char* format, ...) __attribute__((format(gnu_printf, 1, 2)));
  * \param format A string that specifies the format of the output
  * \return The number of characters that are WRITTEN into the buffer, not counting the terminating null character
  */
-#define sprintf sprintf_
-int sprintf_(char* buffer, const char* format, ...) __attribute__((format(gnu_printf, 2, 3)));
+#define sddf_sprintf sddf_sprintf_
+int sddf_sprintf_(char* buffer, const char* format, ...) __attribute__((format(__printf__, 2, 3)));
 
 
 /**
@@ -82,11 +86,10 @@ int sprintf_(char* buffer, const char* format, ...) __attribute__((format(gnu_pr
  *         null character. A value equal or larger than count indicates truncation. Only when the returned value
  *         is non-negative and less than count, the string has been completely written.
  */
-#define snprintf  snprintf_
-#define vsnprintf vsnprintf_
-int  snprintf_(char* buffer, size_t count, const char* format, ...) __attribute__((format(gnu_printf, 3, 4)));
-int vsnprintf_(char* buffer, size_t count, const char* format, va_list va);
-
+#define sddf_snprintf  sddf_snprintf_
+#define sddf_vsnprintf sddf_vsnprintf_
+int  sddf_snprintf_(char* buffer, size_t count, const char* format, ...)
+    __attribute__((format(__printf__, 3, 4)));
 
 /**
  * Tiny vprintf implementation
@@ -94,8 +97,8 @@ int vsnprintf_(char* buffer, size_t count, const char* format, va_list va);
  * \param va A value identifying a variable arguments list
  * \return The number of characters that are WRITTEN into the buffer, not counting the terminating null character
  */
-#define vprintf vprintf_
-int vprintf_(const char* format, va_list va);
+#define sddf_vprintf sddf_vprintf_
+int sddf_vprintf_(const char* format, va_list va);
 
 
 /**
@@ -106,12 +109,10 @@ int vprintf_(const char* format, va_list va);
  * \param format A string that specifies the format of the output
  * \return The number of characters that are sent to the output function, not counting the terminating null character
  */
-int fctprintf(void (*out)(char character, void* arg), void* arg, const char* format, ...) __attribute__((format(gnu_printf, 3, 4)));
-
-
+int sddf_fctprintf(void (*out)(char character, void* arg), void* arg, const char* format, ...) __attribute__((format(__printf__, 3, 4)));
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif  // _PRINTF_H_
+#endif  // _SDDF_PRINTF_H_
