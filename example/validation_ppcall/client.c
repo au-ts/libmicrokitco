@@ -1,6 +1,7 @@
 #include <microkit.h>
 #include <sel4/benchmark_utilisation_types.h>
 #include <serial_drv/printf.h>
+#include <math.h>
 #include "util.h"
 
 uintptr_t uart_base;
@@ -33,14 +34,10 @@ void notified(microkit_channel channel) {
             run(i);
         }
 
-        sddf_printf_("Result:\n");
-        uint64_t accumulator = 0;
+        sddf_printf_("Result (cycles):\n");
         for (int i = 0; i < PASSES; i++) {
-            sddf_printf_("Pass #%d: %lu cycles\n", i, result[i]);
-            accumulator += result[i];
+            sddf_printf_("===> %lu\n", result[i]);
         }
-        sddf_printf_("Average: %ld cycles\n", accumulator / PASSES);
-        
 
     } else {
         sddf_printf_("Received notification from unknown channel %d\n", channel);
