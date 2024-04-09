@@ -1,0 +1,95 @@
+All benchmarks ran on odroidc4_1 on machine queue
+
+Microkit-bare round trip ppcall (validation_ppcall):
+    Run 1:
+        Pass #0: 265 cycles
+        Pass #1: 296 cycles
+        Pass #2: 169 cycles
+        Pass #3: 175 cycles
+        Pass #4: 169 cycles
+        Pass #5: 175 cycles
+        Pass #6: 176 cycles
+        Pass #7: 165 cycles
+        Pass #8: 169 cycles
+        Pass #9: 145 cycles
+        Average: 190 cycles
+    Run 2:
+        Pass #0: 445 cycles
+        Pass #1: 203 cycles
+        Pass #2: 166 cycles
+        Pass #3: 169 cycles
+        Pass #4: 169 cycles
+        Pass #5: 169 cycles
+        Pass #6: 169 cycles
+        Pass #7: 166 cycles
+        Pass #8: 166 cycles
+        Pass #9: 169 cycles
+        Average: 199 cycles
+    Run 3:
+        Pass #0: 383 cycles
+        Pass #1: 181 cycles
+        Pass #2: 169 cycles
+        Pass #3: 169 cycles
+        Pass #4: 169 cycles
+        Pass #5: 169 cycles
+        Pass #6: 169 cycles
+        Pass #7: 172 cycles
+        Pass #8: 169 cycles
+        Pass #9: 169 cycles
+        Average: 191 cycles
+    3 runs avg:
+        (190 + 199 + 191) / 3 = 193 cycles
+
+Microkit-bare round trip notify (validation_notify):
+    Run 1:
+        Pass #0: 652 cycles
+        Pass #1: 220 cycles
+        Pass #2: 210 cycles
+        Pass #3: 212 cycles
+        Pass #4: 179 cycles
+        Pass #5: 210 cycles
+        Pass #6: 200 cycles
+        Pass #7: 198 cycles
+        Pass #8: 194 cycles
+        Pass #9: 215 cycles
+        Average: 249 cycles
+    Run 2:
+        Pass #0: 683 cycles
+        Pass #1: 270 cycles
+        Pass #2: 292 cycles
+        Pass #3: 210 cycles
+        Pass #4: 205 cycles
+        Pass #5: 211 cycles
+        Pass #6: 204 cycles
+        Pass #7: 209 cycles
+        Pass #8: 239 cycles
+        Pass #9: 188 cycles
+        Average: 271 cycles
+    Run 3:
+        Pass #0: 669 cycles
+        Pass #1: 218 cycles
+        Pass #2: 199 cycles
+        Pass #3: 219 cycles
+        Pass #4: 209 cycles
+        Pass #5: 203 cycles
+        Pass #6: 203 cycles
+        Pass #7: 174 cycles
+        Pass #8: 238 cycles
+        Pass #9: 188 cycles
+        Average: 252 cycles
+    3 runs avg:
+        (249 + 271 + 252) / 3 = 257 cycles
+
+libmicrokitco (unsafe build) round trip notify-cowait-notify:
+    Dryrun 9/Apr/24 @ 9ed90e1dca1635eea92c71dda07a5b49eb243d14:
+        Pass #0: 2716 cycles
+        Pass #1: 1016 cycles
+        Pass #2: 811 cycles
+        Pass #3: 742 cycles
+        Pass #4: 785 cycles
+        Pass #5: 751 cycles
+        Pass #6: 730 cycles
+        Pass #7: 783 cycles
+        Pass #8: 704 cycles
+        Pass #9: 719 cycles
+        Average: 975 cycles
