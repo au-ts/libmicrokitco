@@ -1,6 +1,15 @@
 All benchmarks ran on odroidc4_1 on machine queue
 
 Microkit-bare round trip ppcall (validation_ppcall):
+    Significant event sequence:
+        client: counting starts
+            client: invoke seL4_Call()
+            server: seL4_Recv() returns
+            server: invoke protected(), returns immediately
+            server: invoke seL4_ReplyRecv()
+            client: seL4_Call() returns
+        client: counting stops
+
     Run 1:
         Pass #0: 265 cycles
         Pass #1: 296 cycles
@@ -40,7 +49,18 @@ Microkit-bare round trip ppcall (validation_ppcall):
     3 runs avg:
         (190 + 199 + 191) / 3 = 193 cycles
 
-Microkit-bare round trip notify (validation_notify):
+Microkit-bare round trip notify - recv ntfn (validation_notify):
+    Significant invocations sequence:
+        client: counting starts
+            client: invoke seL4_Signal()
+            server: seL4_Recv() returns
+            server: invoke notified(), returns immediately
+            server: invoke seL4_Signal()
+            server: invoke seL4_Recv()
+            client: invoke seL4_Recv()
+            client: seL4_Recv() returns
+        client: counting stops
+
     Run 1:
         Pass #0: 652 cycles
         Pass #1: 220 cycles
@@ -79,6 +99,60 @@ Microkit-bare round trip notify (validation_notify):
         Average: 252 cycles
     3 runs avg:
         (249 + 271 + 252) / 3 = 257 cycles
+
+Microkit-bare round trip notify - wait with basic libco - recv ntfn (validation_notify_and_bare_libco_wait):
+    Significant invocations sequence:
+        client: counting starts
+            client: invoke seL4_Signal()
+            server: seL4_Recv() returns
+            server: invoke notified(), returns immediately
+            server: invoke seL4_Signal()
+            server: invoke seL4_Recv()
+            client: invoke co_switch(root_handle)
+            client: invoke seL4_Recv()
+            client: seL4_Recv() returns
+            client: co_switch(co_handle);
+        client: counting stops
+
+    Run 1:
+        Pass #0: 1126 cycles
+        Pass #1: 570 cycles
+        Pass #2: 410 cycles
+        Pass #3: 310 cycles
+        Pass #4: 302 cycles
+        Pass #5: 326 cycles
+        Pass #6: 293 cycles
+        Pass #7: 336 cycles
+        Pass #8: 339 cycles
+        Pass #9: 335 cycles
+        Average: 434 cycles
+    Run 2:
+        Pass #0: 1076 cycles
+        Pass #1: 563 cycles
+        Pass #2: 410 cycles
+        Pass #3: 328 cycles
+        Pass #4: 365 cycles
+        Pass #5: 367 cycles
+        Pass #6: 363 cycles
+        Pass #7: 355 cycles
+        Pass #8: 319 cycles
+        Pass #9: 356 cycles
+        Average: 450 cycles
+    Run 3:
+        Pass #0: 1195 cycles
+        Pass #1: 562 cycles
+        Pass #2: 387 cycles
+        Pass #3: 371 cycles
+        Pass #4: 320 cycles
+        Pass #5: 319 cycles
+        Pass #6: 339 cycles
+        Pass #7: 312 cycles
+        Pass #8: 318 cycles
+        Pass #9: 348 cycles
+        Average: 447 cycles
+
+    3 runs avg:
+        (434 + 450 + 447) / 3 = 443 cycles
 
 libmicrokitco (unsafe build) round trip notify-cowait-notify:
     Dryrun 9/Apr/24 @ cb104acb42bbc20e454c9afbc749c8c0a7ad6de8:
