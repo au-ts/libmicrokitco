@@ -32,12 +32,10 @@ size_t runner(void) {
         run(i);
     }
     sddf_printf_("Result:\n");
-    uint64_t accumulator = 0;
     for (int i = 0; i < PASSES; i++) {
-        sddf_printf_("Pass #%d: %lu cycles\n", i, result[i]);
-        accumulator += result[i];
+        sddf_printf_("===> %lu\n", result[i]);
     }
-    sddf_printf_("Average: %ld cycles\nFINISHED\n", accumulator / PASSES);
+    sddf_printf_("FINISHED\n");
 
     return 0;
 }
