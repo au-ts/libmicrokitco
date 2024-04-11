@@ -34,8 +34,8 @@ SERIALDIR=$(ROOTDIR)/sel4_profiler/serial
 BOARD_DIR := $(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)
 
 IMAGES := profiler.elf client.elf uart.elf uart_virt_rx.elf uart_virt_tx.elf eth.elf eth_virt_rx.elf eth_virt_tx.elf eth_copy.elf arp.elf timer.elf
-CFLAGS := -mcpu=$(CPU) -mstrict-align -ffreestanding -g3 -O3 -Wall  -Wno-unused-function -fno-omit-frame-pointer
-LDFLAGS := -L$(BOARD_DIR)/lib -L$(SDDF)/lib --verbose
+CFLAGS := -c -mcpu=$(CPU) -mstrict-align -ffreestanding -nostdlib -g3 -O3 -Wall -Wno-unused-function -fno-omit-frame-pointer
+LDFLAGS := -L$(BOARD_DIR)/lib -L$(SDDF)/lib 
 LIBS := -lmicrokit -Tmicrokit.ld -lc
 
 IMAGE_FILE = $(BUILD_DIR)/loader.img
@@ -175,7 +175,34 @@ $(BUILD_DIR)/arp.elf: $(addprefix $(BUILD_DIR)/, $(ARP_OBJS))
 $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) $(SYSTEM_DESC)
+# BEING System being profiled v
+
+LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
+LIBMICROKITCO_UNSAFE = ''
+include $(LIBMICROKITCO_PATH)/Makefile
+
+$(BUILD_DIR)/start.o: start.c
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(BUILD_DIR)/client_being_profiled.o: client.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+
+$(BUILD_DIR)/server.o: server.c
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
+	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+
+$(BUILD_DIR)/client_being_profiled.elf: $(BUILD_DIR)/client_being_profiled.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
+	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+
+$(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o
+	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+
+# END System being profiled ^
+
+$(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) $(SYSTEM_DESC) $(BUILD_DIR)/start.elf $(BUILD_DIR)/client_being_profiled.elf $(BUILD_DIR)/server.elf
 	$(MICROKIT_TOOL) $(SYSTEM_DESC) --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(IMAGE_FILE) -r $(REPORT_FILE)
 
 .PHONY: all depend compile clean
@@ -215,29 +242,5 @@ clean:
 
 
 
-# $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
-# 	$(CC) $(CFLAGS) $^ -o $@
 
-# $(BUILD_DIR)/printf.o: serial_drv/printf.c
-# 	$(CC) $(CFLAGS) -DCONFIG_PLAT_ODROIDC4 $^ -o $@
 
-# $(BUILD_DIR)/start.o: start.c
-# 	$(CC) $(CFLAGS) $^ -o $@
-
-# $(BUILD_DIR)/client.o: client.c
-# 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
-
-# $(BUILD_DIR)/server.o: server.c
-# 	$(CC) $(CFLAGS) $^ -o $@
-
-# $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
-# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
-
-# $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
-# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
-
-# $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
-# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
-
-# $(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
-# 	$(MICROKIT_TOOL) validation_notify_and_cowait.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt

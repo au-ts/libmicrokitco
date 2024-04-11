@@ -1,5 +1,5 @@
 #include <microkit.h>
-#include "util.h"
+// #include "util.h"
 
 void init(void) {
     microkit_notify(4);
