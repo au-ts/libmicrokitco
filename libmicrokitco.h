@@ -13,6 +13,7 @@ typedef enum {
     co_err_init_stack_too_small,
     co_err_init_max_cothreads_too_small,
     co_err_init_allocator_init_fail,
+    co_err_init_controller_alloc_fail,
     co_err_init_tcbs_alloc_fail,
     co_err_init_join_alloc_fail,
     co_err_init_free_handles_alloc_fail,
@@ -59,6 +60,10 @@ typedef enum {
 const char *microkit_cothread_pretty_error(co_err_t err_num);
 
 
+// Client must provide implementation of the following:
+
+
+
 // Business logic
 #define MICROKITCO_ROOT_THREAD 0
 #define MINIMUM_STACK_SIZE 0x1000
@@ -66,7 +71,6 @@ const char *microkit_cothread_pretty_error(co_err_t err_num);
 
 typedef size_t (*client_entry_t)(void);
 typedef int microkit_cothread_t;
-typedef struct cothreads_control co_control_t;
 
 typedef enum {
     ready_false,
