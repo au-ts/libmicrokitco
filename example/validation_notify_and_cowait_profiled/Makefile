@@ -215,29 +215,29 @@ clean:
 
 
 
-$(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
-	$(CC) $(CFLAGS) $^ -o $@
+# $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
+# 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BUILD_DIR)/printf.o: serial_drv/printf.c
-	$(CC) $(CFLAGS) -DCONFIG_PLAT_ODROIDC4 $^ -o $@
+# $(BUILD_DIR)/printf.o: serial_drv/printf.c
+# 	$(CC) $(CFLAGS) -DCONFIG_PLAT_ODROIDC4 $^ -o $@
 
-$(BUILD_DIR)/start.o: start.c
-	$(CC) $(CFLAGS) $^ -o $@
+# $(BUILD_DIR)/start.o: start.c
+# 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BUILD_DIR)/client.o: client.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+# $(BUILD_DIR)/client.o: client.c
+# 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
-$(BUILD_DIR)/server.o: server.c
-	$(CC) $(CFLAGS) $^ -o $@
+# $(BUILD_DIR)/server.o: server.c
+# 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
-	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+# $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
+# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
-	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+# $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
+# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+# $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
+# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
-	$(MICROKIT_TOOL) validation_notify_and_cowait.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+# $(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+# 	$(MICROKIT_TOOL) validation_notify_and_cowait.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
