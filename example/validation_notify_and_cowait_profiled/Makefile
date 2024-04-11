@@ -1,12 +1,12 @@
-BUILD_DIR ?= build
-MICROKIT_CONFIG ?= profile
-MICROKIT_SDK = profile_sdk
+BUILD_DIR := $(shell realpath build)
+MICROKIT_CONFIG := profile
+MICROKIT_SDK = $(shell realpath profile_sdk)
 
 MICROKIT_BOARD := odroidc4
 SDDF_PLATFORM_DIR := meson
 CPU := cortex-a53
 
-SYSTEM_DESC := board/$(MICROKIT_BOARD)/validation_notify_and_cowait_profiled.system
+SYSTEM_DESC := validation_notify_and_cowait_profiled.system
 
 TOOLCHAIN := aarch64-none-elf
 
@@ -15,7 +15,7 @@ LD := $(TOOLCHAIN)-ld
 AS := $(TOOLCHAIN)-as
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
-ROOTDIR=$(pwd)
+ROOTDIR=$(shell pwd)
 SDDF=$(ROOTDIR)/sel4_profiler/sDDF
 SDDF_INCLUDE=$(SDDF)/include/sddf
 LWIP=$(SDDF)/network/ipstacks/lwip/src
@@ -35,7 +35,7 @@ BOARD_DIR := $(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)
 
 IMAGES := profiler.elf client.elf uart.elf uart_virt_rx.elf uart_virt_tx.elf eth.elf eth_virt_rx.elf eth_virt_tx.elf eth_copy.elf arp.elf timer.elf
 CFLAGS := -mcpu=$(CPU) -mstrict-align -ffreestanding -g3 -O3 -Wall  -Wno-unused-function -fno-omit-frame-pointer
-LDFLAGS := -L$(BOARD_DIR)/lib -L$(SDDF)/lib
+LDFLAGS := -L$(BOARD_DIR)/lib -L$(SDDF)/lib --verbose
 LIBS := -lmicrokit -Tmicrokit.ld -lc
 
 IMAGE_FILE = $(BUILD_DIR)/loader.img
