@@ -175,15 +175,15 @@ $(BUILD_DIR)/arp.elf: $(addprefix $(BUILD_DIR)/, $(ARP_OBJS))
 $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-# BEING System being profiled v
+# BEGIN System being profiled v
 
-LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_PATH := ../..
 LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
 LIBMICROKITCO_UNSAFE = ''
 include $(LIBMICROKITCO_PATH)/Makefile
 
-$(BUILD_DIR)/start.o: start.c
-	$(CC) $(CFLAGS) $^ -o $@
+# $(BUILD_DIR)/start.o: start.c
+# 	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/client_being_profiled.o: client.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
@@ -191,8 +191,8 @@ $(BUILD_DIR)/client_being_profiled.o: client.c
 $(BUILD_DIR)/server.o: server.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
-	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
+# $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
+# 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
 $(BUILD_DIR)/client_being_profiled.elf: $(BUILD_DIR)/client_being_profiled.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
@@ -202,7 +202,7 @@ $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o
 
 # END System being profiled ^
 
-$(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) $(SYSTEM_DESC) $(BUILD_DIR)/start.elf $(BUILD_DIR)/client_being_profiled.elf $(BUILD_DIR)/server.elf
+$(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) $(SYSTEM_DESC) $(BUILD_DIR)/client_being_profiled.elf $(BUILD_DIR)/server.elf
 	$(MICROKIT_TOOL) $(SYSTEM_DESC) --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(IMAGE_FILE) -r $(REPORT_FILE)
 
 .PHONY: all depend compile clean
@@ -213,6 +213,7 @@ $(IMAGE_FILE) $(REPORT_FILE): $(addprefix $(BUILD_DIR)/, $(IMAGES)) $(SYSTEM_DES
 #Make the Directories
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)/uart))	\
+	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
 clean:
 	rm -f *.o *.elf .depend*
