@@ -40,10 +40,9 @@ void init(void) {
 
     microkit_cothread_yield();
 
-    // This prints before the cothreads' prints because root thread is higher priority.
     printf("CLIENT: done, exiting!\n");
 
-    // returns to Microkit event loop for recv'ing notifications.
+    // returns to Microkit event loop for recv'ing notifications when all cothreads finishes.
 }
 
 void notified(microkit_channel channel) {
