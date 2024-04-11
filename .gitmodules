@@ -1,0 +1,3 @@
+[submodule "example/validation_notify_and_cowait_profiled/sel4_profiler"]
+	path = example/validation_notify_and_cowait_profiled/sel4_profiler
+	url = git@github.com:au-ts/sel4_profiler.git
