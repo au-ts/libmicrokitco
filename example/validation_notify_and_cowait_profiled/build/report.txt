@@ -33,7 +33,7 @@
        <Region name=PD-ELF arp-1 addr=0x30291000 offset=0x0 size=4320>
        <Region name=PD-ELF timer-0 addr=0x30293000 offset=0x0 size=9760>
        <Region name=PD-ELF timer-1 addr=0x30296000 offset=0x0 size=4304>
-       <Region name=PD-ELF prof_client-0 addr=0x30298000 offset=0x0 size=140024>
+       <Region name=PD-ELF prof_client-0 addr=0x30298000 offset=0x0 size=140000>
        <Region name=PD-ELF prof_client-1 addr=0x302bb000 offset=0x0 size=862208>
 
 # Monitor (Initial Task) Info
