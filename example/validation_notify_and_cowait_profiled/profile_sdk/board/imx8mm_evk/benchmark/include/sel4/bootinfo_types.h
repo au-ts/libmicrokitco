@@ -11,7 +11,7 @@
 #include <sel4/sel4_arch/constants.h>
 
 /* caps with fixed slot positions in the root CNode */
-enum seL4_RootCNodeCapSlots {
+enum {
     seL4_CapNull                =  0, /* null cap */
     seL4_CapInitThreadTCB       =  1, /* initial thread's TCB cap */
     seL4_CapInitThreadCNode     =  2, /* initial thread's root CNode cap */

@@ -51,10 +51,12 @@ enum priorityConstants {
 
 enum seL4_MsgLimits {
     seL4_MsgLengthBits = 7,
-    seL4_MsgExtraCapBits = 2,
-    seL4_MsgMaxLength = 120
+    seL4_MsgExtraCapBits = 2
 };
 
+enum {
+    seL4_MsgMaxLength = 120,
+};
 #define seL4_MsgMaxExtraCaps (LIBSEL4_BIT(seL4_MsgExtraCapBits)-1)
 
 /* seL4_CapRights_t defined in shared_types_*.bf */

@@ -313,7 +313,7 @@ seL4_BenchmarkResetAllThreadsUtilisation(void);
 /**
  * @xmlonly <manual name="Register Thread For Profiling" label="sel4_profilerregisterthread" /> @endxmlonly
  * @brief Set an id in the calling thread's TCB to enable profiling. Id must be greater than 0.
- *
+ * 
  * @param[in] tcb_cptr TCB cap pointer to the thread to enable profiling on.
  */
 
