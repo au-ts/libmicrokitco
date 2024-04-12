@@ -42,6 +42,9 @@ size_t runner(void) {
 
 void init(void) {
     seL4_ProfilerRegisterThread(1);
+
+
+
     // ipcbuffer = (uint64_t*) &(seL4_GetIPCBuffer()->msg[0]);
     co_err_t err = microkit_cothread_init(co_mem, 0x1000, 1, co_stack);
     // if (err != co_no_err) {
