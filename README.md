@@ -10,13 +10,19 @@ Such a (more traditional) programming model can be implemented on top of the exi
 Design, implementation and performance evaluation of a library that provides a non-reactive (active process) programming model on top of the Microkit API.
 
 ## Solution
+### Terminology
+- Root Protection Domain (PD) thread: the thread created by seL4 for a protection domain. This is where the Microkit's event loop runs. For brevity, we will refer to this as "root thread".
+- Root TCB: the thread control block of the root thread within the library used to store it's execution context for cothread switching and blocking state.
+- Cothread TCB: serves the same purpose as root TCB, but also stores the virtual address of the cothread's stack.
+
+
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple executing contexts (cothreads) into 1 Protection Domain (PD). Then, one or more cothreads can wait (block) for an incoming notification from a channel or a callback to be fired, while some cothreads are waiting, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple executing contexts (threads) onto one kernel thread of a PD. Then, one or more threads can wait (block) for an incoming notification from a channel or another thread to return, while some cothreads are blocked, another cothread can execute. 
 
 ### Scheduling
 All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time. 
 
-If when the scheduler is invoked and no cothreads are ready, the scheduler will return to the root PD thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
+If when the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
 
 IMPORTANT: you should not perform any seL4 blocking calls while using this library. If the PD is blocked in seL4, none of your cothreads will execute even if it is ready. 
 
@@ -40,8 +46,8 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 6. `MICROKIT_CONFIG`: one of `debug` or `release`, and
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`.
 
-> ##### Danger zone
-> Define `LIBMICROKITCO_UNSAFE` to skip most pedantic error checking.
+##### Danger zone
+> Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking.
 
 Then, add this to your Makefile after the declarations:
 ```
@@ -49,6 +55,10 @@ include $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco/libmicrokitco.o`.
+
+
+## Foot guns
+- If you perform a protected procedure call (PPC), all threads in your PD will be blocked even if they are ready until the PPC returns.
 
 ## API
 ### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
