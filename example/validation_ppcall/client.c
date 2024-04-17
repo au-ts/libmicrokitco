@@ -1,30 +1,22 @@
 #include <microkit.h>
-#include <sel4/benchmark_utilisation_types.h>
 #include <serial_drv/printf.h>
-#include <math.h>
-#include "util.h"
+#include "sel4bench.h"
 
 uintptr_t uart_base;
 
-uint64_t *ipcbuffer;
-
-#define PASSES 10
+#define PASSES 20
 uint64_t result[PASSES];
 
-void run(int nth) {
-    seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
-    seL4_BenchmarkResetLog();
-
+inline static void run(int nth) {
+    sel4bench_reset_counters();
+    
     microkit_ppcall(1, microkit_msginfo_new(0, 0));
 
-    seL4_BenchmarkFinalizeLog();
-    seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
-
-    result[nth] = ipcbuffer[BENCHMARK_TOTAL_UTILISATION];
+    result[nth] = sel4bench_get_cycle_count();
 }
 
 void init(void) {
-    ipcbuffer = (uint64_t*) &(seL4_GetIPCBuffer()->msg[0]);
+    sel4bench_init();
 }
 
 void notified(microkit_channel channel) {

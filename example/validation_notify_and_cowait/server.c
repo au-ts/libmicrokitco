@@ -1,6 +1,5 @@
 #include <microkit.h>
 #include <serial_drv/printf.h>
-#include "util.h"
 
 uintptr_t uart_base;
 

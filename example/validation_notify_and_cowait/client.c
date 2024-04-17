@@ -1,29 +1,22 @@
 #include <microkit.h>
-#include <sel4/benchmark_utilisation_types.h>
 #include <serial_drv/printf.h>
 #include <libmicrokitco.h>
-#include "util.h"
+#include "sel4bench.h"
 
 uintptr_t uart_base;
 uintptr_t co_mem;
 uintptr_t co_stack;
 
-uint64_t *ipcbuffer;
-
-#define PASSES 10
+#define PASSES 20
 uint64_t result[PASSES];
 
-void run(int nth) {
-    seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
-    seL4_BenchmarkResetLog();
+inline static void run(int nth) {
+    sel4bench_reset_counters();
 
     microkit_notify(1);
     microkit_cothread_wait(1);
 
-    seL4_BenchmarkFinalizeLog();
-    seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
-
-    result[nth] = ipcbuffer[BENCHMARK_TOTAL_UTILISATION];
+    result[nth] = sel4bench_get_cycle_count();
 }
 
 size_t runner(void) {
@@ -41,7 +34,8 @@ size_t runner(void) {
 }
 
 void init(void) {
-    ipcbuffer = (uint64_t*) &(seL4_GetIPCBuffer()->msg[0]);
+    sel4bench_init();
+
     co_err_t err = microkit_cothread_init(co_mem, 0x1000, 1, co_stack);
     if (err != co_no_err) {
         sddf_printf_("CLIENT: Cannot init libmicrokitco, err is :%s\n", microkit_cothread_pretty_error(err));

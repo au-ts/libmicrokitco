@@ -33,7 +33,7 @@
        <Region name=PD-ELF arp-1 addr=0x30291000 offset=0x0 size=4320>
        <Region name=PD-ELF timer-0 addr=0x30293000 offset=0x0 size=9760>
        <Region name=PD-ELF timer-1 addr=0x30296000 offset=0x0 size=4304>
-       <Region name=PD-ELF prof_client-0 addr=0x30298000 offset=0x0 size=140024>
+       <Region name=PD-ELF prof_client-0 addr=0x30298000 offset=0x0 size=140000>
        <Region name=PD-ELF prof_client-1 addr=0x302bb000 offset=0x0 size=862208>
 
 # Monitor (Initial Task) Info
@@ -53,7 +53,7 @@
 # System Kernel Invocations Summary
 
      # of invocations   :        824
-     size of invocations:     60,272
+     size of invocations:     60,240
 
 # Allocated Kernel Objects Detail
 
@@ -3758,34 +3758,30 @@
          node_depth           1
          node_offset          813
          num_objects          14
-    0x0161 IRQ Control          - GetTriggerCore    - 0x0000000000000004 (IRQ Control)
+    0x0161 IRQ Control          - Get               - 0x0000000000000004 (IRQ Control)
          irq                  169
          trigger              0
          dest_root (cap)      0x000000000000005e (CNode: root)
          dest_index           9223372036854776635
          dest_depth           64
-         target               0
-    0x0162 IRQ Control          - GetTriggerCore    - 0x0000000000000004 (IRQ Control)
+    0x0162 IRQ Control          - Get               - 0x0000000000000004 (IRQ Control)
          irq                  225
          trigger              1
          dest_root (cap)      0x000000000000005e (CNode: root)
          dest_index           9223372036854776636
          dest_depth           64
-         target               0
-    0x0163 IRQ Control          - GetTriggerCore    - 0x0000000000000004 (IRQ Control)
+    0x0163 IRQ Control          - Get               - 0x0000000000000004 (IRQ Control)
          irq                  40
          trigger              0
          dest_root (cap)      0x000000000000005e (CNode: root)
          dest_index           9223372036854776637
          dest_depth           64
-         target               0
-    0x0164 IRQ Control          - GetTriggerCore    - 0x0000000000000004 (IRQ Control)
+    0x0164 IRQ Control          - Get               - 0x0000000000000004 (IRQ Control)
          irq                  42
          trigger              1
          dest_root (cap)      0x000000000000005e (CNode: root)
          dest_index           9223372036854776638
          dest_depth           64
-         target               0
     0x0165 ASID Pool            - Assign            - 0x0000000000000006 (ASID Pool: init)
          vspace (cap)         0x80000000000002f8 (VSpace: PD=profiler)
       REPEAT: count=14 {'vspace': 1}
@@ -6422,15 +6418,15 @@
          flags                0
     0x02f0 SchedControl         - ConfigureFlags    - 0x0000000000000012 (None)
          schedcontext (cap)   0x80000000000002c6 (SchedContext: PD=server)
-         budget               1000
-         period               1000
+         budget               100
+         period               200
          extra_refills        0
          badge                257
          flags                0
     0x02f1 SchedControl         - ConfigureFlags    - 0x0000000000000012 (None)
          schedcontext (cap)   0x80000000000002c7 (SchedContext: PD=client)
-         budget               1000
-         period               1000
+         budget               100
+         period               200
          extra_refills        0
          badge                258
          flags                0
@@ -6519,14 +6515,14 @@
          fault_ep (cap)       0x80000000000002e2 (EP: Monitor Fault)
     0x02fe TCB                  - SetSchedParams    - 0x80000000000002b8 (TCB: PD=server)
          authority (cap)      0x0000000000000001 (TCB: init)
-         mcp                  254
-         priority             254
+         mcp                  81
+         priority             81
          sched_context (cap)  0x80000000000002c6 (SchedContext: PD=server)
          fault_ep (cap)       0x80000000000002e2 (EP: Monitor Fault)
     0x02ff TCB                  - SetSchedParams    - 0x80000000000002b9 (TCB: PD=client)
          authority (cap)      0x0000000000000001 (TCB: init)
-         mcp                  253
-         priority             253
+         mcp                  80
+         priority             80
          sched_context (cap)  0x80000000000002c7 (SchedContext: PD=client)
          fault_ep (cap)       0x80000000000002e2 (EP: Monitor Fault)
     0x0300 TCB                  - SetSchedParams    - 0x80000000000002ba (TCB: PD=uart)

@@ -1,8 +1,7 @@
 #include <microkit.h>
-#include <sel4/benchmark_utilisation_types.h>
 #include <serial_drv/printf.h>
 #include <libco/libco.h>
-#include "util.h"
+#include "sel4bench.h"
 
 uintptr_t uart_base;
 uintptr_t co_stack;
@@ -10,22 +9,16 @@ uintptr_t co_stack;
 cothread_t root_handle;
 cothread_t co_handle;
 
-uint64_t *ipcbuffer;
-
-#define PASSES 10
+#define PASSES 20
 uint64_t result[PASSES];
 
-void run(int nth) {
-    seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
-    seL4_BenchmarkResetLog();
+inline static void run(int nth) {
+    sel4bench_reset_counters();
 
     microkit_notify(1);
     co_switch(root_handle);
 
-    seL4_BenchmarkFinalizeLog();
-    seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
-
-    result[nth] = ipcbuffer[BENCHMARK_TOTAL_UTILISATION];
+    result[nth] = sel4bench_get_cycle_count();
 }
 
 void runner(void) {
@@ -44,7 +37,8 @@ void runner(void) {
 }
 
 void init(void) {
-    ipcbuffer = (uint64_t*) &(seL4_GetIPCBuffer()->msg[0]);
+    sel4bench_init();
+
     root_handle = co_active();
     co_handle = co_derive((void *) co_stack, 0x1000, runner);
 
