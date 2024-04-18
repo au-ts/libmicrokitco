@@ -11,23 +11,22 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Terminology
-- Root Protection Domain (PD) thread: the thread created by seL4 for a protection domain. This is where the Microkit's event loop runs. For brevity, we will refer to this as "root thread".
-- Root TCB: the thread control block of the root thread within the library used to store it's execution context for cothread switching and blocking state.
+- Root Protection Domain (PD) thread: the kernel thread created by seL4 for a protection domain. This is where the Microkit's event loop runs. For brevity, we will refer to this as "root thread".
+- Root TCB: the thread control block of the root thread within this library used to store it's execution context for cothread switching and blocking state.
+- Cothread: an execution context in userland that the seL4 kernel is not aware of. The client provides memory for the stack in the form of a Memory Region (MR) with guard page.
 - Cothread TCB: serves the same purpose as root TCB, but also stores the virtual address of the cothread's stack.
 
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple executing contexts (threads) onto one kernel thread of a PD. Then, one or more threads can wait (block) for an incoming notification from a channel or another thread to return, while some cothreads are blocked, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple threads onto one kernel thread of a PD. Then, one or more threads can wait (block) for an incoming notification from a channel or another thread to return, while some threads are blocked, another thread can execute. 
 
 ### Scheduling
-All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time. 
+All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Threads should yield judiciously during long running computation to ensure other threads are not starved of CPU time. 
 
-If when the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`.
-
-IMPORTANT: you should not perform any seL4 blocking calls while using this library. If the PD is blocked in seL4, none of your cothreads will execute even if it is ready. 
+In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
 
 ### Memory model
-The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory region must only have read and write permissions. See `microkit_cothread_init()`.
+The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
 ### State transition
 
@@ -58,7 +57,8 @@ Finally, for any of your object files that uses this library, link it against `$
 
 
 ## Foot guns
-- If you perform a protected procedure call (PPC), all threads in your PD will be blocked even if they are ready until the PPC returns.
+- If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
+- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs. So if you have a long running cothread that does not block, the other cothreads will never wake up if they are blocked.
 
 ## API
 ### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
