@@ -85,9 +85,11 @@ typedef enum cothread_state {
 } co_state_t;
 
 typedef struct {
+    // Execution context
     cothread_t cothread;
     client_entry_t client_entry;
 
+    // Current state
     co_state_t state;
     
     // the next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
@@ -109,12 +111,11 @@ typedef struct {
     // zero if this TCB never returned before
     int retval_valid;
 
+    int num_priv_args;
+    size_t priv_args[MAXIMUM_CO_ARGS];
 
     // unused for root thread at the first index of co_tcb_t* tcbs;
     uintptr_t stack_left;
-
-    int num_priv_args;
-    size_t priv_args[MAXIMUM_CO_ARGS];
 } co_tcb_t;
 
 typedef struct {
@@ -123,10 +124,8 @@ typedef struct {
 } blocked_list_t;
 
 struct cothreads_control {
-    // both is inclusive of root thread!!!
-    int max_cothreads;
-    // active cothreads
-    int num_cothreads;
+    // both inclusive of root thread!
+    int max_threads;
 
     int co_stack_size;
 
@@ -157,13 +156,13 @@ static co_control_t *co_controller;
 
 size_t microkit_cothread_derive_memsize(int max_cothreads) {
     // Includes root PD thread.
-    int real_max_cothreads = max_cothreads + 1;
+    int max_threads = max_cothreads + 1;
 
-    size_t tcb_table_size = sizeof(co_tcb_t) * real_max_cothreads;
-    size_t joined_table_size = sizeof(blocked_list_t) * real_max_cothreads;
+    size_t tcb_table_size = sizeof(co_tcb_t) * max_threads;
+    size_t joined_table_size = sizeof(blocked_list_t) * max_threads;
 
     // Scheduling and free handle queue 
-    size_t queues_size = (sizeof(microkit_cothread_t) * 2) * real_max_cothreads;
+    size_t queues_size = (sizeof(microkit_cothread_t) * 2) * max_threads;
 
     return tcb_table_size + joined_table_size + queues_size + sizeof(co_control_t);
 }
@@ -195,15 +194,26 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller->co_stack_size = co_stack_size;
 
     // Includes root thread.
-    co_controller->num_cothreads = 1;
-    int real_max_cothreads = max_cothreads + 1;
-    co_controller->max_cothreads = real_max_cothreads;
+    co_controller->max_threads = max_cothreads + 1;
     co_controller->mem_allocator = allocator;
 
-    void *tcbs_array = allocator.alloc(&allocator, sizeof(co_tcb_t) * real_max_cothreads);
-    void *joined_array = allocator.alloc(&allocator, sizeof(blocked_list_t) * real_max_cothreads);
-    void *free_handle_queue_mem = allocator.alloc(&allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
-    void *scheduling_queue_mem = allocator.alloc(&allocator, sizeof(microkit_cothread_t) * real_max_cothreads);
+    void *tcbs_array = allocator.alloc(
+        &allocator, 
+        sizeof(co_tcb_t) * co_controller->max_threads
+    );
+    void *joined_array = allocator.alloc(
+        &allocator, 
+        sizeof(blocked_list_t) * co_controller->max_threads
+    );
+    void *free_handle_queue_mem = allocator.alloc(
+        &allocator,
+        sizeof(microkit_cothread_t) * co_controller->max_threads
+    );
+    void *scheduling_queue_mem = allocator.alloc(
+        &allocator, 
+        sizeof(microkit_cothread_t) * co_controller->max_threads
+    );
+
     if (!tcbs_array) {
         return co_err_init_tcbs_alloc_fail;
     }
@@ -219,7 +229,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
 
     co_controller->tcbs = tcbs_array;
     co_controller->joined_map = joined_array;
-    for (int i = 0; i < real_max_cothreads; i++) {
+    for (int i = 0; i < co_controller->max_threads; i++) {
         co_controller->tcbs[i].state = cothread_not_active;
     }
 
@@ -245,12 +255,22 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     co_controller->tcbs[0].state = cothread_running;
     co_controller->tcbs[0].stack_left = 0;
     co_controller->tcbs[0].next_blocked_on_same_channel = -1;
+    // not used for root thread but memzero anyways
     memzero(co_controller->tcbs[0].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
     co_controller->running = 0;
 
     // initialise the queues
-    int err_hq = hostedqueue_init(&co_controller->free_handle_queue, free_handle_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
-    int err_sq = hostedqueue_init(&co_controller->scheduling_queue, scheduling_queue_mem, sizeof(microkit_cothread_t), real_max_cothreads);
+    int err_hq = hostedqueue_init(
+        &co_controller->free_handle_queue,
+        free_handle_queue_mem,
+        sizeof(microkit_cothread_t), co_controller->max_threads
+    );
+    int err_sq = hostedqueue_init(
+        &co_controller->scheduling_queue,
+        scheduling_queue_mem,
+        sizeof(microkit_cothread_t), co_controller->max_threads
+    );
+
     if (err_hq != LIBHOSTEDQUEUE_NOERR) {
         return co_err_init_free_handles_init_fail;
     }
@@ -259,7 +279,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     }
 
     // enqueue all the free cothread handle IDs but exclude the root thread.
-    for (microkit_cothread_t i = 1; i < real_max_cothreads; i++) {
+    for (microkit_cothread_t i = 1; i < co_controller->max_threads; i++) {
         if (hostedqueue_push(&co_controller->free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
             return co_err_init_free_handles_populate_fail;
         }
@@ -272,7 +292,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, 
     }
 
     // initialised the joined table
-    for (int j = 0; j < real_max_cothreads; j++) {
+    for (int j = 0; j < co_controller->max_threads; j++) {
         co_controller->joined_map[j].head = -1;
         co_controller->joined_map[j].tail = -1;
     }
@@ -343,6 +363,7 @@ void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
     co_controller->joined_map[cothread].head = -1;
     co_controller->joined_map[cothread].tail = -1;
 
+    // Switch to another cothread. We never return.
     internal_destroy_me();
 }
 void cothread_entry_wrapper() {
@@ -438,7 +459,7 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
         if (!init_success) {
             return co_err_generic_not_initialised;
         }
-        if (cothread >= co_controller->max_cothreads || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
+        if (cothread >= co_controller->max_threads || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
             return co_err_generic_invalid_handle;
         }
         if (co_controller->tcbs[cothread].state == cothread_ready) {
@@ -467,7 +488,7 @@ co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
         if (!init_success) {
             return co_err_generic_not_initialised;
         }
-        if (cothread >= co_controller->max_cothreads || cothread < 0) {
+        if (cothread >= co_controller->max_threads || cothread < 0) {
             return co_err_generic_invalid_handle;
         }
         if (cothread == co_controller->running) {
@@ -600,7 +621,7 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
         if (!init_success) {
             return co_err_generic_not_initialised;
         }
-        if (cothread >= co_controller->max_cothreads || cothread < 0) {
+        if (cothread >= co_controller->max_threads || cothread < 0) {
             return co_err_generic_invalid_handle;
         }
     #endif
@@ -622,6 +643,7 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
 }
 
 int internal_detect_deadlock(microkit_cothread_t caller, microkit_cothread_t joinee) {
+    // depth first search to detect circular joins
     microkit_cothread_t cur = co_controller->tcbs[joinee].joined_on;
     while (cur != -1) {
         if (cur == caller) {
@@ -639,7 +661,7 @@ co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval) {
         if (!init_success) {
             return co_err_generic_not_initialised;
         }
-        if (cothread >= co_controller->max_cothreads || cothread < 0) {
+        if (cothread >= co_controller->max_threads || cothread < 0) {
             return co_err_generic_invalid_handle;
         }
     #endif
