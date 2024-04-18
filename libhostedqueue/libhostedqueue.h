@@ -51,7 +51,7 @@ int hostedqueue_peek(hosted_queue_t *queue_controller, void *ret) {
     int item_size = queue_controller->item_size;
     void *base = queue_controller->memory + (item_size * (queue_controller->front));
 
-    memcpy(ret, base, item_size);
+    co_memcpy(ret, base, item_size);
     return LIBHOSTEDQUEUE_NOERR;
 }
 
@@ -76,7 +76,7 @@ int hostedqueue_push(hosted_queue_t *queue_controller, void *item) {
     queue_controller->items += 1;
     int item_size = queue_controller->item_size;
     void* base = queue_controller->memory + (item_size * queue_controller->back);
-    memcpy(base, item, item_size);
+    co_memcpy(base, item, item_size);
 
     if (queue_controller->back == queue_controller->capacity - 1) {
         queue_controller->back = 0;
