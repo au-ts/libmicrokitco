@@ -60,10 +60,6 @@ typedef enum {
 const char *microkit_cothread_pretty_error(co_err_t err_num);
 
 
-// Client must provide implementation of the following:
-
-
-
 // Business logic
 #define MICROKITCO_ROOT_THREAD 0
 #define MINIMUM_STACK_SIZE 0x1000
