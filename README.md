@@ -33,10 +33,8 @@ This library supports AArch32, AArch64 and x86_64.
 
 ### State transition
 
-TODO: add join() after concrete implementation
-
 A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
-![state transition diagram](./docs/state_diagram.png)
+![State transition diagram](./docs/state_diagram.png)
 
 ## Usage
 To use `libmicrokitco` in your project, define these in your Makefile:
