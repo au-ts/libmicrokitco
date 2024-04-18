@@ -11,7 +11,7 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Terminology
-- Root Protection Domain (PD) thread: the kernel thread created by seL4 for a protection domain. This is where the Microkit's event loop runs. For brevity, we will refer to this as "root thread".
+- Root Protection Domain (PD) thread: the kernel thread created by seL4 for a protection domain. This is where the Microkit's event loop and entry points runs. For brevity, we will refer to this as "root thread".
 - Root TCB: the thread control block of the root thread within this library used to store it's execution context for cothread switching and blocking state.
 - Cothread: an execution context in userland that the seL4 kernel is not aware of. The client provides memory for the stack in the form of a Memory Region (MR) with guard page.
 - Cothread TCB: serves the same purpose as root TCB, but also stores the virtual address of the cothread's stack.
@@ -61,7 +61,8 @@ Finally, for any of your object files that uses this library, link it against `$
 
 ## Foot guns
 - If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
-- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs. So if you have a long running cothread that does not block, the other cothreads will never wake up if they are blocked.
+- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
+
 
 ## API
 ### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
@@ -69,13 +70,22 @@ Map the error number returned by this library's functions into a human friendly 
 
 ---
 
+### `size_t microkit_cothread_derive_memsize(int max_cothreads)`
+
+##### Arguments
+`max_cothreads` indicates how many cothreads the client intends to have. Exclusive of root thread.
+
+Returns an unsigned integer indicating how much memory this library will need in bytes.
+
+---
+
 ### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-- `controller_memory` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large. See line 151 of `libmicrokitco.c`.
+- `controller_memory` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large.
 - `co_stack_size` to be >= 0x1000 bytes.
-- `max_cothreads` to be >= 1, which is exclusive of the calling thread.
+- `max_cothreads` to be >= 1, exclusive of the calling thread.
 
 Then, it expect `max_cothreads` of `uintptr_t` that point to where each co-stack starts.
 
@@ -88,7 +98,7 @@ A variadic function that creates a new cothread, but does not switch to it.
 - `client_entry` points to your cothread's entrypoint function of the form `size_t (*)(void)`.
 - `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
-- `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of word size each.
+- `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of `size_t`.
 - `num_args` arguments.
 
 --- 
@@ -103,7 +113,7 @@ Fetch the argument of the calling cothread, returns error if called from the roo
 ---
 
 ### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
-Marks an initialised but but not ready cothread as ready and schedule it, but does not switch to it.
+Marks an initialised but not ready cothread as ready and schedule it, but does not switch to it.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
