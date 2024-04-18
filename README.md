@@ -28,6 +28,9 @@ In cases where the scheduler is invoked and no cothreads are ready, the schedule
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
+### Architecture support
+This library supports AArch32, AArch64 and x86_64.
+
 ### State transition
 
 TODO: add join() after concrete implementation
@@ -39,10 +42,10 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 To use `libmicrokitco` in your project, define these in your Makefile:
 1. `LIBMICROKITCO_PATH`: absolute path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
-3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-linux-gnu`,
+3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-none-elf`,
 4. `BUILD_DIR`,
-5. `BOARD`: one of Microkit's supported board, e.g. `qemu_arm_virt`,
-6. `MICROKIT_CONFIG`: one of `debug` or `release`, and
+5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4`,
+6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, and
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`.
 
 ##### Danger zone
