@@ -20,7 +20,7 @@ void init(void) {
 
     co_err_t err = microkit_cothread_init(co_mem, stack_size, 3, stack1, stack2, stack3);
     if (err != co_no_err) {
-        printf("ERR: cannot init libmicrokitco\n");
+        printf("ERR: cannot init libmicrokitco, err is %s", microkit_cothread_pretty_error(err));
         return;
     }
     printf("CLIENT: libmicrokitco started\n");
