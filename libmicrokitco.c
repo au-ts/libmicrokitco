@@ -63,11 +63,10 @@ const char *err_strs[] = {
 
 // Return a string of human friendly error message.
 const char *microkit_cothread_pretty_error(co_err_t err_num) {
-    int abs_err = err_num * -1;
-    if (err_num < 0 || abs_err >= co_num_errors) {
+    if (err_num < 0 || err_num >= co_num_errors) {
         return "libmicrokitco: unknown error!\n";
     } else {
-        return err_strs[abs_err];
+        return err_strs[err_num];
     }
 }
 
