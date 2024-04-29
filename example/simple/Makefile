@@ -26,6 +26,7 @@ CPU := cortex-a53
 
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
+LIBMICROKITCO_MAX_COTHREADS=3
 include $(LIBMICROKITCO_PATH)/Makefile
 
 CC := $(TOOLCHAIN)-gcc

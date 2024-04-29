@@ -18,7 +18,19 @@ size_t co_entry() {
 void init(void) {
     printf("CLIENT: starting\n");
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, 3, stack1, stack2, stack3);
+    printf("CLIENT: libmicrokitco derived memsize is %ld bytes, max_cothreads is %d\n", 
+        microkit_cothread_derive_memsize(), 
+        microkit_cothread_fetch_defined_num_cothreads()
+    );
+
+    co_err_t err = microkit_cothread_init(
+        co_mem, 
+        stack_size, 
+        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack1, 
+        stack2, 
+        stack3
+    );
     if (err != co_no_err) {
         printf("ERR: cannot init libmicrokitco, err is %s", microkit_cothread_pretty_error(err));
         return;
@@ -35,6 +47,7 @@ void init(void) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
+    printf("CLIENT: cothreads limit test passed\n");
 
     printf("CLIENT: cothreads spawned\n");
 
