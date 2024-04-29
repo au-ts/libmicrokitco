@@ -26,6 +26,12 @@ ifndef CPU
 $(error CPU is not set)
 endif
 
+ifndef LIBMICROKITCO_MAX_COTHREADS 
+$(error LIBMICROKITCO_MAX_COTHREADS is not set)
+else
+MAX_COTHREADS := -DLIBMICROKITCO_MAX_COTHREADS=$(LIBMICROKITCO_MAX_COTHREADS)
+endif
+
 ifdef LIBMICROKITCO_UNSAFE
 UNSAFE := -D LIBMICROKITCO_UNSAFE
 else
@@ -49,7 +55,7 @@ $(LIBMICROKITCO_BUILD_DIR)/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
 	$(CO_CC) $(CO_CFLAGS) -w $< -o $@
 
 $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o: $(LIBMICROKITCO_PATH)/libmicrokitco.c
-	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $< -o $@
+	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $< -o $@
 
 $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco.o: $(LIBMICROKITCO_BUILD_DIR)/libco.o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o
 	$(CO_LD) -r $(LIBMICROKITCO_BUILD_DIR)/libco.o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare.o -o $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco.o

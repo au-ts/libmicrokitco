@@ -11,13 +11,7 @@ typedef enum {
 
     co_err_init_already_initialised,
     co_err_init_stack_too_small,
-    co_err_init_max_cothreads_too_small,
-    co_err_init_allocator_init_fail,
-    co_err_init_controller_alloc_fail,
-    co_err_init_tcbs_alloc_fail,
-    co_err_init_join_alloc_fail,
-    co_err_init_free_handles_alloc_fail,
-    co_err_init_sched_alloc_fail,
+    co_err_init_num_costacks_not_equal_defined,
     co_err_init_co_stack_null,
     co_err_init_free_handles_init_fail,
     co_err_init_sched_init_fail,
@@ -25,7 +19,6 @@ typedef enum {
 
     co_err_recv_ntfn_no_blocked,
 
-    // All of the below will not get thrown if you compile with LIBMICROKITCO_UNSAFE.
     co_err_spawn_client_entry_null,
     co_err_spawn_num_args_negative,
     co_err_spawn_num_args_too_much,
@@ -52,7 +45,7 @@ typedef enum {
     co_err_join_cannot_join_to_root_thread,
     co_err_join_deadlock_detected,
 
-    // this must be last to "count" how many errors combinations we have
+    // this must be last to count how many errors combinations we have
     co_num_errors
 } co_err_t;
 
@@ -73,9 +66,11 @@ typedef enum {
     ready_true
 } ready_status_t;
 
-size_t microkit_cothread_derive_memsize(int max_cothreads);
+size_t microkit_cothread_derive_memsize();
 
-co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...);
+int microkit_cothread_fetch_defined_num_cothreads();
+
+co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, int num_costacks, ...);
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 
