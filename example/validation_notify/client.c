@@ -34,9 +34,9 @@ void notified(microkit_channel channel) {
         
     } else if (channel == 1) {
         nth += 1;
+        result = sel4bench_get_cycle_count() - prev_cycle_count;
 
         if (nth > WARMUP_PASSES) {
-            result = sel4bench_get_cycle_count() - prev_cycle_count;
             sum_t += result;
             sum_sq += result * result;
         }
