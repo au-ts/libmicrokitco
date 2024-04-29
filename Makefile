@@ -56,10 +56,10 @@ libmicrokitco_directory:
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
 $(LIBCO_OBJ): $(LIBMICROKITCO_PATH)/libco/libco.c
-	$(CO_CC) $(CO_CFLAGS) $< -o $@
+	$(CO_CC) $(CO_CFLAGS) $^ -o $@
 
 $(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c
-	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $< -o $@
+	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $^ -o $@
 
 $(LIBMICROKITCO_FINAL_OBJ): $(LIBCO_OBJ) $(LIBMICROKITCO_BARE_OBJ)
-	$(CO_LD) -r $? -o $@
+	$(CO_LD) -r $^ -o $@
