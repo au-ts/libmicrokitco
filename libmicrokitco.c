@@ -211,12 +211,12 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     // Initialise the queues
     int err_hq = hostedqueue_init(
         &co_controller->free_handle_queue,
-        &co_controller->free_handle_queue_mem,
+        co_controller->free_handle_queue_mem,
         sizeof(microkit_cothread_t), MAX_THREADS
     );
     int err_sq = hostedqueue_init(
         &co_controller->scheduling_queue,
-        &co_controller->free_handle_queue_mem,
+        co_controller->free_handle_queue_mem,
         sizeof(microkit_cothread_t), MAX_THREADS
     );
 
