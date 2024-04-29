@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <system>
     <!-- Define your system here -->
-    <memory_region name="co_mem" size="0x2000"/>
+    <memory_region name="co_mem" size="0x1000"/>
     <memory_region name="stack1" size="0x1000"/>
     <memory_region name="stack2" size="0x1000"/>
     <memory_region name="stack3" size="0x1000"/>
