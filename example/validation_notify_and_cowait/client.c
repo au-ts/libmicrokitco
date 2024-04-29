@@ -7,35 +7,58 @@ uintptr_t uart_base;
 uintptr_t co_mem;
 uintptr_t co_stack;
 
-#define PASSES 20
-uint64_t result[PASSES];
+#define WARMUP_PASSES 8
+#define MEASURE_PASSES 32
 
-inline static void run(int nth) {
-    sel4bench_reset_counters();
+uint64_t sum_t;
+uint64_t sum_sq;
+uint64_t result;
+uint64_t prev_cycle_count;
 
+static void FASTFN run() {
     microkit_notify(1);
     microkit_cothread_wait(1);
+}
 
-    result[nth] = sel4bench_get_cycle_count();
+static void FASTFN measure(int nth) {
+    prev_cycle_count = sel4bench_get_cycle_count();
+
+    run();
+
+    result = sel4bench_get_cycle_count() - prev_cycle_count;
+
+    sum_t += result;
+    sum_sq += result * result;
 }
 
 size_t runner(void) {
     sddf_printf_("Starting round trip notify-wait-notify benchmark\n");
-    for (int i = 0; i < PASSES; i++) {
-        run(i);
+
+    sel4bench_init();
+    sel4bench_get_cycle_count();
+    sum_t = 0;
+    sum_sq = 0;
+    result = 0;
+    prev_cycle_count = 0;
+
+    for (int i = 0; i < WARMUP_PASSES; i++) {
+        run();
     }
+    for (int i = 0; i < MEASURE_PASSES; i++) {
+        measure(i);
+    }
+
     sddf_printf_("Result:\n");
-    for (int i = 0; i < PASSES; i++) {
-        sddf_printf_("===> %lu\n", result[i]);
-    }
+
+    sddf_printf_("Mean: %lf\n", sum_t / (float) MEASURE_PASSES);
+    sddf_printf_("Stdev = sqrt(%lf)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (float) (MEASURE_PASSES * (MEASURE_PASSES - 1))));
+
     sddf_printf_("FINISHED\n");
 
     return 0;
 }
 
 void init(void) {
-    sel4bench_init();
-
     co_err_t err = microkit_cothread_init(co_mem, 0x1000, 1, co_stack);
     if (err != co_no_err) {
         sddf_printf_("CLIENT: Cannot init libmicrokitco, err is :%s\n", microkit_cothread_pretty_error(err));
