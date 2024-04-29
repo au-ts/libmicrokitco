@@ -310,7 +310,7 @@ static FASTFN void sel4bench_stop_counters(counter_bitfield_t mask)
 
 static FASTFN void sel4bench_reset_counters(void)
 {
-    //Reset all counters ~~except~~ AND the CCNT
-    MODIFY_PMCR( |, SEL4BENCH_ARMV8A_PMCR_RESET_ALL | SEL4BENCH_ARMV8A_PMCR_RESET_CCNT);
+    //Reset all counters except the CCNT
+    MODIFY_PMCR( |, SEL4BENCH_ARMV8A_PMCR_RESET_ALL);
 }
 
