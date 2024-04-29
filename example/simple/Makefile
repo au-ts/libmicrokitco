@@ -25,7 +25,7 @@ BUILD_DIR := build
 CPU := cortex-a53
 
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
+LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco_3_cothreads.o
 LIBMICROKITCO_MAX_COTHREADS=3
 include $(LIBMICROKITCO_PATH)/Makefile
 
@@ -44,13 +44,13 @@ directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
 $(BUILD_DIR)/printf.o: printf.c
-	$(CC) $(CFLAGS) printf.c -o $(BUILD_DIR)/printf.o
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/client.o: client.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $< -o $@
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o 
-	$(LD) -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ) $(BUILD_DIR)/client.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client.elf
+	$(LD) -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/loader.img: $(BUILD_DIR)/client.elf
 	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
