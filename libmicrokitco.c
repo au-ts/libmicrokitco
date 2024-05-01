@@ -296,8 +296,8 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
     }
 }
 
-void internal_destroy_me();
-void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
+static inline void internal_destroy_me();
+static inline void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
     // Save retval in TCB to handle case where thread is joined after it returns.
     co_controller->tcbs[cothread].retval_valid = 1;
     co_controller->tcbs[cothread].this_retval = retval;
@@ -323,7 +323,7 @@ void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
     // Switch to another cothread. We never actually return.
     internal_destroy_me();
 }
-void cothread_entry_wrapper() {
+static inline void cothread_entry_wrapper() {
     // Execute the client entry point
     size_t retval = co_controller->tcbs[co_controller->running].client_entry();
 
@@ -464,7 +464,7 @@ microkit_cothread_t internal_schedule() {
     return internal_pop_from_queue(&co_controller->scheduling_queue, tcbs);
 }
 // Switch to the next ready thread, also handle cases where there is no ready thread.
-void internal_go_next() {
+static inline void internal_go_next() {
     microkit_cothread_t next = internal_schedule();
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
@@ -518,7 +518,7 @@ void microkit_cothread_yield() {
     internal_go_next();
 }
 
-void internal_destroy_me() {
+static inline void internal_destroy_me() {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return;
@@ -567,7 +567,7 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
     return co_no_err;
 }
 
-int internal_detect_deadlock(microkit_cothread_t caller, microkit_cothread_t joinee) {
+static inline int internal_detect_deadlock(microkit_cothread_t caller, microkit_cothread_t joinee) {
     // depth first search to detect circular joins
     microkit_cothread_t cur = co_controller->tcbs[joinee].joined_on;
     while (cur != -1) {
