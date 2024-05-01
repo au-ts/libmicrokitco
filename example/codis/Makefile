@@ -27,8 +27,9 @@ BUILD_DIR := $(PWD)/build
 CPU := cortex-a53
 
 LIBMICROKITCO_PATH := $(PWD)/../..
-LIBMICROKITCO_OBJ := libmicrokitco.o
-include $(LIBMICROKITCO_PATH)/Makefile
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
+LIBMICROKITCO_MAX_COTHREADS=3
 
 CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
@@ -44,34 +45,39 @@ all: directories $(BUILD_DIR)/loader.img
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
+export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+$(LIBMICROKITCO_1T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
+$(LIBMICROKITCO_3T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+
 $(BUILD_DIR)/printf.o: printf.c
-	$(CC) $(CFLAGS) printf.c -o $(BUILD_DIR)/printf.o
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/client1.o: client1.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) client1.c -o $(BUILD_DIR)/client1.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/client2.o: client2.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) client2.c -o $(BUILD_DIR)/client2.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/client3.o: client3.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) client3.c -o $(BUILD_DIR)/client3.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 
 $(BUILD_DIR)/server.o: server.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) server.c -o $(BUILD_DIR)/server.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
-$(BUILD_DIR)/client1.elf: $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/libmicrokitco/libmicrokitco.o $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client1.elf
+$(BUILD_DIR)/client1.elf: $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/client2.elf: $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/libmicrokitco/libmicrokitco.o $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client2.elf
+$(BUILD_DIR)/client2.elf: $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/client3.elf: $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/libmicrokitco/libmicrokitco.o $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/client3.elf
+$(BUILD_DIR)/client3.elf: $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-
-$(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/libmicrokitco/libmicrokitco.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/libmicrokitco/libmicrokitco.o $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/server.elf
+$(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_3T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client1.elf $(BUILD_DIR)/client2.elf $(BUILD_DIR)/client3.elf
 	$(MICROKIT_TOOL) codis.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
