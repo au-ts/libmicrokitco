@@ -38,23 +38,38 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ## Usage
 To use `libmicrokitco` in your project, define these in your Makefile:
-1. `LIBMICROKITCO_PATH`: absolute path to root of this library,
+1. `LIBMICROKITCO_PATH`: path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
 3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-none-elf`,
 4. `BUILD_DIR`,
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4`,
-6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, and
-7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`.
+6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
+7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, and
+8. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs.
 
-##### Danger zone
-> Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking.
-
-Then, add this to your Makefile after the declarations:
-```
-include $(LIBMICROKITCO_PATH)/Makefile
+The compiled object filename will have the form:
+```Make
+LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)_cothreads.o
 ```
 
-Finally, for any of your object files that uses this library, link it against `$(BUILD_DIR)/libmicrokitco/libmicrokitco.o`.
+<!-- ##### Danger zone
+> Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking. -->
+
+Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example:
+```Make
+LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
+
+export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+
+$(LIBMICROKITCO_1T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
+$(LIBMICROKITCO_3T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+```
+
+Finally, for any of your object files that uses this library, link it against `$(LIBMICROKITCO_OBJ)`.
 
 
 ## Foot guns
@@ -68,24 +83,19 @@ Map the error number returned by this library's functions into a human friendly 
 
 ---
 
-### `size_t microkit_cothread_derive_memsize(int max_cothreads)`
-
-##### Arguments
-`max_cothreads` indicates how many cothreads the client intends to have. Exclusive of root thread.
-
-Returns an unsigned integer indicating how much memory this library will need in bytes.
+### `size_t microkit_cothread_derive_memsize()`
+For the compiled configuration, returns the amount of memory the library will needs for it's data structure (excluding the costacks).
 
 ---
 
-### `co_err_t microkit_cothread_init(uintptr_t controller_memory, int co_stack_size, int max_cothreads, ...)`
+### `co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-- `controller_memory` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large.
+- `controller_memory_addr` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large.
 - `co_stack_size` to be >= 0x1000 bytes.
-- `max_cothreads` to be >= 1, exclusive of the calling thread.
 
-Then, it expect `max_cothreads` of `uintptr_t` that point to where each co-stack starts.
+Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uintptr_t` that point to where each co-stack starts. Giving less than `LIBMICROKITCO_MAX_COTHREADS` is undefined behaviour!
 
 ---
 
