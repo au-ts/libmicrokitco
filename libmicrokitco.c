@@ -206,14 +206,10 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     // Initialise the queues
     int err_hq = hostedqueue_init(
         &co_controller->free_handle_queue,
-        co_controller->free_handle_queue_mem,
-        sizeof(microkit_cothread_t), 
         MAX_THREADS
     );
     int err_sq = hostedqueue_init(
         &co_controller->scheduling_queue,
-        co_controller->scheduling_queue_mem,
-        sizeof(microkit_cothread_t), 
         MAX_THREADS
     );
 
@@ -228,7 +224,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
 
     // Enqueue all the free cothread handle IDs but exclude the root thread.
     for (microkit_cothread_t i = 1; i < MAX_THREADS; i++) {
-        if (hostedqueue_push(&co_controller->free_handle_queue, &i) != LIBHOSTEDQUEUE_NOERR) {
+        if (hostedqueue_push(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &i) != LIBHOSTEDQUEUE_NOERR) {
             co_controller = NULL;
             return co_err_init_free_handles_populate_fail;
         }
@@ -346,7 +342,7 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
 
     hosted_queue_t *free_handle_queue = &co_controller->free_handle_queue;
     microkit_cothread_t new;
-    int pop_err = hostedqueue_pop(free_handle_queue, &new);
+    int pop_err = hostedqueue_pop(free_handle_queue, co_controller->free_handle_queue_mem, &new);
 
     if (pop_err != LIBHOSTEDQUEUE_NOERR) {
         return co_err_spawn_max_cothreads_reached;
@@ -375,7 +371,7 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
         int err = microkit_cothread_mark_ready(new);
         if (err != co_no_err) {
             co_controller->tcbs[new].state = cothread_not_active;
-            hostedqueue_push(free_handle_queue, &new);
+            hostedqueue_push(free_handle_queue, co_controller->free_handle_queue_mem, &new);
             return co_err_spawn_cannot_schedule;
         }
     }
@@ -421,7 +417,7 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     #endif
 
     hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
-    int push_err = hostedqueue_push(sched_queue, &cothread);
+    int push_err = hostedqueue_push(sched_queue, co_controller->scheduling_queue_mem, &cothread);
     co_state_t old_state = co_controller->tcbs[cothread].state;
     co_controller->tcbs[cothread].state = cothread_ready;
 
@@ -434,10 +430,10 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
 }
 
 // Pop a ready thread from a given scheduling queue, discard any destroyed thread 
-microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_t* tcbs) {
+static inline microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_t* tcbs) {
     while (true) {
         microkit_cothread_t next_choice;
-        int peek_err = hostedqueue_pop(sched_queue, &next_choice);
+        int peek_err = hostedqueue_pop(sched_queue, co_controller->scheduling_queue_mem, &next_choice);
         if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
             return SCHEDULER_NULL_CHOICE;
         } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
@@ -452,7 +448,7 @@ microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_
     }
 }
 // Pick a ready thread
-microkit_cothread_t internal_schedule() {
+static inline microkit_cothread_t internal_schedule() {
     co_tcb_t* tcbs = co_controller->tcbs;
     return internal_pop_from_queue(&co_controller->scheduling_queue, tcbs);
 }
@@ -504,7 +500,7 @@ void microkit_cothread_yield() {
 
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
-    hostedqueue_push(sched_queue, &co_controller->running);
+    hostedqueue_push(sched_queue, co_controller->scheduling_queue_mem, &co_controller->running);
     co_controller->tcbs[co_controller->running].state = cothread_ready;
 
     // If the scheduling queues are empty beforehand, the caller just get runned again.
@@ -548,7 +544,7 @@ co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
         // cannot destroy root thread
         panic();
     }
-    if (hostedqueue_push(&co_controller->free_handle_queue, &cothread) != LIBHOSTEDQUEUE_NOERR) {
+    if (hostedqueue_push(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &cothread) != LIBHOSTEDQUEUE_NOERR) {
         return co_err_destroy_specific_cannot_release_handle;
     }
     co_controller->tcbs[cothread].state = cothread_not_active;
