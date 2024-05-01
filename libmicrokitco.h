@@ -68,9 +68,7 @@ typedef enum {
 
 size_t microkit_cothread_derive_memsize();
 
-int microkit_cothread_fetch_defined_num_cothreads();
-
-co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, int num_costacks, ...);
+co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...);
 
 co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
 

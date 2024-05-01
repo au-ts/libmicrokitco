@@ -160,20 +160,13 @@ size_t microkit_cothread_derive_memsize() {
     return sizeof(co_control_t);
 }
 
-int microkit_cothread_fetch_defined_num_cothreads() {
-    return LIBMICROKITCO_MAX_COTHREADS;
-}
-
-co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, int num_costacks, ...) {
+co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...) {
     // We don't allow skipping error checking here for safety because this can only be ran once per PD.
     if (co_controller != NULL) {
         return co_err_init_already_initialised;
     }
     if (co_stack_size < MINIMUM_STACK_SIZE) {
         return co_err_init_stack_too_small;
-    }
-    if (num_costacks != LIBMICROKITCO_MAX_COTHREADS) {
-        return co_err_init_num_costacks_not_equal_defined;
     }
 
     size_t derived_mem_size = microkit_cothread_derive_memsize();
@@ -185,8 +178,8 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     co_controller->tcbs[0].stack_left = (uintptr_t) NULL;
     // Parses all the valid stack memory regions 
     va_list ap;
-    va_start (ap, num_costacks);
-    for (int i = 0; i < num_costacks; i++) {
+    va_start (ap, co_stack_size);
+    for (int i = 0; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
         co_controller->tcbs[i + 1].stack_left = (uintptr_t) va_arg(ap, uintptr_t);
 
         if (!co_controller->tcbs[i + 1].stack_left) {
