@@ -47,7 +47,7 @@ LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(LIBMICROKI
 CO_CC := $(TOOLCHAIN)-gcc
 CO_LD := $(TOOLCHAIN)-ld
 
-CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-stringop-overflow -Wno-unused-function -Wno-unused-variable -Wno-array-bounds
+CO_CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -Wall -Werror -Wno-stringop-overflow -Wno-unused-function -Wno-unused-variable
 CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 
 all: libmicrokitco_directory $(LIBMICROKITCO_FINAL_OBJ)
@@ -56,10 +56,10 @@ libmicrokitco_directory:
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
 $(LIBCO_OBJ): $(LIBMICROKITCO_PATH)/libco/libco.c
-	$(CO_CC) $(CO_CFLAGS) $^ -o $@
+	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $^ -o $@
 
 $(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c
-	$(CO_CC) $(CO_CFLAGS) -Werror $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $^ -o $@
+	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $^ -o $@
 
 $(LIBMICROKITCO_FINAL_OBJ): $(LIBCO_OBJ) $(LIBMICROKITCO_BARE_OBJ)
 	$(CO_LD) -r $^ -o $@
