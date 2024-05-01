@@ -31,40 +31,47 @@ LD := $(TOOLCHAIN)-ld
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
-include $(LIBMICROKITCO_PATH)/Makefile
+# Our PDs have different needs for number of cothreads so we need multiple configs of the library.
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
+LIBMICROKITCO_4T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4_cothreads.o
 
 CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-function -Wno-format -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
-LDFLAGS := -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
+LDFLAGS := -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
 LIBS := -lmicrokit -Tmicrokit.ld
-
 
 all: directories $(BUILD_DIR)/loader.img
 
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
+export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+$(LIBMICROKITCO_3T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+
+$(LIBMICROKITCO_4T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4
+
 $(BUILD_DIR)/printf.o: printf.c
-	$(CC) $(CFLAGS) printf.c -o $(BUILD_DIR)/printf.o
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/deadlocked.o: deadlocked.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) deadlocked.c -o $(BUILD_DIR)/deadlocked.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/deadlock_free.o: deadlock_free.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) deadlock_free.c -o $(BUILD_DIR)/deadlock_free.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/many.o: many.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) many.c -o $(BUILD_DIR)/many.o
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
-$(BUILD_DIR)/deadlocked.elf: $(BUILD_DIR)/deadlocked.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/deadlocked.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/deadlocked.elf
+$(BUILD_DIR)/deadlocked.elf: $(BUILD_DIR)/deadlocked.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_3T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/deadlock_free.elf: $(BUILD_DIR)/deadlock_free.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/deadlock_free.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/deadlock_free.elf
+$(BUILD_DIR)/deadlock_free.elf: $(BUILD_DIR)/deadlock_free.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_3T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/many.elf: $(BUILD_DIR)/many.o $(BUILD_DIR)/printf.o
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/many.o $(BUILD_DIR)/printf.o $(LIBS) -o $(BUILD_DIR)/many.elf
+$(BUILD_DIR)/many.elf: $(BUILD_DIR)/many.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_4T_OBJ)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/loader.img: $(BUILD_DIR)/deadlocked.elf $(BUILD_DIR)/deadlock_free.elf $(BUILD_DIR)/many.elf
 	$(MICROKIT_TOOL) join_deadlock.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
