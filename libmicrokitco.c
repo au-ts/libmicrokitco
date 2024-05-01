@@ -1,12 +1,9 @@
-// @billn: needs some cleaning up
-
 #include <microkit.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <sel4/sel4.h>
 
 #include "libmicrokitco.h"
-#include "coallocator.h"
 #include "libhostedqueue/libhostedqueue.h"
 #include "libco/libco.h"
 
@@ -16,6 +13,7 @@
 #error "libmicrokitco: max_cothreads must be known at compile time."
 #endif
 
+// No point to use this library if your max cothread is 0.
 #if LIBMICROKITCO_MAX_COTHREADS < 1
 #error "libmicrokitco: max_cothreads must be greater or equal to 1."
 #endif
@@ -78,7 +76,7 @@ const char *microkit_cothread_pretty_error(co_err_t err_num) {
 
 
 // Business logic
-typedef enum cothread_state {
+typedef enum {
     // This id is not being used
     cothread_not_active = 0,
 
@@ -92,9 +90,11 @@ typedef enum cothread_state {
 typedef struct {
     // Execution context for libco primitive
     cothread_t cothread;
+
+    // Entrypoint for cothread
     client_entry_t client_entry;
 
-    // Current state
+    // Current execution state
     co_state_t state;
     
     // The next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
@@ -107,13 +107,13 @@ typedef struct {
     microkit_cothread_t next_joined_on_same_cothread;
 
 
-    // The cothread that this cothread is waiting on to return
+    // The cothread that this cothread is waiting on to return (if applicable)
     microkit_cothread_t joined_on;
     // Retval of cothread that this TCB joined on
     size_t joined_retval;
 
     size_t this_retval;
-    // Zero if this TCB never returned before
+    // Zero if this TCB never returned before OR `this_retval` has been read once.
     int retval_valid;
 
     int num_priv_args;
@@ -143,7 +143,7 @@ typedef struct cothreads_control {
 
     // Arrays for queues.
     microkit_cothread_t free_handle_queue_mem[MAX_THREADS];
-    microkit_cothread_t scheduling_queue_queue_mem[MAX_THREADS];
+    microkit_cothread_t scheduling_queue_mem[MAX_THREADS];
 
     // Map of linked list on what cothreads are joined to which cothread.
     blocked_list_t joined_map[MAX_THREADS];
@@ -156,6 +156,7 @@ typedef struct cothreads_control {
 static co_control_t *co_controller = NULL;
 
 size_t microkit_cothread_derive_memsize() {
+    // We don't really want the user messing with the library's brain so not putting the data structure in header
     return sizeof(co_control_t);
 }
 
@@ -176,16 +177,17 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     }
 
     size_t derived_mem_size = microkit_cothread_derive_memsize();
-    // This part will VMFault on write if your memory region is not large enough.
+    // This part will VMFault on write if the given memory is not large enough.
     memzero((void *) controller_memory_addr, derived_mem_size);
     co_controller = (co_control_t *) controller_memory_addr;
     co_controller->co_stack_size = co_stack_size;
 
+    co_controller->tcbs[0].stack_left = (uintptr_t) NULL;
     // Parses all the valid stack memory regions 
     va_list ap;
     va_start (ap, num_costacks);
     for (int i = 0; i < num_costacks; i++) {
-        co_controller->tcbs[i + 1].stack_left = va_arg(ap, uintptr_t);
+        co_controller->tcbs[i + 1].stack_left = (uintptr_t) va_arg(ap, uintptr_t);
 
         if (!co_controller->tcbs[i + 1].stack_left) {
             co_controller = NULL;
@@ -212,12 +214,14 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     int err_hq = hostedqueue_init(
         &co_controller->free_handle_queue,
         co_controller->free_handle_queue_mem,
-        sizeof(microkit_cothread_t), MAX_THREADS
+        sizeof(microkit_cothread_t), 
+        MAX_THREADS
     );
     int err_sq = hostedqueue_init(
         &co_controller->scheduling_queue,
-        co_controller->free_handle_queue_mem,
-        sizeof(microkit_cothread_t), MAX_THREADS
+        co_controller->scheduling_queue_mem,
+        sizeof(microkit_cothread_t), 
+        MAX_THREADS
     );
 
     if (err_hq != LIBHOSTEDQUEUE_NOERR) {
@@ -281,6 +285,7 @@ co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
             cur = next;
         }
  
+        // Erase the list after we are done waking up the cothreads
         co_controller->blocked_channel_map[ch].head = -1;
         co_controller->blocked_channel_map[ch].tail = -1;
 
@@ -311,10 +316,11 @@ void internal_entry_return(microkit_cothread_t cothread, size_t retval) {
         cur = next;
     }
 
+    // Erase the list after we are done waking up the cothreads 
     co_controller->joined_map[cothread].head = -1;
     co_controller->joined_map[cothread].tail = -1;
 
-    // Switch to another cothread. We never return.
+    // Switch to another cothread. We never actually return.
     internal_destroy_me();
 }
 void cothread_entry_wrapper() {
@@ -324,7 +330,7 @@ void cothread_entry_wrapper() {
     // After the client entry point return, wake any joined cothreads and clean up after ourselves.
     internal_entry_return(co_controller->running, retval);
 
-    // should not get here.
+    // Should not get here.
     // UB in libco if cothread returns normally!
     panic();
 }
@@ -434,40 +440,7 @@ co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
     }
 }
 
-co_err_t microkit_cothread_switch(microkit_cothread_t cothread) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (cothread >= MAX_THREADS || cothread < 0) {
-            return co_err_generic_invalid_handle;
-        }
-        if (cothread == co_controller->running) {
-            return co_err_switch_to_self;
-        }
-        if (co_controller->tcbs[cothread].state == cothread_not_active) {
-            return co_err_generic_invalid_handle;
-        }
-    #endif
-
-    co_controller->tcbs[co_controller->running].state = cothread_ready;
-    hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
-    int push_err = hostedqueue_push(sched_queue, &co_controller->running);
-
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (push_err != LIBHOSTEDQUEUE_NOERR) {
-            // cannot schedule caller, something horrifically wrong with implementation.
-            panic();
-        }
-    #endif
-
-    co_controller->tcbs[cothread].state = cothread_running;
-    co_controller->running = cothread;
-    co_switch(co_controller->tcbs[cothread].cothread);
-    return co_no_err;
-}
-
-// pop a ready thread from a given scheduling queue, discard any destroyed thread 
+// Pop a ready thread from a given scheduling queue, discard any destroyed thread 
 microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_queue, co_tcb_t* tcbs) {
     while (true) {
         microkit_cothread_t next_choice;
@@ -519,7 +492,8 @@ co_err_t microkit_cothread_wait(microkit_channel wake_on) {
     if (co_controller->blocked_channel_map[wake_on].head == -1) {
         co_controller->blocked_channel_map[wake_on].head = co_controller->running;
     } else {
-        co_controller->tcbs[co_controller->blocked_channel_map[wake_on].tail].next_blocked_on_same_channel = co_controller->running;
+        microkit_cothread_t tail_tcb = co_controller->blocked_channel_map[wake_on].tail;
+        co_controller->tcbs[tail_tcb].next_blocked_on_same_channel = co_controller->running;
     }
     co_controller->blocked_channel_map[wake_on].tail = co_controller->running;
     co_controller->tcbs[co_controller->running].next_blocked_on_same_channel = -1;
@@ -641,7 +615,8 @@ co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval) {
     if (co_controller->joined_map[cothread].head == -1) {
         co_controller->joined_map[cothread].head = co_controller->running;
     } else {
-        co_controller->tcbs[co_controller->joined_map[cothread].tail].next_joined_on_same_cothread = co_controller->running;
+        microkit_cothread_t tail_tcb = co_controller->joined_map[cothread].tail;
+        co_controller->tcbs[tail_tcb].next_joined_on_same_cothread = co_controller->running;
     }
     co_controller->joined_map[cothread].tail = co_controller->running;
     co_controller->tcbs[co_controller->running].next_joined_on_same_cothread = -1;
