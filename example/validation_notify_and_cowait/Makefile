@@ -20,9 +20,7 @@ SERIAL := $(PWD)/serial_drv
 CC_INCLUDE_SERIAL := -I$(SERIAL)/include
 
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
-LIBMICROKITCO_UNSAFE = ''
-include $(LIBMICROKITCO_PATH)/Makefile
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
 
 CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS := -c -mcpu=$(CPU) -O3 -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-function -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
@@ -33,6 +31,10 @@ all: directories $(BUILD_DIR)/loader.img
 
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
+
+export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+$(LIBMICROKITCO_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
 
 $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
 	$(CC) $(CFLAGS) $^ -o $@
@@ -52,7 +54,7 @@ $(BUILD_DIR)/server.o: server.c
 $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
+$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_OBJ)
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
 $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
