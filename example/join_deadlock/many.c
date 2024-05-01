@@ -65,7 +65,6 @@ void init(void) {
     co_err_t err = microkit_cothread_init(
         co_mem, 
         stack_size, 
-        microkit_cothread_fetch_defined_num_cothreads(), 
         stack1, 
         stack2, 
         stack3,
@@ -109,7 +108,7 @@ void init(void) {
         microkit_internal_crash(0);
     }
 
-    printf("Many to one PD: root: finished OK\n");
+    printf("Many to one PD: root: all magic CORRECT, finished OK\n");
 }
 
 void notified(microkit_channel channel) {

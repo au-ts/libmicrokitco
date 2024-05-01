@@ -46,12 +46,11 @@ size_t co_entry3() {
 };
 
 void init(void) {
-    printf("Deadlocked PD: starting, libmicrokitco defined num_cothreads is %d\n", microkit_cothread_fetch_defined_num_cothreads());
+    printf("Deadlocked PD: starting\n");
 
     co_err_t err = microkit_cothread_init(
         co_mem, 
-        stack_size, 
-        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack_size,  
         stack1, 
         stack2, 
         stack3

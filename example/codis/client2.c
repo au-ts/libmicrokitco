@@ -46,7 +46,7 @@ void init(void) {
     our_client_num = (ipc >> 12) & 0xF;
     printf("CLIENT #%d: starting...", our_client_num);
 
-    co_err_t co_err = microkit_cothread_init(co_mem, 0x2000, 1, co_stack);
+    co_err_t co_err = microkit_cothread_init(co_mem, 0x2000, co_stack);
     if (co_err != co_no_err) {
         printf("CLIENT #%d: ERROR: %s\n", our_client_num, microkit_cothread_pretty_error(co_err));
         microkit_internal_crash(co_err);

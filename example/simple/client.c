@@ -18,15 +18,13 @@ size_t co_entry() {
 void init(void) {
     printf("CLIENT: starting\n");
 
-    printf("CLIENT: libmicrokitco derived memsize is %ld bytes, max_cothreads is %d\n", 
-        microkit_cothread_derive_memsize(), 
-        microkit_cothread_fetch_defined_num_cothreads()
+    printf("CLIENT: libmicrokitco derived memsize is %lu bytes\n", 
+        microkit_cothread_derive_memsize()
     );
 
     co_err_t err = microkit_cothread_init(
         co_mem, 
-        stack_size, 
-        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack_size,
         stack1, 
         stack2, 
         stack3

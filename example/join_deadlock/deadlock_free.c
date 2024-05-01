@@ -56,8 +56,7 @@ void init(void) {
 
     co_err_t err = microkit_cothread_init(
         co_mem, 
-        stack_size, 
-        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack_size,
         stack1, 
         stack2, 
         stack3
