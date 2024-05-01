@@ -59,7 +59,7 @@ size_t runner(void) {
 }
 
 void init(void) {
-    co_err_t err = microkit_cothread_init(co_mem, 0x1000, 1, co_stack);
+    co_err_t err = microkit_cothread_init(co_mem, 0x1000, co_stack);
     if (err != co_no_err) {
         sddf_printf_("CLIENT: Cannot init libmicrokitco, err is :%s\n", microkit_cothread_pretty_error(err));
     } else {
