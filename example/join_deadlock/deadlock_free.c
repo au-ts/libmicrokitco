@@ -54,7 +54,15 @@ size_t co_entry3() {
 void init(void) {
     printf("Deadlock-free PD: starting\n");
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, 3, stack1, stack2, stack3);
+    co_err_t err = microkit_cothread_init(
+        co_mem, 
+        stack_size, 
+        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack1, 
+        stack2, 
+        stack3
+    );
+
     if (err != co_no_err) {
         printf("Deadlock-free PD: ERR: cannot init libmicrokitco\n");
         return;

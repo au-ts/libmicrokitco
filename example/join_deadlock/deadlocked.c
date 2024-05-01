@@ -37,7 +37,7 @@ size_t co_entry3() {
     // ^-----------|
     co_err_t err = microkit_cothread_join(1, &_retval);
     if (err == co_err_join_deadlock_detected) {
-        printf("Deadlocked PD: co3: DEADLOCK DETECTED\n");
+        printf("Deadlocked PD: co3: DEADLOCK DETECTED...OK\n");
     } else {
         printf("Deadlocked PD: co3: ERROR: DEADLOCK NOT DETECTED\n");
         microkit_internal_crash(err);
@@ -46,9 +46,16 @@ size_t co_entry3() {
 };
 
 void init(void) {
-    printf("Deadlocked PD: starting\n");
+    printf("Deadlocked PD: starting, libmicrokitco defined num_cothreads is %d\n", microkit_cothread_fetch_defined_num_cothreads());
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, 3, stack1, stack2, stack3);
+    co_err_t err = microkit_cothread_init(
+        co_mem, 
+        stack_size, 
+        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack1, 
+        stack2, 
+        stack3
+    );
     if (err != co_no_err) {
         printf("Deadlocked PD: ERR: cannot init libmicrokitco\n");
         return;
@@ -71,7 +78,7 @@ void init(void) {
     } else if (retval == MAGIC){
         printf("Deadlocked PD: root: finished ok\n");
     } else {
-        printf("Deadlocked PD: root: magic does not match\n");
+        printf("Deadlocked PD: root: magic does not match %p\n", retval);
     }
 }
 

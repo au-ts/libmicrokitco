@@ -62,7 +62,15 @@ size_t co_entry4() {
 void init(void) {
     printf("Many to one PD: starting\n");
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, 4, stack1, stack2, stack3, stack4);
+    co_err_t err = microkit_cothread_init(
+        co_mem, 
+        stack_size, 
+        microkit_cothread_fetch_defined_num_cothreads(), 
+        stack1, 
+        stack2, 
+        stack3,
+        stack4
+    );
     if (err != co_no_err) {
         printf("Many to one PD: ERR: cannot init libmicrokitco\n");
         return;
