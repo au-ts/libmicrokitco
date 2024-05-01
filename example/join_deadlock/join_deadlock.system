@@ -2,7 +2,7 @@
 <system>
     <!-- Define your system here -->
 
-    <memory_region name="deadlocked_co_mem" size="0x2000"/>
+    <memory_region name="deadlocked_co_mem" size="0x1000"/>
     <memory_region name="deadlocked_stack1" size="0x1000"/>
     <memory_region name="deadlocked_stack2" size="0x1000"/>
     <memory_region name="deadlocked_stack3" size="0x1000"/>
@@ -36,7 +36,7 @@
     </protection_domain>
 
 
-    <memory_region name="deadlock_free_co_mem" size="0x2000"/>
+    <memory_region name="deadlock_free_co_mem" size="0x1000"/>
     <memory_region name="deadlock_free_stack1" size="0x1000"/>
     <memory_region name="deadlock_free_stack2" size="0x1000"/>
     <memory_region name="deadlock_free_stack3" size="0x1000"/>
