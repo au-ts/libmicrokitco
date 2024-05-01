@@ -60,7 +60,7 @@ cothread_t co_derive(void* memory, unsigned int size, void (*entrypoint)(void)) 
   }
   if(!co_active_handle) co_active_handle = &co_active_buffer;
 
-  if(handle = (uintptr_t*)memory) {
+  if((handle = (uintptr_t*)memory)) {
     unsigned int offset = (size & ~15);
     uintptr_t* p = (uintptr_t*)((unsigned char*)handle + offset);
     handle[0]  = (uintptr_t)p;              /* x16 (stack pointer) */
