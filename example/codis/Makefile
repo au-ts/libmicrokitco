@@ -29,7 +29,6 @@ CPU := cortex-a53
 LIBMICROKITCO_PATH := $(PWD)/../..
 LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
 LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
-LIBMICROKITCO_MAX_COTHREADS=3
 
 CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
