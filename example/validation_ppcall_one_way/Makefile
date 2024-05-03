@@ -8,7 +8,7 @@ TOOLCHAIN := aarch64-none-elf
 PWD := $(shell pwd)
 
 MICROKIT_BOARD := odroidc4
-MICROKIT_CONFIG := release
+MICROKIT_CONFIG := benchmark
 BUILD_DIR := $(PWD)/build
 CPU := cortex-a53
 
