@@ -66,6 +66,7 @@ CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICRO
 
 all: libmicrokitco_directory $(LIBMICROKITCO_FINAL_OBJ)
 
+.PHONY: libmicrokitco_directory
 libmicrokitco_directory: 
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
