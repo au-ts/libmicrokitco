@@ -2,7 +2,7 @@
 #include <libmicrokitco.h>
 #include <printf.h>
 
-#define COMEM_3CT_SIZE 984
+#define COMEM_3CT_SIZE 952
 #define COSTACK_SIZE 0x1000
 
 char co_mem[COMEM_3CT_SIZE];

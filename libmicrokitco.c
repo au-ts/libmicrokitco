@@ -88,8 +88,8 @@ typedef enum {
 } co_state_t;
 
 typedef struct {
-    // Execution context for libco primitive
-    cothread_t cothread;
+    // Thread local storage: context + stack
+    void* local_storage;
 
     // Entrypoint for cothread
     client_entry_t client_entry;
@@ -118,9 +118,6 @@ typedef struct {
 
     int num_priv_args;
     size_t priv_args[MAXIMUM_CO_ARGS];
-
-    // Unused for root thread at the first index of co_tcb_t* tcbs;
-    uintptr_t stack_left;
 } co_tcb_t;
 
 typedef struct {
@@ -175,29 +172,27 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     co_controller = (co_control_t *) controller_memory_addr;
     co_controller->co_stack_size = co_stack_size;
 
-    co_controller->tcbs[0].stack_left = (uintptr_t) NULL;
     // Parses all the valid stack memory regions 
     va_list ap;
     va_start (ap, co_stack_size);
     for (int i = 0; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
-        co_controller->tcbs[i + 1].stack_left = (uintptr_t) va_arg(ap, uintptr_t);
+        co_controller->tcbs[i + 1].local_storage = (void *) va_arg(ap, uintptr_t);
 
-        if (!co_controller->tcbs[i + 1].stack_left) {
+        if (!co_controller->tcbs[i + 1].local_storage) {
             co_controller = NULL;
             return co_err_init_co_stack_null;
         }
 
         // sanity check the stacks, crash if stack not as big as we think
-        char *stack = (char *) co_controller->tcbs[i + 1].stack_left;
+        char *stack = (char *) co_controller->tcbs[i + 1].local_storage;
         stack[0] = 0;
         stack[co_stack_size - 1] = 0;
     }
     va_end(ap);
 
     // Initialise the root thread's handle;
-    co_controller->tcbs[0].cothread = co_active();
+    co_controller->tcbs[0].local_storage = co_active();
     co_controller->tcbs[0].state = cothread_running;
-    co_controller->tcbs[0].stack_left = (uintptr_t) NULL;
     co_controller->tcbs[0].next_blocked_on_same_channel = -1;
     co_controller->tcbs[0].next_joined_on_same_cothread = -1;
     co_controller->tcbs[0].joined_on = -1;
@@ -348,10 +343,10 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
         return co_err_spawn_max_cothreads_reached;
     }
 
-    unsigned char *costack = (unsigned char *) co_controller->tcbs[new].stack_left;
+    unsigned char *costack = (unsigned char *) co_controller->tcbs[new].local_storage;
     memzero(costack, co_controller->co_stack_size);
     co_controller->tcbs[new].client_entry = client_entry;
-    co_controller->tcbs[new].cothread = co_derive(costack, co_controller->co_stack_size, cothread_entry_wrapper);
+    co_controller->tcbs[new].local_storage = co_derive(costack, co_controller->co_stack_size, cothread_entry_wrapper);
     co_controller->tcbs[new].state = cothread_initialised;
     co_controller->tcbs[new].next_blocked_on_same_channel = -1;
     co_controller->tcbs[new].next_joined_on_same_cothread = -1;
@@ -462,7 +457,7 @@ static inline void internal_go_next() {
 
     co_controller->tcbs[next].state = cothread_running;
     co_controller->running = next;
-    co_switch(co_controller->tcbs[next].cothread);
+    co_switch(co_controller->tcbs[next].local_storage);
 }
 
 co_err_t microkit_cothread_wait(microkit_channel wake_on) {
