@@ -2,8 +2,6 @@
 #include "libco.h"
 #include "settings.h"
 
-#include <assert.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
