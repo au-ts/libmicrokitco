@@ -31,9 +31,10 @@ LD := $(TOOLCHAIN)-ld
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
 LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_TARGET := aarch64
 # Our PDs have different needs for number of cothreads so we need multiple configs of the library.
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
-LIBMICROKITCO_4T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4_cothreads.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64.o
+LIBMICROKITCO_4T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4ct_aarch64.o
 
 CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS := -c -mcpu=$(CPU) -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-array-bounds -Wno-unused-function -Wno-format -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
@@ -45,7 +46,7 @@ all: directories $(BUILD_DIR)/loader.img
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
-export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_TARGET
 $(LIBMICROKITCO_3T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
 
