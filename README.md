@@ -40,16 +40,21 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 To use `libmicrokitco` in your project, define these in your Makefile:
 1. `LIBMICROKITCO_PATH`: path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
-3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-none-elf`,
+3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-none-elf` or `x86_64-elf`,
 4. `BUILD_DIR`,
-5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4`,
+5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
-7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, and
-8. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs.
+7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53` or `nehalem`, 
+9. `LIBMICROKITCO_TARGET`: one of the library's supported architecture {"aarch64", "x86_64"}, and
+10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs.
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)_cothreads.o
+LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(LIBMICROKITCO_TARGET).o
+```
+For example, a library object file with 5 cothreads configured for AArch64 would have the name:
+```Make
+libmicrokitco_5ct_aarch64.o
 ```
 
 <!-- ##### Danger zone
@@ -58,10 +63,11 @@ LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)_cothreads.o
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example:
 ```Make
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
+LIBMICROKITCO_TARGET := aarch64
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64.o
 
-export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+export LIBMICROKITCO_PATH LIBMICROKITCO_TARGET MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
 
 $(LIBMICROKITCO_1T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
