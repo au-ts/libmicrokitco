@@ -2,16 +2,21 @@
 #include <libmicrokitco.h>
 #include <printf.h>
 
-uintptr_t co_mem;
-int stack_size = 0x1000;
-uintptr_t stack1;
-uintptr_t stack2;
-uintptr_t stack3;
+#define COMEM_3CT_SIZE 984
+#define COSTACK_SIZE 0x1000
+
+char co_mem[COMEM_3CT_SIZE];
+
+// These should actually be in the system description file with guard page
+// but setvar_addr does not work in the x86 SDK currently so we putting them here
+char stack1[COSTACK_SIZE];
+char stack2[COSTACK_SIZE];
+char stack3[COSTACK_SIZE];
 
 size_t co_entry() {
     size_t our_id;
     microkit_cothread_get_arg(0, &our_id);
-    printf("CO%ld: hi\n", our_id);
+    printf("CO%ld: hello world\n", our_id);
     return 0;
 }
 
@@ -21,16 +26,20 @@ void init(void) {
     printf("CLIENT: libmicrokitco derived memsize is %lu bytes\n", 
         microkit_cothread_derive_memsize()
     );
+    if (COMEM_3CT_SIZE < microkit_cothread_derive_memsize()) {
+        printf("CLIENT: ERROR: but we only allocated %d bytes!\n", COMEM_3CT_SIZE);
+        microkit_internal_crash(0);
+    }
 
     co_err_t err = microkit_cothread_init(
         co_mem, 
-        stack_size,
+        COSTACK_SIZE,
         stack1, 
         stack2, 
         stack3
     );
     if (err != co_no_err) {
-        printf("ERR: cannot init libmicrokitco, err is %s", microkit_cothread_pretty_error(err));
+        printf("CLIENT: ERR: cannot init libmicrokitco, err is %s", microkit_cothread_pretty_error(err));
         return;
     }
     printf("CLIENT: libmicrokitco started\n");
