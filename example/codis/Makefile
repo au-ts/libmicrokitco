@@ -27,8 +27,9 @@ BUILD_DIR := $(PWD)/build
 CPU := cortex-a53
 
 LIBMICROKITCO_PATH := $(PWD)/../..
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1_cothreads.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3_cothreads.o
+LIBMICROKITCO_TARGET := aarch64
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64.o
 
 CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
@@ -44,7 +45,7 @@ all: directories $(BUILD_DIR)/loader.img
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
-export LIBMICROKITCO_PATH MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+export LIBMICROKITCO_PATH LIBMICROKITCO_TARGET MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
 $(LIBMICROKITCO_1T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
 $(LIBMICROKITCO_3T_OBJ):
