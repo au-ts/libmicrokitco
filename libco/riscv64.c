@@ -9,6 +9,41 @@ extern "C"
 {
 #endif
 
+// control region indexes at the beginning of cothread local storage
+enum {
+    ra,
+    sp,
+    fp, // AKA s0
+    s1,
+    s2,
+    s3,
+    s4,
+    s5,
+    s6,
+    s7,
+    s8,
+    s9,
+    s10,
+    s11,
+    f8, // AKA fs0
+    f9, // and so on...
+    f18,
+    f19,
+    f20,
+    f21,
+    f22,
+    f23,
+    f24,
+    f25,
+    f26,
+    f27,
+    client_entry,
+    pc,
+    canary
+};
+
+#define STACK_CANARY 0xBBADF00D
+
 // Quick reference: https://inst.eecs.berkeley.edu/~cs61c/fa17/img/riscvcard.pdf
 
 static thread_local uintptr_t co_active_buffer[64];
@@ -40,9 +75,9 @@ const uint32_t co_swap_function[1024] = {
     0x07b5b423, // sd s11, 104(a1)
 
     // Save floating point saved register, unused because we are using soft-float
-    // 0x0685b827, // fsd f8, 112(a1)
+    // 0x0685b827, // fsd f8, 112(a1)  EQUIV fsd fs0, 112(a1)
     // 0x0695bc27, // fsd f9, 120(a1)
-    // 0x0925b027, // fsd f18, 128(a1) EQUIV fsd fs2, 128(a1)
+    // 0x0925b027, // fsd f18, 128(a1) 
     // 0x0935b427, // fsd f19, 136(a1)
     // 0x0945b827, // fsd f20, 144(a1)
     // 0x0955bc27, // fsd f21, 152(a1)
@@ -123,44 +158,53 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
     unsigned int offset = (size & ~15);
     uintptr_t *p = (uintptr_t *)((unsigned char *)handle + offset);
 
-    // ABI register names
-    handle[0] = 0;            /* Return address (ra) = NULL, crash if cothread return! */
-    handle[1] = (uintptr_t)p; /* sp */
+    handle[ra] = 0; /* crash if cothread return! */
+    handle[sp] = (uintptr_t)p; 
 
-    handle[2] = (uintptr_t)p; /* saved register s0 AKA frame pointer fp */
-    handle[3] = 0;            /* s1 */
-    handle[4] = 0;            /* s2 */
-    handle[5] = 0;            /* s3 */
-    handle[6] = 0;            /* s4 */
-    handle[7] = 0;            /* s5 */
-    handle[8] = 0;            /* s6 */
-    handle[9] = 0;            /* s7 */
-    handle[10] = 0;           /* s8 */
-    handle[11] = 0;           /* s9 */
-    handle[12] = 0;           /* s10 */
-    handle[13] = 0;           /* s11 */
+    handle[fp] = (uintptr_t)p; 
 
-    handle[14] = 0; /* f8 (floating point saved register f8) */
-    handle[15] = 0; /* f9 */
-    handle[16] = 0; /* f18 */
-    handle[17] = 0; /* f19 */
-    handle[18] = 0; /* f20 */
-    handle[19] = 0; /* f21 */
-    handle[20] = 0; /* f22 */
-    handle[21] = 0; /* f23 */
-    handle[22] = 0; /* f24 */
-    handle[23] = 0; /* f25 */
-    handle[24] = 0; /* f26 */
-    handle[25] = 0; /* f27 */
+    // These aren't really needed, but keeping in for clarity
+    handle[s1] = 0;            
+    handle[s2] = 0;         
+    handle[s3] = 0;          
+    handle[s4] = 0;      
+    handle[s5] = 0;        
+    handle[s6] = 0;       
+    handle[s7] = 0;         
+    handle[s8] = 0;      
+    handle[s9] = 0;          
+    handle[s10] = 0;        
+    handle[s11] = 0;       
 
-    handle[26] = (uintptr_t)entrypoint;    /* client entrypoint */
-    handle[27] = (uintptr_t)co_entrypoint; /* our real entrypoint, also acts as the PC! */
+    handle[f8] = 0;
+    handle[f9] = 0; 
+    handle[f18] = 0; 
+    handle[f19] = 0; 
+    handle[f20] = 0;
+    handle[f21] = 0; 
+    handle[f22] = 0; 
+    handle[f23] = 0;
+    handle[f24] = 0; 
+    handle[f25] = 0;
+    handle[f26] = 0;
+    handle[f27] = 0;
+
+    handle[client_entry] = (uintptr_t)entrypoint;    
+    handle[pc] = (uintptr_t)co_entrypoint; 
+
+    handle[canary] = STACK_CANARY;
 
     return handle;
 }
 
 void co_switch(cothread_t handle)
 {
+    uintptr_t *memory = (uintptr_t *) handle;
+    if (memory[canary] != STACK_CANARY) {
+        // Crash if the cothread stack overflowed into our control region.
+        *(int *)0;
+    }
+
     cothread_t co_previous_handle = co_active_handle;
     co_active_handle = handle;
     co_swap(co_active_handle, co_previous_handle);
