@@ -32,7 +32,7 @@ void init(void) {
     }
 
     co_err_t err = microkit_cothread_init(
-        co_mem, 
+        (uintptr_t) co_mem, 
         COSTACK_SIZE,
         stack1, 
         stack2, 
