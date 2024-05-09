@@ -9,6 +9,11 @@ extern "C"
 {
 #endif
 
+inline void panic() {
+    char *panic_addr = (char *) 0;
+    *panic_addr = (char) 0;
+}
+
 // control region indexes at the beginning of cothread local storage
 enum {
     ra,
@@ -132,7 +137,7 @@ static void co_entrypoint(void)
     uintptr_t *buffer = (uintptr_t *)co_active_handle;
     void (*entrypoint)(void) = (void (*)(void))buffer[26];
     entrypoint();
-    *(int *)0; /* Panic if cothread_t entrypoint returns */
+    panic(); /* Panic if cothread_t entrypoint returns */
 }
 
 cothread_t co_active()
@@ -202,7 +207,7 @@ void co_switch(cothread_t handle)
     uintptr_t *memory = (uintptr_t *) handle;
     if (memory[canary] != STACK_CANARY) {
         // Crash if the cothread stack overflowed into our control region.
-        *(int *)0;
+        panic();
     }
 
     cothread_t co_previous_handle = co_active_handle;
