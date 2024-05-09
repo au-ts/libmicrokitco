@@ -79,7 +79,10 @@ const uint32_t co_swap_function[1024] = {
     0x07a5b023, // sd s10, 96(a1)
     0x07b5b423, // sd s11, 104(a1)
 
-    // Save floating point saved register, unused because we are using soft-float
+    // Save floating point saved register
+    // Unused because the Microkit SDK itself is soft-float
+    // We can't link soft float and hard float objects together
+
     // 0x0685b827, // fsd f8, 112(a1)  EQUIV fsd fs0, 112(a1)
     // 0x0695bc27, // fsd f9, 120(a1)
     // 0x0925b027, // fsd f18, 128(a1) 
