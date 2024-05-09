@@ -291,7 +291,7 @@ static inline void internal_entry_return(microkit_cothread_t cothread, size_t re
     while (cur != -1) {
         co_err_t err = microkit_cothread_mark_ready(cur);
         if (err != co_no_err) {
-            microkit_internal_crash(err);
+            microkit_internal_crash((seL4_Error) err);
         }
         co_controller->tcbs[cur].joined_retval = retval;
 
