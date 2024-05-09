@@ -6,6 +6,11 @@
 extern "C" {
 #endif
 
+inline void panic() {
+    char *panic_addr = (char *) 0;
+    *panic_addr = (char) 0;
+}
+
 static thread_local long long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
 static void (*co_swap)(cothread_t, cothread_t) = 0;
@@ -35,7 +40,7 @@ static void co_entrypoint(cothread_t handle) {
   long long* buffer = (long long*)handle;
   void (*entrypoint)(void) = (void (*)(void))buffer[1];
   entrypoint();
-  *(int *)0;  /* Panic if cothread_t entrypoint returns */
+  panic();  /* Panic if cothread_t entrypoint returns */
 }
 
 cothread_t co_active() {
