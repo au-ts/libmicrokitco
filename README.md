@@ -29,7 +29,7 @@ In cases where the scheduler is invoked and no cothreads are ready, the schedule
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
 ### Architecture support
-This library supports AArch32, AArch64 and x86_64.
+This library supports AArch64, RISC-V (rv64imac) and x86_64.
 
 ### State transition
 
