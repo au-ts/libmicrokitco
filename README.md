@@ -37,24 +37,30 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 ![State transition diagram](./docs/state_diagram.png)
 
 ## Usage
+### Prerequisite
+You need the LLVM toolchain installed and on your machine's `$PATH`:
+- `clang`,
+- `ld.lld`, and 
+- `llvm-objcopy` if you are targeting x86_64.
+
+### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
 1. `LIBMICROKITCO_PATH`: path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
-3. `TOOLCHAIN`: your toolchain, e.g. `aarch64-none-elf` or `x86_64-elf`,
+3. `TARGET`: triple, one of `{ "aarch64-none-elf", "x86_64-none-elf", "riscv64-none-elf" }`
 4. `BUILD_DIR`,
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53` or `nehalem`, 
-9. `LIBMICROKITCO_TARGET`: one of the library's supported architecture {"aarch64", "x86_64"}, and
 10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs.
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(LIBMICROKITCO_TARGET).o
+LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
 ```
 For example, a library object file with 5 cothreads configured for AArch64 would have the name:
 ```Make
-libmicrokitco_5ct_aarch64.o
+libmicrokitco_5ct_aarch64-none-elf.o
 ```
 
 <!-- ##### Danger zone
@@ -62,12 +68,12 @@ libmicrokitco_5ct_aarch64.o
 
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example:
 ```Make
+TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_TARGET := aarch64
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64.o
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
 
-export LIBMICROKITCO_PATH LIBMICROKITCO_TARGET MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+export LIBMICROKITCO_PATH TARGET MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
 
 $(LIBMICROKITCO_1T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
@@ -81,6 +87,7 @@ Finally, for any of your object files that uses this library, link it against `$
 ## Foot guns
 - If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
 - The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
+- If you have 2 or more cothreads and they use `signal_delayed()`, the previous cothread's signal will get overwritten!
 
 
 ## API
