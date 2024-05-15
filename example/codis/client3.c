@@ -2,7 +2,7 @@
 #include <printf.h>
 #include <libmicrokitco.h>
 
-#include <string.h>
+#include "string.h"
 #include <stdint.h>
 
 #include "protocol.h"

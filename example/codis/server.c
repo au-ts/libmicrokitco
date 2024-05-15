@@ -3,7 +3,7 @@
 
 #include <microkit.h>
 #include <libmicrokitco.h>
-#include <string.h>
+#include "string.h"
 #include <stdint.h>
 
 #include <printf.h>
