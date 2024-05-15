@@ -3,37 +3,31 @@ ifndef MICROKIT_SDK
 	MICROKIT_SDK := ../../../sdk
 endif 
 
-TOOLCHAIN := aarch64-none-elf
-
 PWD := $(shell pwd)
 
-MICROKIT_BOARD := odroidc4
 MICROKIT_CONFIG := benchmark
 BUILD_DIR := $(PWD)/build
-CPU := cortex-a53
 
-CC := $(TOOLCHAIN)-gcc
-LD := $(TOOLCHAIN)-ld
+CC := clang
+LD := ld.lld
 MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 
-SERIAL := $(PWD)/serial_drv
-CC_INCLUDE_SERIAL := -I$(SERIAL)/include
+CC_INCLUDE_SERIAL := -Iserial_drv/include
 
-CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS := -c -mcpu=$(CPU) -O3 -g3 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
-LDFLAGS := -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
-LIBS := -lmicrokit -Tmicrokit.ld 
+CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
+CFLAGS = -target $(TARGET) $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
+LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
+LIBS = -lmicrokit -Tmicrokit.ld 
 
-all: directories $(BUILD_DIR)/loader.img
-
+.PHONY: directories
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
 $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(SERIAL_CONFIG) $^ -o $@
 
 $(BUILD_DIR)/printf.o: serial_drv/printf.c
-	$(CC) $(CFLAGS) -DCONFIG_PLAT_ODROIDC4 $^ -o $@
+	$(CC) $(CFLAGS) -DPRINTF_DISABLE_SUPPORT_FLOAT $^ -o $@
 
 $(BUILD_DIR)/start.o: start.c
 	$(CC) $(CFLAGS) $^ -o $@
@@ -53,5 +47,25 @@ $(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(B
 $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/loader.img: $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+.PHONY: build_odroidc4
+build_odroidc4: TARGET = aarch64-none-elf
+build_odroidc4: MICROKIT_BOARD = odroidc4
+build_odroidc4: CPU = cortex-a55
+build_odroidc4: ECFLAGS = '-mtune=cortex-a55'
+build_odroidc4: SERIAL_CONFIG = -DCONFIG_PLAT_ODROIDC4
+build_odroidc4: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0xff80_3000/' validation_ppcall_one_way.system >temp.system
+	mv temp.system validation_ppcall_one_way.system
 	$(MICROKIT_TOOL) validation_ppcall_one_way.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+
+.PHONY: build_hifive
+build_hifive: TARGET = riscv64-none-elf
+build_hifive: MICROKIT_BOARD = hifive_unleashed
+build_hifive: CPU = medany
+build_hifive: ECFLAGS = -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -march=rv64imac
+build_hifive: SERIAL_CONFIG = -DCONFIG_PLAT_HIFIVE
+build_hifive: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_ppcall_one_way.system >temp.system
+	mv temp.system validation_ppcall_one_way.system
+	$(MICROKIT_TOOL) validation_ppcall_one_way.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+
