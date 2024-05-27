@@ -20,7 +20,7 @@ SERIAL := $(PWD)/serial_drv
 CC_INCLUDE_SERIAL := -I$(SERIAL)/include
 
 CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS := -c -mcpu=$(CPU) -O3 -g3 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
+CFLAGS := -c -mcpu=$(CPU) -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Werror -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
 LDFLAGS := -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
 LIBS := -lmicrokit -Tmicrokit.ld 
 

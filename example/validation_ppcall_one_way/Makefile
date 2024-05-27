@@ -5,7 +5,7 @@ endif
 
 PWD := $(shell pwd)
 
-MICROKIT_CONFIG := benchmark
+MICROKIT_CONFIG := debug
 BUILD_DIR := $(PWD)/build
 
 CC := clang
