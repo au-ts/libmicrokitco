@@ -42,22 +42,22 @@ section(text)
         0xa9015033, /* stp x19,x20,[x1, 16] */ // from[16] = x19, from[24] = x20
         0xa9415013, /* ldp x19,x20,[x0, 16] */ // x19 = to[16], x20 = to[24]
         0xa9025835, /* stp x21,x22,[x1, 32] */ // and so on...
-        0xa9425815,                            /* ldp x21,x22,[x0, 32] */
-        0xa9036037,                            /* stp x23,x24,[x1, 48] */
-        0xa9436017,                            /* ldp x23,x24,[x0, 48] */
-        0xa9046839,                            /* stp x25,x26,[x1, 64] */
-        0xa9446819,                            /* ldp x25,x26,[x0, 64] */
-        0xa905703b,                            /* stp x27,x28,[x1, 80] */
+        0xa9425815, /* ldp x21,x22,[x0, 32] */
+        0xa9036037, /* stp x23,x24,[x1, 48] */
+        0xa9436017, /* ldp x23,x24,[x0, 48] */
+        0xa9046839, /* stp x25,x26,[x1, 64] */
+        0xa9446819, /* ldp x25,x26,[x0, 64] */
+        0xa905703b, /* stp x27,x28,[x1, 80] */
         0xa945701b, /* ldp x27,x28,[x0, 80] */ // end of callee saved
         0xf900303d, /* str x29,    [x1, 96] */ // from[96] = frame pointer
         0xf940301d, /* ldr x29,    [x0, 96] */ // frame pointer = to[96]
         0x6d072428, /* stp d8, d9, [x1,112] */ // from[112] = d8, from[120] = d9
         0x6d472408, /* ldp d8, d9, [x0,112] */ // d8 = to[112], d9 = to[120]
         0x6d082c2a, /* stp d10,d11,[x1,128] */ // and so on...
-        0x6d482c0a,                            /* ldp d10,d11,[x0,128] */
-        0x6d09342c,                            /* stp d12,d13,[x1,144] */
-        0x6d49340c,                            /* ldp d12,d13,[x0,144] */
-        0x6d0a3c2e,                            /* stp d14,d15,[x1,160] */
+        0x6d482c0a, /* ldp d10,d11,[x0,128] */
+        0x6d09342c, /* stp d12,d13,[x1,144] */
+        0x6d49340c, /* ldp d12,d13,[x0,144] */
+        0x6d0a3c2e, /* stp d14,d15,[x1,160] */
         0x6d4a3c0e, /* ldp d14,d15,[x0,160] */ // end of floating point register saves
         0xd61f03c0,
         /* br x30               */ // PC = x30 = to[8]
