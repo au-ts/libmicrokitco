@@ -9,8 +9,7 @@ extern "C"
 {
 #endif
 
-inline void panic()
-{
+void co_panic() {
     char *panic_addr = (char *)0;
     *panic_addr = (char)0;
 }
@@ -145,13 +144,17 @@ static void co_entrypoint(void)
     uintptr_t *buffer = (uintptr_t *)co_active_handle;
     void (*entrypoint)(void) = (void (*)(void))buffer[client_entry];
     entrypoint();
-    panic(); /* Panic if cothread_t entrypoint returns */
+    co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
 cothread_t co_active()
 {
     if (!co_active_handle)
+    {
         co_active_handle = &co_active_buffer;
+        co_active_buffer[22] = STACK_CANARY;
+    }
+
     return co_active_handle;
 }
 
@@ -159,7 +162,10 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 {
     uintptr_t *handle;
     if (!co_active_handle)
+    {
         co_active_handle = &co_active_buffer;
+        co_active_buffer[22] = STACK_CANARY;
+    }
 
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
@@ -175,7 +181,7 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 
     handle[client_entry] = (uintptr_t)entrypoint;
     handle[pc] = (uintptr_t)co_entrypoint;
-    handle[canary] = STACK_CANARY;
+    // handle[canary] = STACK_CANARY;
 
     return handle;
 }
@@ -183,9 +189,9 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 void co_switch(cothread_t handle)
 {
     uintptr_t *memory = (uintptr_t *)handle;
-    if (co_active_buffer[canary] != STACK_CANARY || memory[canary] != STACK_CANARY)
+    if (co_active_buffer[22] != STACK_CANARY || memory[22] != STACK_CANARY)
     {
-        panic();
+        co_panic();
     }
 
     cothread_t co_previous_handle = co_active_handle;
