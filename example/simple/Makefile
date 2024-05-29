@@ -1,10 +1,9 @@
-# Specify MICROKIT_SDK if your setup is different:
 ifndef MICROKIT_SDK
 $(error your MICROKIT_SDK path is not set.)
 endif
 
 ifndef TARGET
-$(error your TARGET triple is not set. Required for both LLVM and triple toolchain setups.)
+$(error your TARGET triple is not set. Required for both LLVM and gcc toolchain setups.)
 endif
 
 # Debug so we have serial without an actual serial driver

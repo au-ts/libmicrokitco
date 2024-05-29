@@ -40,9 +40,9 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ## Usage
 ### Prerequisite
-You have two choices of toolchain: LLVM or your own compiler triple.
+You have two choices of toolchain: LLVM clang or gcc.
 
-For LLVM, you need the LLVM toolchain installed and on your machine's `$PATH`:
+For LLVM clang, you need the LLVM toolchain installed and on your machine's `$PATH`:
 - `clang`,
 - `ld.lld`, and 
 - `llvm-objcopy`.
@@ -56,7 +56,7 @@ These `clang` targets have been well tested with this library:
 
 ---
 
-For your own compiler triple, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
+For your gcc, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
 - `$(TOOLCHAIN)-gcc`,
 - `$(TOOLCHAIN)-ld`,
 - `$(TOOLCHAIN)-objcopy` (for x86_64 targets only),
