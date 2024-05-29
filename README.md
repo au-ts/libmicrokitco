@@ -40,21 +40,47 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ## Usage
 ### Prerequisite
-You need the LLVM toolchain installed and on your machine's `$PATH`:
+You have two choices of toolchain: LLVM or your own compiler triple.
+
+For LLVM, you need the LLVM toolchain installed and on your machine's `$PATH`:
 - `clang`,
 - `ld.lld`, and 
-- `llvm-objcopy` if you are targeting x86_64.
+- `llvm-objcopy`.
+
+Then define `LLVM = 1` in your Makefile and export it when you invoke libmicrokitco's Makefile.
+
+These `clang` targets have been well tested with this library:
+- `aarch64-none-elf`,
+- `x86_64-none-elf`,
+- `riscv64-none-elf`.
+
+---
+
+For your own compiler triple, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
+- `$(TOOLCHAIN)-gcc`,
+- `$(TOOLCHAIN)-ld`,
+- `$(TOOLCHAIN)-objcopy` (for x86_64 targets only),
+
+If they are not in your `$PATH`, `$(TOOLCHAIN)` must contain the absolute path to them.
+
+These compiler triples have been well tested with this library:
+- `aarch64-unknown-linux-gnu`,
+- `aarch64-none-elf`,
+- `x86_64-elf`,
+- `riscv64-unknown-elf`.
+
 
 ### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
 1. `LIBMICROKITCO_PATH`: path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
-3. `TARGET`: triple, one of `{ "aarch64-none-elf", "x86_64-none-elf", "riscv64-none-elf" }`
+3. `TARGET`: triple, e.g. `aarch64-none-elf`, `x86_64-none-elf`, `riscv64-none-elf`. This is used for naming the output object files and as an argument to LLVM's `clang`.
 4. `BUILD_DIR`,
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
-7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53` or `nehalem`, 
-10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs.
+7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
+10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs, and
+11. The variables as outlined in Prerequisite.
 
 The compiled object filename will have the form:
 ```Make
@@ -68,14 +94,31 @@ libmicrokitco_5ct_aarch64-none-elf.o
 <!-- ##### Danger zone
 > Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking. -->
 
-Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example:
+Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
 ```Make
 TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
 LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
 
-export LIBMICROKITCO_PATH TARGET MICROKIT_SDK TOOLCHAIN BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+LLVM = 1
+export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
+
+$(LIBMICROKITCO_1T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
+$(LIBMICROKITCO_3T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+```
+
+Or with a compiler triple:
+```Make
+TARGET=aarch64-none-elf
+TOOLCHAIN=$(TARGET)
+LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
+LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
+
+export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
 $(LIBMICROKITCO_1T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
