@@ -1,21 +1,34 @@
-# Specify MICROKIT_SDK if your setup is different:
 ifndef MICROKIT_SDK
-	MICROKIT_SDK := /Users/dreamliner787-9/TS/sdk
+$(error your MICROKIT_SDK path is not set.)
 endif
 
-# Debug so we have serial without a serial driver
+ifndef TARGET
+$(error your TARGET triple is not set. Required for both LLVM and gcc toolchain setups.)
+endif
+
+# Debug so we have serial without an actual serial driver
 MICROKIT_CONFIG := debug
 BUILD_DIR := build
 
+# default to building with LLVM
+ifndef TOOLCHAIN
 CC = clang
 LD = ld.lld
+OBJCP = llvm-objcopy
+CFLAGS = -target $(TARGET)
+else
+CC = $(TOOLCHAIN)-gcc
+LD = $(TOOLCHAIN)-ld
+OBJCP = $(TOOLCHAIN)-objcopy
+endif
+
 MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_MAX_COTHREADS = 3
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS = -c 
+CFLAGS += -c -g
 CFLAGS += -nostdlib -ffreestanding 
 CFLAGS += -Wall
 CFLAGS += $(CC_INCLUDE_MICROKIT_FLAG) -Iinclude
@@ -45,7 +58,15 @@ $(BUILD_DIR)/client.o: client.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 # Build libmicrokitco
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS
+ifndef TOOLCHAIN
+LLVM = 1
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LLVM
+
+else
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS TOOLCHAIN
+
+endif
+
 $(LIBMICROKITCO_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=aarch64-none-elf
 $(LIBMICROKITCO_X86_64_OBJ):
@@ -69,14 +90,14 @@ $(AARCH64_TARGET_RULE): aarch64_link
 	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $@ -r $(BUILD_DIR)/report.txt
 $(X86_64_TARGET_RULE): x86_64_link
 	$(MICROKIT_TOOL) simple.system --capdl --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -r $(BUILD_DIR)/report.txt
-	llvm-objcopy -O elf32-i386 $(BUILD_DIR)/sel4.elf $(BUILD_DIR)/kernel.elf
+	$(OBJCP) -O elf32-i386 $(BUILD_DIR)/sel4.elf $(BUILD_DIR)/kernel.elf
 $(RISCV64_TARGET_RULE): riscv64_link
 	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $@ -r $(BUILD_DIR)/report.txt
 
 # Run them on QEMU
 run_qemu_aarch64: MICROKIT_BOARD = qemu_arm_virt
 run_qemu_aarch64: CPU = cortex-a53
-run_qemu_aarch64: CFLAGS += -target aarch64-none-elf -mstrict-align -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
+run_qemu_aarch64: CFLAGS += -mstrict-align -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
 run_qemu_aarch64: clean directories $(AARCH64_TARGET_RULE)
 	qemu-system-aarch64 -machine virt,virtualization=on            \
 		-cpu "$(CPU)"                                              \
@@ -87,7 +108,7 @@ run_qemu_aarch64: clean directories $(AARCH64_TARGET_RULE)
 
 run_qemu_x86_64: MICROKIT_BOARD = x86_64_virt
 run_qemu_x86_64: CPU = Nehalem
-run_qemu_x86_64: CFLAGS += -target x86_64-none-elf -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
+run_qemu_x86_64: CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -Wno-parentheses
 run_qemu_x86_64: clean directories $(X86_64_TARGET_RULE)
 	qemu-system-x86_64                                                                             \
 		-cpu $(CPU),-vme,+pdpe1gb,-xsave,-xsaveopt,-xsavec,+fsgsbase,-invpcid,+syscall,+lm,enforce \
@@ -99,7 +120,7 @@ run_qemu_x86_64: clean directories $(X86_64_TARGET_RULE)
 
 run_qemu_riscv64: MICROKIT_BOARD = qemu_riscv_virt
 run_qemu_riscv64: CPU = medany
-run_qemu_riscv64: CFLAGS += -target riscv64-none-elf -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -mabi=lp64 -march=rv64imac
+run_qemu_riscv64: CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -mabi=lp64 -march=rv64imac
 run_qemu_riscv64: clean directories $(RISCV64_TARGET_RULE)
 	qemu-system-riscv64 -machine virt            \
 		-cpu rv64                                                  \
