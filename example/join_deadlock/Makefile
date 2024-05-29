@@ -33,10 +33,10 @@ LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
 LIBS := -lmicrokit -Tmicrokit.ld
 
 # Our PDs have different needs for number of cothreads so we need multiple configs of the library.
-LIBMICROKITCO_3T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
-LIBMICROKITCO_4T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4ct_aarch64-none-elf.o
-LIBMICROKITCO_3T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_riscv64-none-elf.o
-LIBMICROKITCO_4T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4ct_riscv64-none-elf.o
+LIBMICROKITCO_3T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_4T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4ct_$(TARGET).o
+LIBMICROKITCO_3T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_4T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_4ct_$(TARGET).o
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 RISCV64_TARGET_RULE := $(BUILD_DIR)/loader_riscv64.img
@@ -59,14 +59,14 @@ export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG 
 endif
 
 $(LIBMICROKITCO_3T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=aarch64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
 $(LIBMICROKITCO_4T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=aarch64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=$(TARGET)
 
 $(LIBMICROKITCO_3T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=riscv64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
 $(LIBMICROKITCO_4T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=riscv64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=$(TARGET)
 
 # Build client system
 $(BUILD_DIR)/printf.o: printf.c
