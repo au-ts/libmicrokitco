@@ -1,6 +1,9 @@
-# Specify MICROKIT_SDK if your setup is different:
 ifndef MICROKIT_SDK
-	MICROKIT_SDK := /Users/dreamliner787-9/TS/sdk
+$(error your MICROKIT_SDK path is not set.)
+endif
+
+ifndef TARGET
+$(error your TARGET triple is not set. Required for both LLVM and gcc toolchain setups.)
 endif
 
 PWD := $(shell pwd)
@@ -8,14 +11,24 @@ PWD := $(shell pwd)
 MICROKIT_CONFIG := debug
 BUILD_DIR := $(PWD)/build
 
-CC := clang
-LD := ld.lld
+# default to building with LLVM
+ifndef TOOLCHAIN
+CC = clang
+LD = ld.lld
+OBJCP = llvm-objcopy
+CFLAGS = -target $(TARGET)
+else
+CC = $(TOOLCHAIN)-gcc
+LD = $(TOOLCHAIN)-ld
+OBJCP = $(TOOLCHAIN)-objcopy
+endif
+
 MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 LIBMICROKITCO_PATH := ../../
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS = -c -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
+CFLAGS += -c -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
 LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
 LIBS := -lmicrokit -Tmicrokit.ld
 
@@ -36,7 +49,15 @@ directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
 # Build libmicrokitco
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU
+ifndef TOOLCHAIN
+LLVM = 1
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LLVM
+
+else
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS TOOLCHAIN
+
+endif
+
 $(LIBMICROKITCO_3T_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=aarch64-none-elf
 $(LIBMICROKITCO_4T_AARCH64_OBJ):
@@ -91,7 +112,7 @@ $(RISCV64_TARGET_RULE): riscv64_link_deadlocked riscv64_link_deadlock_free riscv
 # Run on QEMU
 run_qemu_aarch64: MICROKIT_BOARD = qemu_arm_virt
 run_qemu_aarch64: CPU = cortex-a53
-run_qemu_aarch64: CFLAGS += -target aarch64-none-elf -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
+run_qemu_aarch64: CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
 run_qemu_aarch64: clean directories $(AARCH64_TARGET_RULE)
 	qemu-system-aarch64 -machine virt,virtualization=on            \
 		-cpu "$(CPU)"                                              \
@@ -102,7 +123,7 @@ run_qemu_aarch64: clean directories $(AARCH64_TARGET_RULE)
 
 run_qemu_riscv64: MICROKIT_BOARD = qemu_riscv_virt
 run_qemu_riscv64: CPU = medany
-run_qemu_riscv64: CFLAGS += -target riscv64-none-elf -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -march=rv64imac
+run_qemu_riscv64: CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -march=rv64imac
 run_qemu_riscv64: clean directories $(RISCV64_TARGET_RULE)
 	qemu-system-riscv64 -machine virt                              \
 		-cpu rv64                                                  \
