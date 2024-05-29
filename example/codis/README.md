@@ -2,4 +2,4 @@ A simple Redis-like example system that implements an integer-string map as an i
 
 In it's current state, the cache have 255 "buckets" that are able to store a 4K string per bucket. Communications are done asynchronously by signalling the server channel and arguments are passed by a shared buffer between the client and server. The clients then blocks waiting for data to come back from the server to demo the library.
 
-`libc.a` came from musllibc of LionsOS for the string library.
+Modify the SDK paths in `run_qemu.sh` as appropriate for your system. Then execute the script for running options.
