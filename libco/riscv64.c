@@ -195,8 +195,7 @@ void co_switch(cothread_t handle)
     }
 
     cothread_t co_previous_handle = co_active_handle;
-    co_active_handle = handle;
-    co_swap(co_active_handle, co_previous_handle);
+    co_swap(co_active_handle = handle, co_previous_handle);
 }
 
 #ifdef __cplusplus
