@@ -41,8 +41,7 @@ endif
 ifdef LLVM
 CO_CC := clang
 CO_LD := ld.lld
-CO_CFLAGS = -target $(TARGET)
-CO_LDFLAGS = -Wno-unused-command-line-argument
+CO_CFLAGS = -target $(TARGET) -Wno-unused-command-line-argument
 else
 ifndef TOOLCHAIN
 $(error your TOOLCHAIN triple must be specified for non-LLVM toolchain setup. E.g. TOOLCHAIN = aarch64-none-elf)
