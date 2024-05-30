@@ -200,7 +200,7 @@ Blocks the calling cothread on a notification of a specific Microkit channel the
 
 ---
 
-### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
+### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
 Maps an incoming notification to blocked cothreads, schedule them then yields to let the newly ready cothreads execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 This will always runs in the context of the root PD thread.

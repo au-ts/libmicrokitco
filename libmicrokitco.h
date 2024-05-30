@@ -70,7 +70,7 @@ size_t microkit_cothread_derive_memsize();
 
 co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...);
 
-co_err_t microkit_cothread_recv_ntfn(microkit_channel ch);
+co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
 co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);
 co_err_t microkit_cothread_get_arg(int nth, size_t *ret);

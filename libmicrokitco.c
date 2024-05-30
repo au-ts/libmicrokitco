@@ -240,7 +240,7 @@ co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_s
     return co_no_err;
 }
 
-co_err_t microkit_cothread_recv_ntfn(microkit_channel ch) {
+co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
