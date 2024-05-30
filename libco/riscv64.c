@@ -49,6 +49,7 @@ enum
     f27,
     client_entry,
     pc,
+    reserved,
     canary
 };
 
