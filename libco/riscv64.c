@@ -54,8 +54,38 @@ enum
 
 #define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
 
-static thread_local uintptr_t co_active_buffer[32];
-static thread_local cothread_t co_active_handle = 0;
+static thread_local uintptr_t co_active_buffer[32] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    STACK_CANARY
+};
+static thread_local cothread_t co_active_handle = &co_active_buffer;
 
 // co_swap(char *to, char *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
@@ -149,23 +179,12 @@ static void co_entrypoint(void)
 
 cothread_t co_active()
 {
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[canary] = STACK_CANARY;
-    }
-
     return co_active_handle;
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 {
     uintptr_t *handle;
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[canary] = STACK_CANARY;
-    }
 
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
