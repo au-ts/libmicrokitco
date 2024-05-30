@@ -46,18 +46,18 @@ struct uart {
 typedef volatile struct uart uart_regs_t;
 void _sddf_putchar(char character)
 {
-    microkit_dbg_putc(character);
-    return;
     volatile uart_regs_t *regs = (uart_regs_t *) uart_base;
 
-    if (!(regs->txdata & UART_TX_DATA_FULL)) {
-        if (character == '\n') {
-            regs->txdata = '\r' & UART_TX_DATA_MASK;
-            while(regs->txdata & UART_TX_DATA_FULL) {}
-        }
-        regs->txdata = character & UART_TX_DATA_MASK;
-        return;
+    while (regs->txdata & UART_TX_DATA_FULL) {}
+
+    if (character == '\n') {
+        regs->txdata = '\r' & UART_TX_DATA_MASK;
+        while(regs->txdata & UART_TX_DATA_FULL) {}
     }
+
+    regs->txdata = character & UART_TX_DATA_MASK;
+    return;
+   
 
 }
 
