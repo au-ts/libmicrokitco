@@ -56,7 +56,7 @@ enum
 #define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
 
 static thread_local uintptr_t co_active_buffer[32];
-static thread_local cothread_t co_active_handle = &co_active_buffer;
+static thread_local cothread_t co_active_handle = 0;
 
 // co_swap(char *to, char *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
