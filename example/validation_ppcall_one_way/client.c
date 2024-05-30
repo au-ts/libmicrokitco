@@ -1,13 +1,13 @@
 #include <microkit.h>
 #include <serial_drv/printf.h>
 
-// #if defined(__aarch64__)
-//     #include "sel4bench_aarch64.h"
-// #elif defined(__riscv)
-//     #include "sel4bench_riscv64.h"
-// #else
-//     #error "err: unsupported processor, compiler or operating system"
-// #endif
+#if defined(__aarch64__)
+    #include "sel4bench_aarch64.h"
+#elif defined(__riscv)
+    #include "sel4bench_riscv64.h"
+#else
+    #error "err: unsupported processor, compiler or operating system"
+#endif
 
 uintptr_t uart_base;
 
@@ -20,7 +20,7 @@ uint64_t result;
 uint64_t prev_cycle_count;
 
 static void inline measure(int ith) {
-    //prev_cycle_count = sel4bench_get_cycle_count();
+    prev_cycle_count = sel4bench_get_cycle_count();
 
     microkit_ppcall(1, microkit_msginfo_new(0, 0));
 
@@ -38,8 +38,8 @@ void notified(microkit_channel channel) {
         sddf_printf_("Starting one way trip call benchmark\n");
 
         // try to bring everything into cache
-        //sel4bench_init();
-        //sel4bench_get_cycle_count();
+        sel4bench_init();
+        sel4bench_get_cycle_count();
         sum_t = 0;
         sum_sq = 0;
         result = 0;
