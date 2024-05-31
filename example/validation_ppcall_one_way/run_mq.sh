@@ -26,7 +26,7 @@ then
     if [ "$?" != 0 ];
     then
         echo "Build FAILED!" && exit 1
-    elses
+    else
         mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED"
         exit 0
     fi
