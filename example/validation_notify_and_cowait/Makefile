@@ -60,7 +60,6 @@ $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(B
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
 .PHONY: build_odroidc4
-build_odroidc4: TARGET = aarch64-none-elf
 build_odroidc4: MICROKIT_BOARD = odroidc4
 build_odroidc4: CPU = cortex-a55
 build_odroidc4: ECFLAGS = '-mtune=cortex-a55'
@@ -72,7 +71,6 @@ build_odroidc4: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BU
 	$(MICROKIT_TOOL) validation_notify_and_cowait.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
 
 .PHONY: build_hifive
-build_hifive: TARGET = riscv64-unknown-elf
 build_hifive: MICROKIT_BOARD = hifive_unleashed
 build_hifive: CPU = medany
 build_hifive: ECFLAGS = -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -march=rv64imac
