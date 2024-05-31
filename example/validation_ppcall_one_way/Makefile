@@ -6,6 +6,7 @@ ifndef TOOLCHAIN
 	$(error TOOLCHAIN must be specified)
 endif 
 
+OPENSBI ?= /home/billn/opensbi
 PWD := $(shell pwd)
 
 MICROKIT_CONFIG := benchmark
@@ -74,5 +75,4 @@ build_hifive: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUIL
 	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_ppcall_one_way.system >temp.system
 	mv temp.system validation_ppcall_one_way.system
 	$(MICROKIT_TOOL) validation_ppcall_one_way.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
-
-
+	make -C $(OPENSBI) -j1 PLATFORM=generic FW_PAYLOAD_PATH=$(PWD)/build/loader.img PLATFORM_RISCV_XLEN=64 PLATFORM_RISCV_ISA=rv64imac PLATFORM_RISCV_ABI=lp64 O=$(PWD)/build CROSS_COMPILE=$(TOOLCHAIN)-
