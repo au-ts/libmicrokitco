@@ -65,19 +65,18 @@ void init(void) {
 }
 
 void notified(microkit_channel channel) {
-    if (channel == 1) {
-        co_switch(co_handle);
-    } else if (channel == 3) {
-        // Start
-        
-        sel4bench_init();
-        sel4bench_get_cycle_count();
-        sum_t = 0;
-        sum_sq = 0;
-        result = 0;
-        prev_cycle_count = 0;
+    switch (channel) {
+        case 1:
+            co_switch(co_handle);
 
-        co_switch(co_handle);
+        case 3:
+            sel4bench_init();
+            sel4bench_get_cycle_count();
+            sum_t = 0;
+            sum_sq = 0;
+            result = 0;
+            prev_cycle_count = 0;
+
+            co_switch(co_handle);
     }
-
 }

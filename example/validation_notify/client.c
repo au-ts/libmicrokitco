@@ -26,40 +26,43 @@ void init(void) {
 }
 
 void notified(microkit_channel channel) {
-    if (channel == 3) {
-        sddf_printf_("Starting round trip notify benchmark\n");
+    switch (channel) {
+        case 1:
+            nth += 1;
+            result = sel4bench_get_cycle_count() - prev_cycle_count;
 
-        // try to bring everything we need into cache
-        sel4bench_init();
-        sel4bench_get_cycle_count();
-        sum_t = 0;
-        sum_sq = 0;
-        result = 0;
-        prev_cycle_count = 0;
+            if (nth > WARMUP_PASSES) {
+                sum_t += result;
+                sum_sq += result * result;
+            }
 
-        microkit_notify(1);
+            if (nth == MEASURE_PASSES + WARMUP_PASSES) {
+                sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
+                sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
+
+                sddf_printf_("BENCHFINISHED\n");
+            } else {
+                prev_cycle_count = sel4bench_get_cycle_count();
+
+                microkit_notify(1);
+            }
+            break;
         
-    } else if (channel == 1) {
-        nth += 1;
-        result = sel4bench_get_cycle_count() - prev_cycle_count;
+        case 3:
+            sddf_printf_("Starting round trip notify benchmark\n");
 
-        if (nth > WARMUP_PASSES) {
-            sum_t += result;
-            sum_sq += result * result;
-        }
-
-        if (nth == MEASURE_PASSES + WARMUP_PASSES) {
-            sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
-            sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
-
-            sddf_printf_("BENCHFINISHED\n");
-        } else {
-            prev_cycle_count = sel4bench_get_cycle_count();
+            // try to bring everything we need into cache
+            sel4bench_init();
+            sel4bench_get_cycle_count();
+            sum_t = 0;
+            sum_sq = 0;
+            result = 0;
+            prev_cycle_count = 0;
 
             microkit_notify(1);
-        }
-
-    } else {
-        sddf_printf_("Received notification from unknown channel %d\n", channel);
+            break;
+        
+        default:
+            sddf_printf_("Received notification from unknown channel %d\n", channel);
     }
 }
