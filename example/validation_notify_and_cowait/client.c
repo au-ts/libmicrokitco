@@ -1,7 +1,14 @@
 #include <microkit.h>
 #include <serial_drv/printf.h>
 #include <libmicrokitco.h>
-#include "sel4bench.h"
+
+#if defined(__aarch64__)
+    #include "sel4bench_aarch64.h"
+#elif defined(__riscv)
+    #include "sel4bench_riscv64.h"
+#else
+    #error "err: unsupported processor, compiler or operating system"
+#endif
 
 uintptr_t uart_base;
 uintptr_t co_mem;
@@ -50,8 +57,8 @@ size_t runner(void) {
 
     sddf_printf_("Result:\n");
 
-    sddf_printf_("Mean: %lf\n", sum_t / (float) MEASURE_PASSES);
-    sddf_printf_("Stdev = sqrt(%lf)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (float) (MEASURE_PASSES * (MEASURE_PASSES - 1))));
+    sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
+    sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
 
     sddf_printf_("FINISHED\n");
 
