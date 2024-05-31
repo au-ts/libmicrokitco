@@ -7,7 +7,7 @@ SDK='/home/billn/microkit-sdk-1.2.6-patched'
 if [ "$1" = "odroidc4" ];
 then
     rm -rfd build && \
-    make build_odroidc4 TOOLCHAIN="$A64_TOOLCHAIN" MICROKIT_SDK="$SDK"
+    make build_odroidc4 TOOLCHAIN="$A64_TOOLCHAIN" TARGET='aarch64-none-elf' MICROKIT_SDK="$SDK"
 
     if [ "$?" != 0 ];
     then
@@ -21,7 +21,7 @@ fi
 if [ "$1" = "hifive" ];
 then
     rm -rfd build && \
-    make build_hifive TOOLCHAIN="$R64_TOOLCHAIN" MICROKIT_SDK="$SDK"
+    make build_hifive TOOLCHAIN="$R64_TOOLCHAIN" TARGET='riscv64-unknown-elf' MICROKIT_SDK="$SDK"
 
     if [ "$?" != 0 ];
     then
