@@ -13,14 +13,7 @@ then
     then
         echo "Build FAILED!" && exit 1
     else
-        LOG=$(mktemp)
-        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED" >"$LOG"
-        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED" >>"$LOG"
-        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED" >>"$LOG"
-
-        grep -E "(Mean \:|Stdev \=)" <"$LOG"
-        rm "$LOG"
-        echo "DONE"
+        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED"
         exit 0
     fi
 fi
@@ -33,15 +26,8 @@ then
     if [ "$?" != 0 ];
     then
         echo "Build FAILED!" && exit 1
-    else
-        LOG=$(mktemp)
-        mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED" >"$LOG"
-        mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED" >>"$LOG"
-        mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED" >>"$LOG"
-
-        grep -E "(Mean|Stdev)" <"$LOG"
-        rm "$LOG"
-        echo "DONE"
+    elses
+        mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED"
         exit 0
     fi
 fi
