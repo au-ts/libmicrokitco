@@ -18,6 +18,8 @@ MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 CC_INCLUDE_SERIAL := -Iserial_drv/include
 
+LIBMICROKITCO_PATH := ../../
+
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS =  $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
 LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
@@ -27,6 +29,9 @@ LIBS = -lmicrokit -Tmicrokit.ld
 
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
+
+$(BUILD_DIR)/libco.o: $(LIBMICROKITCO_PATH)/libco/libco.c
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
 	$(CC) $(CFLAGS) $(SERIAL_CONFIG) $^ -o $@
@@ -38,7 +43,7 @@ $(BUILD_DIR)/start.o: start.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/client.o: client.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 $(BUILD_DIR)/server.o: server.c
 	$(CC) $(CFLAGS) $^ -o $@
@@ -46,7 +51,7 @@ $(BUILD_DIR)/server.o: server.c
 $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
+$(BUILD_DIR)/client.elf: $(BUILD_DIR)/client.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o $(BUILD_DIR)/libco.o
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
 $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o $(BUILD_DIR)/putchar_serial.o $(BUILD_DIR)/printf.o
