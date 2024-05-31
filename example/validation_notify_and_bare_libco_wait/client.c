@@ -19,10 +19,10 @@ cothread_t co_handle;
 #define WARMUP_PASSES 8
 #define MEASURE_PASSES 32
 
-uint64_t sum_t = 0;
-uint64_t sum_sq = 0;
-uint64_t result = 0;
-uint64_t prev_cycle_count = 0;
+uint64_t sum_t;
+uint64_t sum_sq;
+uint64_t result;
+uint64_t prev_cycle_count;
 
 static void FASTFN run() {
     microkit_notify(1);
