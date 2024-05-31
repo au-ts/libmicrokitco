@@ -8,7 +8,7 @@ endif
 
 PWD := $(shell pwd)
 
-MICROKIT_CONFIG := debug
+MICROKIT_CONFIG := benchmark
 BUILD_DIR := $(PWD)/build
 
 CC := $(TOOLCHAIN)-gcc
