@@ -39,7 +39,7 @@ then
         mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED" >>"$LOG"
         mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED" >>"$LOG"
 
-        grep -E "(Mean \:|Stdev \=)" <"$LOG"
+        grep -E "(Mean|Stdev)" <"$LOG"
         rm "$LOG"
         echo "DONE"
         exit 0
