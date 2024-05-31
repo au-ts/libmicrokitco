@@ -19,7 +19,7 @@ $(error CPU is not set)
 endif
 
 ifndef TARGET
-$(error LIBMICROKITCO_TARGET is not set)
+$(error TARGET is not set)
 endif
 
 ifndef LIBMICROKITCO_PATH
