@@ -39,7 +39,7 @@ static void FASTFN measure(int nth) {
 }
 
 size_t runner(void) {
-    sddf_printf_("Starting round trip notify-wait-notify benchmark\n");
+    sddf_printf_("Starting round trip notify-cowait-notify benchmark\n");
 
     sel4bench_init();
     sel4bench_get_cycle_count();
