@@ -52,8 +52,8 @@ void notified(microkit_channel channel) {
             measure(i);
         }
 
-        sddf_printf_("Mean: %lf\n", sum_t / (float) MEASURE_PASSES);
-        sddf_printf_("Stdev = sqrt(%lf)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (float) (MEASURE_PASSES * (MEASURE_PASSES - 1))));
+        sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
+        sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
 
     } else {
         sddf_printf_("Received notification from unknown channel %d\n", channel);
