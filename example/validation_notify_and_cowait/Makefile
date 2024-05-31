@@ -36,10 +36,10 @@ $(LIBMICROKITCO_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
 
 $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(SERIAL_CONFIG) $^ -o $@
 
 $(BUILD_DIR)/printf.o: serial_drv/printf.c
-	$(CC) $(CFLAGS) -DCONFIG_PLAT_ODROIDC4 $^ -o $@
+	$(CC) $(CFLAGS) -DPRINTF_DISABLE_SUPPORT_FLOAT $^ -o $@
 
 $(BUILD_DIR)/start.o: start.c
 	$(CC) $(CFLAGS) $^ -o $@
