@@ -52,7 +52,7 @@ void notified(microkit_channel channel) {
             sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
             sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
 
-            sddf_printf_("FINISHED\n");
+            sddf_printf_("BENCHFINISHED\n");
         } else {
             prev_cycle_count = sel4bench_get_cycle_count();
 
