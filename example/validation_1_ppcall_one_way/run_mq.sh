@@ -1,7 +1,3 @@
-A64_TOOLCHAIN='/opt/toolchain/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf'
-R64_TOOLCHAIN='/home/billn/riscv64-unknown-elf-toolchain-10.2.0-2020.12.8-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf'
-OPENSBI='/home/billn/opensbi'
-
 if [ "$1" = "odroidc4" ];
 then
     rm -rfd build && \
