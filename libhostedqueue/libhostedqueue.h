@@ -37,7 +37,7 @@ static inline int hostedqueue_init(hosted_queue_t *queue_controller, int capacit
     return LIBHOSTEDQUEUE_NOERR;
 }
 
-static inline int hostedqueue_peek(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, void *ret) {
+static inline int hostedqueue_peek(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, const void *ret) {
     if (!queue_controller->items) {
         return LIBHOSTEDQUEUE_ERR_EMPTY;
     }
@@ -60,7 +60,7 @@ static inline int hostedqueue_pop(hosted_queue_t *queue_controller, ITEM_TYPE *q
     return err;
 }
 
-static inline int hostedqueue_push(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, void *item) {
+static inline int hostedqueue_push(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, const void *item) {
     if (queue_controller->items == queue_controller->capacity) {
         return LIBHOSTEDQUEUE_ERR_FULL;
     }
