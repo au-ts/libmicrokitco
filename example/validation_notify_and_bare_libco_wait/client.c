@@ -29,7 +29,7 @@ static void FASTFN run() {
     co_switch(root_handle);
 }
 
-static void FASTFN measure(int ith) {
+static void FASTFN measure() {
     prev_cycle_count = sel4bench_get_cycle_count();
 
     run();
@@ -47,7 +47,7 @@ void runner(void) {
         run();
     }
     for (int i = 0; i < MEASURE_PASSES; i++) {
-        measure(i);
+        measure();
     }
 
     sddf_printf_("Result:\n");
