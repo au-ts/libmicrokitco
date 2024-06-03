@@ -157,7 +157,7 @@ size_t microkit_cothread_derive_memsize() {
     return sizeof(co_control_t);
 }
 
-co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, const int co_stack_size, ...) {
+co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const int co_stack_size, ...) {
     // We don't allow skipping error checking here for safety because this can only be ran once per PD.
     if (co_controller != NULL) {
         return co_err_init_already_initialised;
