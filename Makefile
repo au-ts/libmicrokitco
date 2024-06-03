@@ -19,7 +19,7 @@ $(error CPU is not set)
 endif
 
 ifndef TARGET
-$(error LIBMICROKITCO_TARGET is not set)
+$(error TARGET is not set)
 endif
 
 ifndef LIBMICROKITCO_PATH
@@ -41,7 +41,7 @@ endif
 ifdef LLVM
 CO_CC := clang
 CO_LD := ld.lld
-CO_CFLAGS = -target $(TARGET)
+CO_CFLAGS = -target $(TARGET) -Wno-unused-command-line-argument
 else
 ifndef TOOLCHAIN
 $(error your TOOLCHAIN triple must be specified for non-LLVM toolchain setup. E.g. TOOLCHAIN = aarch64-none-elf)
@@ -49,6 +49,7 @@ else
 
 CO_CC := $(TOOLCHAIN)-gcc
 CO_LD := $(TOOLCHAIN)-ld
+CO_LDFLAGS = 
 
 endif
 endif
@@ -60,7 +61,6 @@ LIBMICROKITCO_BARE_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare_$(LIBMIC
 LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
 
 CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Werror -Wno-unused-function
-CO_LDFLAGS =
 
 ifeq (aarch64,$(findstring aarch64,$(TARGET)))
 CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align

@@ -1,5 +1,7 @@
 A simple toy example system that tests deadlock detection of the join() operation.
 
+Modify the SDK paths in `run_qemu.sh` as appropriate for your system. Then execute the script for running options.
+
 Correct output:
 ```
 Deadlocked PD: starting

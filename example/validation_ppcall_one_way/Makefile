@@ -1,25 +1,30 @@
-# Specify MICROKIT_SDK if your setup is different:
 ifndef MICROKIT_SDK
-	MICROKIT_SDK := ../../../sdk
+	$(error MICROKIT SDK must be specified)
 endif 
 
+ifndef TOOLCHAIN
+	$(error TOOLCHAIN must be specified)
+endif 
+
+OPENSBI ?= /home/billn/opensbi
 PWD := $(shell pwd)
 
-MICROKIT_CONFIG := debug
+MICROKIT_CONFIG := benchmark
 BUILD_DIR := $(PWD)/build
 
-CC := clang
-LD := ld.lld
-MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
+CC := $(TOOLCHAIN)-gcc
+LD := $(TOOLCHAIN)-ld
+MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 CC_INCLUDE_SERIAL := -Iserial_drv/include
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS = -target $(TARGET) $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
+CFLAGS =  $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
 LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
 LIBS = -lmicrokit -Tmicrokit.ld 
 
 .PHONY: directories
+
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
@@ -54,18 +59,20 @@ build_odroidc4: CPU = cortex-a55
 build_odroidc4: ECFLAGS = '-mtune=cortex-a55'
 build_odroidc4: SERIAL_CONFIG = -DCONFIG_PLAT_ODROIDC4
 build_odroidc4: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+# A bit of a hack to map the correct serial device
 	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0xff80_3000/' validation_ppcall_one_way.system >temp.system
 	mv temp.system validation_ppcall_one_way.system
 	$(MICROKIT_TOOL) validation_ppcall_one_way.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
 
 .PHONY: build_hifive
-build_hifive: TARGET = riscv64-none-elf
+build_hifive: TARGET = riscv64-unknown-elf
 build_hifive: MICROKIT_BOARD = hifive_unleashed
 build_hifive: CPU = medany
 build_hifive: ECFLAGS = -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -march=rv64imac
 build_hifive: SERIAL_CONFIG = -DCONFIG_PLAT_HIFIVE
 build_hifive: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
+# A bit of a hack to map the correct serial device
 	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_ppcall_one_way.system >temp.system
 	mv temp.system validation_ppcall_one_way.system
 	$(MICROKIT_TOOL) validation_ppcall_one_way.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
-
+	make -C $(OPENSBI) -j1 PLATFORM=generic FW_PAYLOAD_PATH=$(PWD)/build/loader.img PLATFORM_RISCV_XLEN=64 PLATFORM_RISCV_ISA=rv64imac PLATFORM_RISCV_ABI=lp64 O=$(PWD)/build CROSS_COMPILE=$(TOOLCHAIN)-

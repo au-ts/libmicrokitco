@@ -9,13 +9,13 @@ extern "C"
 {
 #endif
 
-void co_panic()
+inline void co_panic()
 {
     char *panic_addr = (char *)0;
     *panic_addr = (char)0;
 }
 
-#define STACK_CANARY 0x341294AA8642FE71
+#define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
 
 static thread_local uintptr_t co_active_buffer[32];
 static thread_local cothread_t co_active_handle = 0;

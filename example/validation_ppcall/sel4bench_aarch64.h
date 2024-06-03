@@ -313,3 +313,4 @@ static FASTFN void sel4bench_reset_counters(void)
     //Reset all counters except the CCNT
     MODIFY_PMCR( |, SEL4BENCH_ARMV8A_PMCR_RESET_ALL);
 }
+

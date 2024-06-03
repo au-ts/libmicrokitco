@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-void co_panic() {
+inline void co_panic() {
     char *panic_addr = (char *)0;
     *panic_addr = (char)0;
 }
@@ -52,9 +52,39 @@ enum
     canary
 };
 
-#define STACK_CANARY 0x341294AA8642FE71
+#define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
 
-static thread_local uintptr_t co_active_buffer[32];
+static thread_local uintptr_t co_active_buffer[32] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    STACK_CANARY
+};
 static thread_local cothread_t co_active_handle = &co_active_buffer;
 
 // co_swap(char *to, char *from)
@@ -149,23 +179,12 @@ static void co_entrypoint(void)
 
 cothread_t co_active()
 {
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[22] = STACK_CANARY;
-    }
-
     return co_active_handle;
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 {
     uintptr_t *handle;
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[22] = STACK_CANARY;
-    }
 
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
@@ -181,7 +200,7 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 
     handle[client_entry] = (uintptr_t)entrypoint;
     handle[pc] = (uintptr_t)co_entrypoint;
-    // handle[canary] = STACK_CANARY;
+    handle[canary] = STACK_CANARY;
 
     return handle;
 }
@@ -189,14 +208,13 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
 void co_switch(cothread_t handle)
 {
     uintptr_t *memory = (uintptr_t *)handle;
-    if (co_active_buffer[22] != STACK_CANARY || memory[22] != STACK_CANARY)
+    if (co_active_buffer[canary] != STACK_CANARY || memory[canary] != STACK_CANARY)
     {
         co_panic();
     }
 
     cothread_t co_previous_handle = co_active_handle;
-    co_active_handle = handle;
-    co_swap(co_active_handle, co_previous_handle);
+    co_swap(co_active_handle = handle, co_previous_handle);
 }
 
 #ifdef __cplusplus

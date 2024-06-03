@@ -1,6 +1,13 @@
 #include <microkit.h>
 #include <serial_drv/printf.h>
-#include "sel4bench.h"
+
+#if defined(__aarch64__)
+    #include "sel4bench_aarch64.h"
+#elif defined(__riscv)
+    #include "sel4bench_riscv64.h"
+#else
+    #error "err: unsupported processor, compiler or operating system"
+#endif
 
 uintptr_t uart_base;
 
@@ -12,7 +19,7 @@ uint64_t sum_sq;
 uint64_t result;
 uint64_t prev_cycle_count;
 
-static void FASTFN measure(int ith) {
+static void inline measure(int ith) {
     prev_cycle_count = sel4bench_get_cycle_count();
 
     microkit_ppcall(1, microkit_msginfo_new(0, 0));
@@ -45,11 +52,11 @@ void notified(microkit_channel channel) {
             measure(i);
         }
 
-        sddf_printf_("Mean: %lf\n", sum_t / (float) MEASURE_PASSES);
-        sddf_printf_("Stdev = sqrt(%lf)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (float) (MEASURE_PASSES * (MEASURE_PASSES - 1))));
+        sddf_printf_("Mean: %lu\n", sum_t / MEASURE_PASSES);
+        sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
 
     } else {
         sddf_printf_("Received notification from unknown channel %d\n", channel);
     }
-    sddf_printf_("FINISHED\n");
+    sddf_printf_("BENCHFINISHED\n");
 }

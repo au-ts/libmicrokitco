@@ -1,24 +1,35 @@
+A64_TOOLCHAIN='/opt/toolchain/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf'
+R64_TOOLCHAIN='/home/billn/riscv64-unknown-elf-toolchain-10.2.0-2020.12.8-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf'
+OPENSBI='/home/billn/opensbi'
+
+SDK='/home/billn/microkit-sdk-1.2.6-patched'
 
 if [ "$1" = "odroidc4" ];
 then
-
-    sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0xff80_3000/' validation_ppcall.system >temp.system && \
-    mv temp.system validation_ppcall.system && \
     rm -rfd build && \
-    make TARGET=aarch64-none-elf MICROKIT_BOARD=odroidc4 CPU=cortex-a55 ECFLAGS='-mcpu=cortex-a55' SERIAL=serial_drv SERIAL_CONFIG=-DCONFIG_PLAT_ODROIDC4 && \
-    mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED" && exit 0
+    make build_odroidc4 TOOLCHAIN="$A64_TOOLCHAIN" MICROKIT_SDK="$SDK"
 
+    if [ "$?" != 0 ];
+    then
+        echo "Build FAILED!" && exit 1
+    else
+        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED"
+        exit 0
+    fi
 fi
 
 if [ "$1" = "hifive" ];
 then
-
-    sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_ppcall.system >temp.system && \
-    mv temp.system validation_ppcall.system && \
     rm -rfd build && \
-    make TARGET=riscv64-none-elf MICROKIT_BOARD=star64 CPU=medany ECFLAGS='-mcmodel=medany -march=rv64imac -mabi=lp64' SERIAL=serial_drv SERIAL_CONFIG=-DCONFIG_PLAT_STAR64 && \
-    mq.sh run -s star64 -f build/loader.img -c "BENCHFINISHED" && exit 0
+    make build_hifive TOOLCHAIN="$R64_TOOLCHAIN" MICROKIT_SDK="$SDK"
 
+    if [ "$?" != 0 ];
+    then
+        echo "Build FAILED!" && exit 1
+    else
+        mq.sh run -s hifive -f build/platform/generic/firmware/fw_payload.bin -c "BENCHFINISHED"
+        exit 0
+    fi
 fi
 
 echo "unknown board"

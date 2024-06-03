@@ -36,9 +36,9 @@ LDFLAGS = -L$(BOARD_DIR)/lib
 LIBS = -lmicrokit -Tmicrokit.ld
 
 # Arch specific obj
-LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
-LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_x86_64-none-elf.o
-LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_riscv64-none-elf.o
+LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 X86_64_TARGET_RULE := $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/capdl-initialiser-with-spec.elf
@@ -68,11 +68,11 @@ export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG 
 endif
 
 $(LIBMICROKITCO_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=aarch64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
 $(LIBMICROKITCO_X86_64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=x86_64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
 $(LIBMICROKITCO_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=riscv64-none-elf
+	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
 
 # Link everything together
 .PHONY: aarch64_link

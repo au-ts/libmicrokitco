@@ -40,12 +40,12 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ## Usage
 ### Prerequisite
-You have two choices of toolchain: LLVM clang or gcc.
+You have two choices of toolchain: LLVM clang or GCC.
 
 For LLVM clang, you need the LLVM toolchain installed and on your machine's `$PATH`:
 - `clang`,
 - `ld.lld`, and 
-- `llvm-objcopy`.
+- `llvm-objcopy` (for x86_64 targets only).
 
 Then define `LLVM = 1` in your Makefile and export it when you invoke libmicrokitco's Makefile.
 
@@ -56,7 +56,7 @@ These `clang` targets have been well tested with this library:
 
 ---
 
-For your gcc, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
+For GCC, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
 - `$(TOOLCHAIN)-gcc`,
 - `$(TOOLCHAIN)-ld`,
 - `$(TOOLCHAIN)-objcopy` (for x86_64 targets only),
@@ -65,6 +65,7 @@ If they are not in your `$PATH`, `$(TOOLCHAIN)` must contain the absolute path t
 
 These compiler triples have been well tested with this library:
 - `aarch64-unknown-linux-gnu`,
+- `aarch64-linux-gnu-gcc`,
 - `aarch64-none-elf`,
 - `x86_64-elf`,
 - `riscv64-unknown-elf`.
@@ -200,7 +201,7 @@ Blocks the calling cothread on a notification of a specific Microkit channel the
 
 ---
 
-### `co_err_t microkit_cothread_recv_ntfn(microkit_channel ch)`
+### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
 Maps an incoming notification to blocked cothreads, schedule them then yields to let the newly ready cothreads execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
 
 This will always runs in the context of the root PD thread.
