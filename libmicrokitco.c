@@ -335,7 +335,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_
         }
     #endif
 
-    const hosted_queue_t *free_handle_queue = &co_controller->free_handle_queue;
+    hosted_queue_t *free_handle_queue = &co_controller->free_handle_queue;
     microkit_cothread_t new;
     const int pop_err = hostedqueue_pop(free_handle_queue, co_controller->free_handle_queue_mem, &new);
 
@@ -449,7 +449,7 @@ static inline microkit_cothread_t internal_schedule() {
 }
 // Switch to the next ready thread, also handle cases where there is no ready thread.
 static inline void internal_go_next() {
-    const microkit_cothread_t next = internal_schedule();
+    microkit_cothread_t next = internal_schedule();
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
         next = 0;
