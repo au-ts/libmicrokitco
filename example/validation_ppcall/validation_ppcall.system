@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <system>
-    <memory_region name="uart" size="0x1_000" phys_addr="0xff80_3000" />
+    <memory_region name="uart" size="0x1_000" phys_addr="0x1001_0000" />
 
     <protection_domain name="server" priority="254" pp="true" passive="true">
         <program_image path="server.elf" />

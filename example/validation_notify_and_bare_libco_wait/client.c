@@ -42,6 +42,7 @@ static void FASTFN measure(int ith) {
 
 void runner(void) {
     sddf_printf_("Starting round trip notify - wait with bare libco - notify benchmark\n");
+
     for (int i = 0; i < WARMUP_PASSES; i++) {
         run();
     }
@@ -68,6 +69,7 @@ void notified(microkit_channel channel) {
     switch (channel) {
         case 1:
             co_switch(co_handle);
+            break;
 
         case 3:
             sel4bench_init();
