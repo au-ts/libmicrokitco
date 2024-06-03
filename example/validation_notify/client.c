@@ -22,7 +22,6 @@ uint64_t prev_cycle_count;
 int nth = 0;
 
 void init(void) {
-    sel4bench_init();
 }
 
 void notified(microkit_channel channel) {
@@ -53,11 +52,10 @@ void notified(microkit_channel channel) {
 
             // try to bring everything we need into cache
             sel4bench_init();
-            sel4bench_get_cycle_count();
             sum_t = 0;
             sum_sq = 0;
             result = 0;
-            prev_cycle_count = 0;
+            prev_cycle_count = sel4bench_get_cycle_count();
 
             microkit_notify(1);
             break;
