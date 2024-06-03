@@ -27,8 +27,8 @@ void init(void) {
 void notified(microkit_channel channel) {
     switch (channel) {
         case 1:
-            nth += 1;
             result = sel4bench_get_cycle_count() - prev_cycle_count;
+            nth += 1;
 
             if (nth > WARMUP_PASSES) {
                 sum_t += result;
@@ -52,6 +52,7 @@ void notified(microkit_channel channel) {
 
             // try to bring everything we need into cache
             sel4bench_init();
+            nth = 0;
             sum_t = 0;
             sum_sq = 0;
             result = 0;
