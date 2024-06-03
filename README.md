@@ -137,7 +137,7 @@ Finally, for any of your object files that uses this library, link it against `$
 
 
 ## API
-### `const char *microkit_cothread_pretty_error(co_err_t err_num)`
+### `const char *microkit_cothread_pretty_error(const co_err_t err_num)`
 Map the error number returned by this library's functions into a human friendly error message string.
 
 ---
@@ -147,7 +147,7 @@ For the compiled configuration, returns the amount of memory the library will ne
 
 ---
 
-### `co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...)`
+### `co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, const int co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
@@ -158,7 +158,7 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 
 ---
 
-### `co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...);`
 A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
@@ -170,7 +170,7 @@ A variadic function that creates a new cothread, but does not switch to it.
 
 --- 
 
-### `co_err_t microkit_cothread_get_arg(int nth, size_t *ret)`
+### `co_err_t microkit_cothread_get_arg(const int nth, size_t *ret)`
 Fetch the argument of the calling cothread, returns error if called from the root thread.
 
 ##### Arguments
@@ -179,7 +179,7 @@ Fetch the argument of the calling cothread, returns error if called from the roo
 
 ---
 
-### `co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread)`
+### `co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread)`
 Marks an initialised but not ready cothread as ready and schedule it, but does not switch to it.
 
 ##### Arguments
@@ -193,7 +193,7 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 
 ---
 
-### `co_err_t microkit_cothread_wait(microkit_channel wake_on)`
+### `co_err_t microkit_cothread_wait(const microkit_channel wake_on)`
 Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel.
 
 ##### Arguments
@@ -211,7 +211,7 @@ This will always runs in the context of the root PD thread.
 
 ---
 
-### `co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread)`
+### `co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread)`
 Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
 
 ##### Arguments
@@ -219,7 +219,7 @@ Destroy a specific cothread regardless of their running state. Should be sparing
 
 ---
 
-### `co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval)`
+### `co_err_t microkit_cothread_join(const microkit_cothread_t cothread, size_t *retval)`
 Blocks the caller until the #`cothread` thread returns, then write it's return value to `retval`. This API is able to detect simple deadlock scenario such as #1 joins #2, #2 joins #3 then #3 joins #1. A thread cannot join itself. 
 
 Take special care when joining in the root PD thread as you will not be able to receive notifications from seL4.

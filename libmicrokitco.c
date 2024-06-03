@@ -66,7 +66,7 @@ const char *err_strs[] = {
 };
 
 // Return a string of human friendly error message.
-const char *microkit_cothread_pretty_error(co_err_t err_num) {
+const char *microkit_cothread_pretty_error(const co_err_t err_num) {
     if (err_num < 0 || err_num >= co_num_errors) {
         return "libmicrokitco: unknown error!\n";
     } else {
@@ -157,7 +157,7 @@ size_t microkit_cothread_derive_memsize() {
     return sizeof(co_control_t);
 }
 
-co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...) {
+co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, const int co_stack_size, ...) {
     // We don't allow skipping error checking here for safety because this can only be ran once per PD.
     if (co_controller != NULL) {
         return co_err_init_already_initialised;
@@ -319,7 +319,7 @@ static inline void cothread_entry_wrapper() {
     panic();
 }
 
-co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...) {
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...) {
     #if !defined LIBMICROKITCO_UNSAFE
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -375,7 +375,7 @@ co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t rea
     return co_no_err;
 }
 
-co_err_t microkit_cothread_get_arg(int nth, size_t *ret) {
+co_err_t microkit_cothread_get_arg(const int nth, size_t *ret) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -395,7 +395,7 @@ co_err_t microkit_cothread_get_arg(int nth, size_t *ret) {
     return co_no_err;
 }
 
-co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread) {
+co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -460,7 +460,7 @@ static inline void internal_go_next() {
     co_switch(co_controller->tcbs[next].local_storage);
 }
 
-co_err_t microkit_cothread_wait(microkit_channel wake_on) {
+co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -525,7 +525,7 @@ static inline void internal_destroy_me() {
     panic();
 }
 
-co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread) {
+co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -565,7 +565,7 @@ static inline int internal_detect_deadlock(microkit_cothread_t caller, microkit_
     return 0;
 }
 
-co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval) {
+co_err_t microkit_cothread_join(const microkit_cothread_t cothread, size_t *retval) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;

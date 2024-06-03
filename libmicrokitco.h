@@ -50,7 +50,7 @@ typedef enum {
 } co_err_t;
 
 // Returns a human friendly error message corresponding with the given err code.
-const char *microkit_cothread_pretty_error(co_err_t err_num);
+const char *microkit_cothread_pretty_error(const co_err_t err_num);
 
 
 // Business logic
@@ -68,20 +68,20 @@ typedef enum {
 
 size_t microkit_cothread_derive_memsize();
 
-co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, int co_stack_size, ...);
+co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, const int co_stack_size, ...);
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
-co_err_t microkit_cothread_spawn(client_entry_t client_entry, ready_status_t ready, microkit_cothread_t *ret, int num_args, ...);
-co_err_t microkit_cothread_get_arg(int nth, size_t *ret);
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...);
+co_err_t microkit_cothread_get_arg(const int nth, size_t *ret);
 
-co_err_t microkit_cothread_mark_ready(microkit_cothread_t cothread);
+co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
 
 // @billn: this needs some rethinking for case where client waits on an async api that fires a callback.
-co_err_t microkit_cothread_wait(microkit_channel wake_on);
+co_err_t microkit_cothread_wait(const microkit_channel wake_on);
 
 void microkit_cothread_yield();
 
-co_err_t microkit_cothread_destroy_specific(microkit_cothread_t cothread);
+co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread);
 
-co_err_t microkit_cothread_join(microkit_cothread_t cothread, size_t *retval);
+co_err_t microkit_cothread_join(const microkit_cothread_t cothread, size_t *retval);
