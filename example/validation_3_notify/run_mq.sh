@@ -7,7 +7,7 @@ then
     then
         echo "Build FAILED!" && exit 1
     else
-        mq.sh run -s odroidc4_1 -f build/loader.img -c "BENCHFINISHED"
+        mq.sh run -s odroidc4_2 -f build/loader.img -c "BENCHFINISHED"
         exit 0
     fi
 fi
