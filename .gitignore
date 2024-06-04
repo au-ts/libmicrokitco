@@ -2,6 +2,7 @@ sdk
 .vscode
 build
 *.DS_Store
+report.txt
 
 # Prerequisites
 *.d
