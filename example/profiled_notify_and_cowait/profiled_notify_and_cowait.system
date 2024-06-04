@@ -108,8 +108,8 @@
     </protection_domain> -->
 
     <channel>
-        <end pd="client" id="1" />
-        <end pd="server" id="2" />
+        <end pd="client" id="10" />
+        <end pd="server" id="20" />
     </channel>
     <!-- <channel>
         <end pd="client" id="3" />
@@ -339,25 +339,25 @@
         <end pd="profiler" id="30" />
     </channel>
 
-    <!-- <channel>
+    <channel>
         <end pd="eth_copy1" id="1" />
-        <end pd="client1" id="2" />
+        <end pd="client" id="2" />
     </channel>
 
     <channel>
         <end pd="eth_virt_tx" id="3" />
-        <end pd="client1" id="3" />
+        <end pd="client" id="3" />
     </channel>
 
     <channel>
         <end pd="arp" id="3" />
-        <end pd="client1" id="7" />
+        <end pd="client" id="7" />
     </channel>
 
     <channel>
         <end pd="timer" id="2" />
-        <end pd="client1" id="1" />
-    </channel> -->
+        <end pd="client" id="1" />
+    </channel>
 
     <channel>
         <end pd="eth_virt_rx" id="3" />

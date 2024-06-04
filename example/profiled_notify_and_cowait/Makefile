@@ -8,7 +8,7 @@ CPU := cortex-a53
 
 SYSTEM_DESC := profiled_notify_and_cowait.system
 
-TOOLCHAIN := aarch64-none-elf
+TOOLCHAIN := /opt/toolchain/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf
 
 CC := $(TOOLCHAIN)-gcc
 LD := $(TOOLCHAIN)-ld
@@ -178,7 +178,6 @@ $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
 # BEGIN System being profiled v
 
 TARGET=aarch64-none-elf
-TOOLCHAIN=$(TARGET)
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
 

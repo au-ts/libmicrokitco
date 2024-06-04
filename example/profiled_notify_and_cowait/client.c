@@ -4,7 +4,7 @@
 #include <libmicrokitco.h>
 // #include "util.h"
 
-// uintptr_t uart_base;
+uintptr_t uart_base;
 uintptr_t co_mem;
 uintptr_t co_stack;
 
@@ -17,8 +17,8 @@ void run(int nth) {
     // seL4_BenchmarkResetThreadUtilisation(TCB_CAP);
     // seL4_BenchmarkResetLog();
 
-    microkit_notify(1);
-    microkit_cothread_wait(1);
+    microkit_notify(10);
+    microkit_cothread_wait(10);
 
     // seL4_BenchmarkFinalizeLog();
     // seL4_BenchmarkGetThreadUtilisation(TCB_CAP);
