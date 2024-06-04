@@ -18,6 +18,7 @@ void run(int nth) {
     // seL4_BenchmarkResetLog();
 
     microkit_notify(10);
+
     microkit_cothread_wait(10);
 
     // seL4_BenchmarkFinalizeLog();
