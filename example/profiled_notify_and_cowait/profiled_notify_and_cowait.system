@@ -92,12 +92,12 @@
     <!-- THIS IS THE SYSTEM WE ARE PROFILING -->
     <protection_domain name="server" period="200" budget="100" priority="81">
         <program_image path="server.elf" />
-        <!-- <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base" /> -->
+        <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base" />
     </protection_domain>
 
     <protection_domain name="client" period="200" budget="100" priority="80">
         <program_image path="client_being_profiled.elf" />
-        <!-- <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base"/> -->
+        <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base"/>
 
         <map mr="co_control_mem" vaddr="0x6_000_000" perms="rw" cached="true" setvar_vaddr="co_mem"/>
         <map mr="co_stack" vaddr="0x6_002_000" perms="rw" cached="true" setvar_vaddr="co_stack"/>
@@ -121,57 +121,7 @@
 
     <!-- UART System -->
 
-    <protection_domain name="uart" priority="97" pp="true" >
-        <program_image path="uart.elf" />
 
-        <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base" />
-
-        <!-- shared memory for ring buffer mechanism -->
-        <map mr="rx_free_serial_drv" vaddr="0x4_000_000" perms="rw" cached="true" setvar_vaddr="rx_free" />
-        <map mr="rx_used_serial_drv" vaddr="0x4_200_000" perms="rw" cached="true" setvar_vaddr="rx_active" />
-        <map mr="tx_free_serial_drv" vaddr="0x4_400_000" perms="rw" cached="true" setvar_vaddr="tx_free" />
-        <map mr="tx_used_serial_drv" vaddr="0x4_600_000" perms="rw" cached="true" setvar_vaddr="tx_active" />
-
-        <map mr="shared_dma_tx_drv" vaddr="0x2_200_000" perms="rw" cached="true" />
-        <map mr="shared_dma_rx_drv" vaddr="0x2_600_000" perms="rw" cached="true" />
-
-         <!-- UART interrupt -->
-        <irq irq="225" id="1" trigger="edge" />
-
-    </protection_domain>
-
-    <protection_domain name="uart_virt_tx" priority="96" pp="true"  budget="2000" >
-        <program_image path="uart_virt_tx.elf" />
-
-        <!-- shared memory for driver/virt ring buffer mechanism -->
-        <map mr="tx_free_serial_drv" vaddr="0x4_400_000" perms="rw" cached="true" setvar_vaddr="tx_free_driver" />
-        <map mr="tx_used_serial_drv" vaddr="0x4_600_000" perms="rw" cached="true" setvar_vaddr="tx_active_driver" />
-
-        <!-- shared memory for virt/client ring buffer mechanism -->
-        <map mr="tx_free_client" vaddr="0x5_400_000" perms="rw" cached="true" setvar_vaddr="tx_free_client" />
-        <map mr="tx_used_client" vaddr="0x5_600_000" perms="rw" cached="true" setvar_vaddr="tx_active_client" />
-
-        <map mr="shared_dma_tx_drv" vaddr="0x2_200_000" perms="rw" cached="true" setvar_vaddr="tx_data_driver" />
-
-        <map mr="shared_dma_tx_client" vaddr="0x2_400_000" perms="rw" cached="true" setvar_vaddr="tx_data_client" />
-
-    </protection_domain>
-
-    <protection_domain name="uart_virt_rx" priority="95" pp="true" budget="2000" >
-        <program_image path="uart_virt_rx.elf" />
-
-        <!-- shared memory for driver/virt ring buffer mechanism -->
-        <map mr="rx_free_serial_drv" vaddr="0x4_000_000" perms="rw" cached="true" setvar_vaddr="rx_free_driver" />
-        <map mr="rx_used_serial_drv" vaddr="0x4_200_000" perms="rw" cached="true" setvar_vaddr="rx_active_driver" />
-
-        <!-- shared memory for virt/client ring buffer mechanism -->
-        <map mr="rx_free_client" vaddr="0x3_000_000" perms="rw" cached="true" setvar_vaddr="rx_free_client" />
-        <map mr="rx_used_client" vaddr="0x3_200_000" perms="rw" cached="true" setvar_vaddr="rx_active_client" />
-
-        <map mr="shared_dma_rx_drv" vaddr="0x2_600_000" perms="rw" cached="true" setvar_vaddr="rx_data_driver" />
-        <map mr="shared_dma_rx_client" vaddr="0x4_800_000" perms="rw" cached="true" setvar_vaddr="rx_data_client" />
-
-    </protection_domain>
 
     <!-- Ethernet System -->
 
@@ -318,26 +268,6 @@
 
 
     <!-- These following channels are needed for communication between the server and driver -->
-
-    <channel>
-        <end pd="prof_client" id="9"/>
-        <end pd="uart_virt_tx" id="1"/>
-    </channel>
-
-    <channel>
-        <end pd="uart" id="8"/>
-        <end pd="uart_virt_tx" id="9"/>
-    </channel>
-
-   <channel>
-        <end pd="prof_client" id="11"/>
-        <end pd="uart_virt_rx" id="1"/>
-    </channel>
-
-    <channel>
-        <end pd="uart" id="10"/>
-        <end pd="uart_virt_rx" id="11"/>
-    </channel>
 
     <channel>
         <end pd="profiler" id="10"/>
