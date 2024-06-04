@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "microkit.h": "c",
+        "profiler_printf.h": "c"
+    }
+}
