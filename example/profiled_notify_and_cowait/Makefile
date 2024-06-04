@@ -6,7 +6,7 @@ MICROKIT_BOARD := odroidc4
 SDDF_PLATFORM_DIR := meson
 CPU := cortex-a53
 
-SYSTEM_DESC := validation_notify_and_cowait_profiled.system
+SYSTEM_DESC := profiled_notify_and_cowait.system
 
 TOOLCHAIN := aarch64-none-elf
 
@@ -95,7 +95,7 @@ PROF_LWIPFILES=$(PROFDIR)/lwip.c $(COREFILES) $(CORE4FILES) $(NETIFFILES)
 UART_OBJS := $(UART_DRIVER)/uart.o printf.o putchar_debug.o
 UART_VIRT_TX_OBJS := $(UART_COMPONENTS)/virt_tx.o 
 UART_VIRT_RX_OBJS := $(UART_COMPONENTS)/virt_rx.o 
-PROFILER_OBJS := $(PROFDIR)/profiler.o sddf_network_sharedringbuffer.o
+PROFILER_OBJS := $(PROFDIR)/profiler.o sddf_network_sharedringbuffer.o printf.o putchar_debug.o
 CLIENT_OBJS := $(PROFDIR)/client.o $(PROFDIR)/serial_server.o  sddf_network_sharedringbuffer.o  \
  $(PROF_LWIPFILES:.c=.o) $(PROFDIR)/lwip.o $(PROFDIR)/netconn_socket.o sddf_timer_client.o \
  $(PROTOBUFDIR)/nanopb/pmu_sample.pb.o $(PROTOBUFDIR)/nanopb/pb_common.o $(PROTOBUFDIR)/nanopb/pb_encode.o \
@@ -142,7 +142,7 @@ $(BUILD_DIR)/putchar_debug.o: $(UTIL)/putchar_debug.c
 $(BUILD_DIR)/putchar_serial.o: $(UTIL)/putchar_serial.c
 	$(CC) -c $(CFLAGS) $(UTIL)/putchar_serial.c -o $(BUILD_DIR)/putchar_serial.o
 
-$(BUILD_DIR)/profiler.elf: $(addprefix $(BUILD_DIR)/, $(PROFILER_OBJS))
+$(BUILD_DIR)/profiler.elf: $(addprefix $(BUILD_DIR)/, $(PROFILER_OBJS)) 
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(BUILD_DIR)/uart.elf: $(addprefix $(BUILD_DIR)/, $(UART_OBJS))
@@ -177,10 +177,14 @@ $(BUILD_DIR)/timer.elf: $(addprefix $(BUILD_DIR)/, $(TIMER_OBJS))
 
 # BEGIN System being profiled v
 
-LIBMICROKITCO_PATH := ../..
-LIBMICROKITCO_OBJ := libmicrokitco/libmicrokitco.o
-LIBMICROKITCO_UNSAFE = ''
-include $(LIBMICROKITCO_PATH)/Makefile
+TARGET=aarch64-none-elf
+TOOLCHAIN=$(TARGET)
+LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
+
+export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
+$(LIBMICROKITCO_1T_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
 
 # $(BUILD_DIR)/start.o: start.c
 # 	$(CC) $(CFLAGS) $^ -o $@
@@ -194,7 +198,7 @@ $(BUILD_DIR)/server.o: server.c
 # $(BUILD_DIR)/start.elf: $(BUILD_DIR)/start.o
 # 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
-$(BUILD_DIR)/client_being_profiled.elf: $(BUILD_DIR)/client_being_profiled.o $(BUILD_DIR)/$(LIBMICROKITCO_OBJ)
+$(BUILD_DIR)/client_being_profiled.elf: $(BUILD_DIR)/client_being_profiled.o $(LIBMICROKITCO_1T_OBJ)
 	$(LD) $(LDFLAGS) $(LIBS) $^ -o $@
 
 $(BUILD_DIR)/server.elf: $(BUILD_DIR)/server.o
