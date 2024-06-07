@@ -69,7 +69,7 @@ CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -Wno-parentheses
 else ifeq (riscv64,$(findstring riscv64,$(TARGET)))
 CO_CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -march=rv64imac -mabi=lp64
 else
-$(error Unsupported target: TARGET="$(TARGET)" not subset of { "aarch64-none-elf", "x86_64-none-elf", "riscv64-none-elf" })
+$(error Unsupported target: TARGET="$(TARGET)")
 endif
 
 CO_CC_INCLUDE_MICROKIT_FLAG := -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
