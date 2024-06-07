@@ -37,7 +37,7 @@ static inline int hostedqueue_init(hosted_queue_t *queue_controller, const int c
     return LIBHOSTEDQUEUE_NOERR;
 }
 
-static inline int hostedqueue_peek(hosted_queue_t *queue_controller, const ITEM_TYPE *queue_memory, const void *ret) {
+static inline int hostedqueue_peek(const hosted_queue_t *queue_controller, const ITEM_TYPE *queue_memory, const void *ret) {
     if (!queue_controller->items) {
         return LIBHOSTEDQUEUE_ERR_EMPTY;
     }
