@@ -169,21 +169,18 @@ section(text)
         // Note to reader, `jalr a2, a2` is not equivalent!
 };
 
-static void co_entrypoint(void)
-{
+static void co_entrypoint(void) {
     uintptr_t *buffer = (uintptr_t *)co_active_handle;
     void (*entrypoint)(void) = (void (*)(void))buffer[client_entry];
     entrypoint();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
-cothread_t co_active()
-{
+cothread_t co_active() {
     return co_active_handle;
 }
 
-cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
-{
+cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) {
     uintptr_t *handle;
 
     if (!co_swap)
@@ -205,8 +202,7 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void))
     return handle;
 }
 
-void co_switch(cothread_t handle)
-{
+void co_switch(cothread_t handle) {
     uintptr_t *memory = (uintptr_t *)handle;
     if (co_active_buffer[canary] != STACK_CANARY || memory[canary] != STACK_CANARY)
     {
