@@ -38,6 +38,11 @@ This library supports AArch64, RISC-V (rv64imac) and x86_64.
 A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
 ![State transition diagram](./docs/state_diagram.png)
 
+### Visualisation of execution
+
+This is an animation of a PD blocking on an incoming notification. The yellow area is the stack and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (`co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
+![Blocking animation](./docs/blocking.gif)
+
 ## Usage
 ### Prerequisite
 You have two choices of toolchain: LLVM clang or GCC.
