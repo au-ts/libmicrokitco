@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 
-inline void co_panic()
+void co_panic()
 {
     char *panic_addr = (char *)0;
     *panic_addr = (char)0;
