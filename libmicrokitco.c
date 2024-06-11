@@ -22,6 +22,10 @@
 #define MAX_THREADS LIBMICROKITCO_MAX_COTHREADS + 1
 #define SCHEDULER_NULL_CHOICE -1
 
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+#define MAX_NTFN_QUEUE 1
+#endif
+
 // Error handling
 const char *err_strs[] = {
     "libmicrokitco: generic: no error.\n",
@@ -270,9 +274,9 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
     if (blocked_list_head == -1) {
         if (co_controller->blocked_channel_map[ch].queued == 0) {
-            co_controller->blocked_channel_map[ch].queued = 1;
+            co_controller->blocked_channel_map[ch].queued += 1;
             return co_no_err;
-        } else if (co_controller->blocked_channel_map[ch].queued > 0) {
+        } else if (co_controller->blocked_channel_map[ch].queued == MAX_NTFN_QUEUE) {
             return co_err_recv_ntfn_already_queued;
         }
     }
@@ -500,8 +504,8 @@ co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
 #endif
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
-    if (co_controller->blocked_channel_map[wake_on].queued == 1) {
-        co_controller->blocked_channel_map[wake_on].queued = 0;
+    if (co_controller->blocked_channel_map[wake_on].queued > 0) {
+        co_controller->blocked_channel_map[wake_on].queued -= 1;
         return co_no_err;
     }
 #endif
