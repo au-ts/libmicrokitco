@@ -254,11 +254,11 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const in
 }
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+#endif
 
     if (co_controller->running) {
         // Called from a cothread context
@@ -349,20 +349,20 @@ static inline void cothread_entry_wrapper() {
 }
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...) {
-    #if !defined LIBMICROKITCO_UNSAFE
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (!client_entry) {
-            return co_err_spawn_client_entry_null;
-        }
-        if (num_args < 0) {
-            return co_err_spawn_num_args_negative;
-        }
-        if (num_args > MAXIMUM_CO_ARGS) {
-            return co_err_spawn_num_args_too_much;
-        }
-    #endif
+#if !defined LIBMICROKITCO_UNSAFE
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (!client_entry) {
+        return co_err_spawn_client_entry_null;
+    }
+    if (num_args < 0) {
+        return co_err_spawn_num_args_negative;
+    }
+    if (num_args > MAXIMUM_CO_ARGS) {
+        return co_err_spawn_num_args_too_much;
+    }
+#endif
 
     hosted_queue_t *free_handle_queue = &co_controller->free_handle_queue;
     microkit_cothread_t new;
@@ -405,40 +405,40 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_
 }
 
 co_err_t microkit_cothread_get_arg(const int nth, size_t *ret) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (!co_controller->running) {
-            return co_err_get_arg_called_from_root;
-        }
-        if (nth >= MAXIMUM_CO_ARGS) {
-            return co_err_get_arg_nth_is_greater_than_max;
-        }
-        if (nth < 0) {
-            return co_err_get_arg_nth_is_negative;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (!co_controller->running) {
+        return co_err_get_arg_called_from_root;
+    }
+    if (nth >= MAXIMUM_CO_ARGS) {
+        return co_err_get_arg_nth_is_greater_than_max;
+    }
+    if (nth < 0) {
+        return co_err_get_arg_nth_is_negative;
+    }
+#endif
 
     *ret = co_controller->tcbs[co_controller->running].priv_args[nth];
     return co_no_err;
 }
 
 co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (cothread >= MAX_THREADS || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
-            return co_err_generic_invalid_handle;
-        }
-        if (co_controller->tcbs[cothread].state == cothread_ready) {
-            return co_err_mark_ready_already_ready;
-        }
-        if (co_controller->running == cothread) {
-            return co_err_mark_ready_cannot_mark_self;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (cothread >= MAX_THREADS || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
+        return co_err_generic_invalid_handle;
+    }
+    if (co_controller->tcbs[cothread].state == cothread_ready) {
+        return co_err_mark_ready_already_ready;
+    }
+    if (co_controller->running == cothread) {
+        return co_err_mark_ready_cannot_mark_self;
+    }
+#endif
 
     hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
     const int push_err = hostedqueue_push(sched_queue, co_controller->scheduling_queue_mem, &cothread);
@@ -490,14 +490,14 @@ static inline void internal_go_next() {
 }
 
 co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (wake_on >= MICROKIT_MAX_CHANNELS) {
-            return co_err_wait_invalid_channel;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (wake_on >= MICROKIT_MAX_CHANNELS) {
+        return co_err_wait_invalid_channel;
+    }
+#endif
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
     if (co_controller->blocked_channel_map[wake_on].queued == 1) {
@@ -523,11 +523,11 @@ co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
 }
 
 void microkit_cothread_yield() {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return;
+    }
+#endif
 
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
@@ -539,11 +539,11 @@ void microkit_cothread_yield() {
 }
 
 static inline void internal_destroy_me() {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return;
+    }
+#endif
 
     if (co_controller->running == 0) {
         return;
@@ -551,25 +551,25 @@ static inline void internal_destroy_me() {
 
     const int err = microkit_cothread_destroy_specific(co_controller->running);
 
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (err != co_no_err) {
-            panic();
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (err != co_no_err) {
+        panic();
+    }
+#endif
 
     // Should not return
     panic();
 }
 
 co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (cothread >= MAX_THREADS || cothread < 0) {
-            return co_err_generic_invalid_handle;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (cothread >= MAX_THREADS || cothread < 0) {
+        return co_err_generic_invalid_handle;
+    }
+#endif
 
     if (co_controller->running == 0) {
         // cannot destroy root thread
@@ -602,14 +602,14 @@ static inline int internal_detect_deadlock(microkit_cothread_t caller, microkit_
 }
 
 co_err_t microkit_cothread_join(const microkit_cothread_t cothread, size_t *retval) {
-    #if !defined(LIBMICROKITCO_UNSAFE)
-        if (co_controller == NULL) {
-            return co_err_generic_not_initialised;
-        }
-        if (cothread >= MAX_THREADS || cothread < 0) {
-            return co_err_generic_invalid_handle;
-        }
-    #endif
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (cothread >= MAX_THREADS || cothread < 0) {
+        return co_err_generic_invalid_handle;
+    }
+#endif
 
     if (co_controller->tcbs[cothread].retval_valid) {
         // Cothread returned before join
