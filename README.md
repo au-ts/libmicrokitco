@@ -43,6 +43,11 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 This is an animation of a PD blocking on an incoming notification. The yellow area is the stack and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (`co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
 ![Blocking animation](./docs/blocking.gif)
 
+### Pre-emptive unblocking
+Is an opt-in feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
+
+To opt-in, define `LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1` in your Makefile and export it.
+
 ## Usage
 ### Prerequisite
 You have two choices of toolchain: LLVM clang or GCC.
@@ -85,8 +90,9 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
-10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs, and
-11. The variables as outlined in Prerequisite.
+10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs,
+11. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`: opt-in flag of preemptive unblocking feature, and
+12. The variables as outlined in Prerequisite.
 
 The compiled object filename will have the form:
 ```Make
