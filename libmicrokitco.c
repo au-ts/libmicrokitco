@@ -37,6 +37,7 @@ const char *err_strs[] = {
     "libmicrokitco: init(): failed to fill free handles queue.\n",
 
     "libmicrokitco: recv_ntfn(): no cothreads are blocked on this channel.\n",
+    "libmicrokitco: recv_ntfn(): a previous notification is already queued on this channel. Ignoring this notification\n",
 
     "libmicrokitco: spawn(): client entrypoint is NULL.\n",
     "libmicrokitco: spawn(): number of arguments is negative.\n",
@@ -120,7 +121,14 @@ typedef struct {
     size_t priv_args[MAXIMUM_CO_ARGS];
 } co_tcb_t;
 
+// A linked list data structure that manage all cothreads blocking on a specific channel.
 typedef struct {
+
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+    // True if preemptive unblock is opted-in AND a notification came in without any cothreads blocking on it.
+    int queued;
+#endif
+
     microkit_cothread_t head;
     microkit_cothread_t tail;
 } blocked_list_t;
@@ -229,6 +237,11 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const in
     for (int i = 0; i < MICROKIT_MAX_CHANNELS; i++) {
         co_controller->blocked_channel_map[i].head = -1;
         co_controller->blocked_channel_map[i].tail = -1;
+
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+        co_controller->blocked_channel_map[i].queued = 0;
+#endif
+
     }
 
     // Initialised the joined table
@@ -252,32 +265,48 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
         panic();
     }
 
-    if (co_controller->blocked_channel_map[ch].head == -1) {
-        return co_err_recv_ntfn_no_blocked;
-    } else {
-        microkit_cothread_t cur = co_controller->blocked_channel_map[ch].head;
+    microkit_cothread_t blocked_list_head = co_controller->blocked_channel_map[ch].head;
 
-        // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
-        while (cur != -1) {
-            const co_err_t err = microkit_cothread_mark_ready(cur);
-            if (err != co_no_err) {
-                return err;
-            }
-
-            const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
-            co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
-            cur = next;
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+    if (blocked_list_head == -1) {
+        if (co_controller->blocked_channel_map[ch].queued == 0) {
+            co_controller->blocked_channel_map[ch].queued = 1;
+            return co_no_err;
+        } else if (co_controller->blocked_channel_map[ch].queued > 0) {
+            return co_err_recv_ntfn_already_queued;
         }
- 
-        // Erase the list after we are done waking up the cothreads
-        co_controller->blocked_channel_map[ch].head = -1;
-        co_controller->blocked_channel_map[ch].tail = -1;
-
-        // Run the cothreads
-        microkit_cothread_yield();
-
-        return co_no_err;
     }
+
+#else
+    if (blocked_list_head == -1) {
+        return co_err_recv_ntfn_no_blocked;
+    }
+
+#endif
+
+    microkit_cothread_t cur = blocked_list_head;
+
+    // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
+    while (cur != -1) {
+        const co_err_t err = microkit_cothread_mark_ready(cur);
+        if (err != co_no_err) {
+            return err;
+        }
+
+        const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
+        co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
+        cur = next;
+    }
+
+    // Erase the list after we are done waking up the cothreads
+    co_controller->blocked_channel_map[ch].head = -1;
+    co_controller->blocked_channel_map[ch].tail = -1;
+
+    // Run the cothreads
+    microkit_cothread_yield();
+
+    return co_no_err;
+
 }
 
 static inline void internal_destroy_me();
@@ -469,6 +498,13 @@ co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
             return co_err_wait_invalid_channel;
         }
     #endif
+
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+    if (co_controller->blocked_channel_map[wake_on].queued == 1) {
+        co_controller->blocked_channel_map[wake_on].queued = 0;
+        return co_no_err;
+    }
+#endif
 
     co_controller->tcbs[co_controller->running].state = cothread_blocked_on_channel;
     

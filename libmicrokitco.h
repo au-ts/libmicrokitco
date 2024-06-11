@@ -18,6 +18,7 @@ typedef enum {
     co_err_init_free_handles_populate_fail,
 
     co_err_recv_ntfn_no_blocked,
+    co_err_recv_ntfn_already_queued,
 
     co_err_spawn_client_entry_null,
     co_err_spawn_num_args_negative,
