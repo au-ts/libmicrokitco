@@ -18,7 +18,7 @@ MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 CC_INCLUDE_SERIAL := -Iserial_drv/include
 
-LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_PATH := ../../../
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS =  $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
