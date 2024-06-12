@@ -25,7 +25,7 @@ run_hifive () {
     ) 
 }
 
-for benchmark in example/validation_*
+for benchmark in validation_*
 do
     if [ "$1" = "odroidc4" ];
     then
