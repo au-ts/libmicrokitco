@@ -11,7 +11,7 @@ Design, implementation and performance evaluation of a library that provides a n
 
 ## Solution
 ### Terminology
-- Root Protection Domain (PD) thread: the kernel thread created by seL4 for a protection domain. This is where the Microkit's event loop and entry points runs. For brevity, we will refer to this as "root thread".
+- Protection Domain (PD) thread: user thread created by the seL4 kernel for a protection domain. This is where the Microkit's event loop and entry points runs. For brevity, we will refer to this as "root thread".
 - Root TCB: the thread control block of the root thread within this library used to store it's execution context for cothread switching and blocking state.
 - Cothread: an execution context in userland that the seL4 kernel is not aware of. The client provides memory for the stack in the form of a Memory Region (MR) with guard page.
 - Cothread TCB: serves the same purpose as root TCB, but also stores the virtual address of the cothread's stack.
@@ -31,7 +31,7 @@ The library expects a large memory region (MR) for it's internal data structures
 ### Architecture support
 This library supports AArch64, RISC-V (rv64imac) and x86_64.
 
-> The `libco` primitives does support hard-float on RISC-V, but the Microkit is built with soft-float so this entire library is also soft-float for linking.
+> The provided `libco` primitives does support hard-float on RISC-V, but the seL4 Microkit is built with soft-float so this entire library is also soft-float for linking.
 
 ### State transition
 
@@ -75,7 +75,7 @@ If they are not in your `$PATH`, `$(TOOLCHAIN)` must contain the absolute path t
 
 These compiler triples have been well tested with this library:
 - `aarch64-unknown-linux-gnu`,
-- `aarch64-linux-gnu-gcc`,
+- `aarch64-linux-gnu`,
 - `aarch64-none-elf`,
 - `x86_64-elf`,
 - `riscv64-unknown-elf`.
@@ -83,7 +83,7 @@ These compiler triples have been well tested with this library:
 
 ### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
-1. `LIBMICROKITCO_PATH`: path to root of this library,
+1. `LIBMICROKITCO_PATH`: absolute path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
 3. `TARGET`: triple, e.g. `aarch64-none-elf`, `x86_64-none-elf`, `riscv64-none-elf`. This is used for naming the output object files and as an argument to LLVM's `clang`.
 4. `BUILD_DIR`,
@@ -123,7 +123,7 @@ $(LIBMICROKITCO_3T_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
 ```
 
-Or with a compiler triple:
+Or with GCC:
 ```Make
 TARGET=aarch64-none-elf
 TOOLCHAIN=$(TARGET)
@@ -159,7 +159,7 @@ For the compiled configuration, returns the amount of memory the library will ne
 
 ---
 
-### `co_err_t microkit_cothread_init(uintptr_t controller_memory_addr, const int co_stack_size, ...)`
+### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const int co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
