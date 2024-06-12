@@ -5,9 +5,9 @@
 
 #include "libmicrokitco.h"
 #include "libhostedqueue/libhostedqueue.h"
-#include "libco/libco.h"
+#include <libco.h>
 
-void panic() {
+void microkit_cothread_panic() {
     char *panic_addr = (char *) NULL;
     *panic_addr = (char) 0;
 }
@@ -271,7 +271,7 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
 
     if (co_controller->running) {
         // Called from a cothread context
-        panic();
+        microkit_cothread_panic();
     }
 
     microkit_cothread_t blocked_list_head = co_controller->blocked_channel_map[ch].head;
@@ -354,7 +354,7 @@ static inline void cothread_entry_wrapper() {
 
     // Should not get here.
     // UB in libco if cothread returns normally!
-    panic();
+    microkit_cothread_panic();
 }
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...) {
@@ -476,7 +476,7 @@ static inline microkit_cothread_t internal_pop_from_queue(hosted_queue_t *sched_
             }
         } else {
             // catch other errs
-            panic();
+            microkit_cothread_panic();
         }
     }
 }
@@ -562,12 +562,12 @@ static inline void internal_destroy_me() {
 
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (err != co_no_err) {
-        panic();
+        microkit_cothread_panic();
     }
 #endif
 
     // Should not return
-    panic();
+    microkit_cothread_panic();
 }
 
 co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread) {
@@ -582,7 +582,7 @@ co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread) 
 
     if (co_controller->running == 0) {
         // cannot destroy root thread
-        panic();
+        microkit_cothread_panic();
     }
     if (hostedqueue_push(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &cothread) != LIBHOSTEDQUEUE_NOERR) {
         return co_err_destroy_specific_cannot_release_handle;
