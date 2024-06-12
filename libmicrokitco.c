@@ -7,6 +7,11 @@
 #include "libhostedqueue/libhostedqueue.h"
 #include "libco/libco.h"
 
+void panic() {
+    char *panic_addr = (char *) NULL;
+    *panic_addr = (char) 0;
+}
+
 // This err is caught by the provided Makefile so we should never trigger this. But it's included
 // in case the client want to compile the library manually.
 #ifndef LIBMICROKITCO_MAX_COTHREADS
