@@ -75,4 +75,4 @@ build_hifive: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUIL
 	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_notify.system >temp.system
 	mv temp.system validation_notify.system
 	$(MICROKIT_TOOL) validation_notify.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
-	make -C $(OPENSBI) -j1 PLATFORM=generic FW_PAYLOAD_PATH=$(PWD)/build/loader.img PLATFORM_RISCV_XLEN=64 PLATFORM_RISCV_ISA=rv64i2p1_m2p0_a2p1_c2p0_zicsr2p0_zifencei2p0_zmmul1p0 PLATFORM_RISCV_ABI=lp64 O=$(PWD)/build CROSS_COMPILE=$(TOOLCHAIN)-
+	make -C $(OPENSBI) -j1 PLATFORM=generic FW_PAYLOAD_PATH=$(PWD)/build/loader.img PLATFORM_RISCV_XLEN=64 PLATFORM_RISCV_ISA=rv64imac PLATFORM_RISCV_ABI=lp64 O=$(PWD)/build CROSS_COMPILE=$(TOOLCHAIN)-
