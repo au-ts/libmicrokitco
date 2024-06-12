@@ -1,10 +1,12 @@
-# Change these for your setup!
-MICROKIT_SDK='/home/billn/microkit-sdk-1.2.6-patched'
-MICROKIT_X86_64_SDK='/home/billn/microkit-sdk-1.2.6-x86-64'
-A64N_TOOLCHAIN_PATH_PREFIX='/opt/toolchain/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/'
-A64L_TOOLCHAIN_PATH_PREFIX=''
-R64_TOOLCHAIN_PATH_PREFIX='/opt/toolchain/riscv/bin/'
-X64_TOOLCHAIN_PATH_PREFIX=''
+# You must define these
+# MICROKIT_SDK=''
+# MICROKIT_X86_64_SDK=''
+
+# These can be left empty if the toolchains are in your $PATH
+# A64N_TOOLCHAIN_PATH_PREFIX=''
+# A64L_TOOLCHAIN_PATH_PREFIX=''
+# R64_TOOLCHAIN_PATH_PREFIX=''
+# X64_TOOLCHAIN_PATH_PREFIX=''
 
 echo "Choose your system to run:"
 echo "1. QEMU aarch64 - Build with LLVM"
