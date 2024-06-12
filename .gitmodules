@@ -1,0 +1,3 @@
+[submodule "example/benchmarks/opensbi"]
+	path = example/benchmarks/opensbi
+	url = https://github.com/riscv-software-src/opensbi.git
