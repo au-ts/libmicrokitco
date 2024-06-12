@@ -53,8 +53,8 @@ This data shows I/O performance of all possible communications model in Microkit
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| One way ppcall | 398 | 46.43 | 11.67% | 553 | 31.72 | 5.74% |
-| Round trip (RT) ppcall | 852 | 38.38 | 4.50% | 1270 | 46.89 | 3.69% | 
+| One way Protected Prodecure Call (PPC) | 398 | 46.43 | 11.67% | 553 | 31.72 | 5.74% |
+| Round trip (RT) PPC | 852 | 38.38 | 4.50% | 1270 | 46.89 | 3.69% | 
 | RT client notify - server notify (async model) | 2441 | 89.53 | 3.67% | 5900 | 87.73 | 1.49% | 
 | RT client notify - wait with libco - server notify | 2728 | 158.01 | 5.79% | 6448 | 155.91 | 2.42% |  
 | RT client notify - wait with libmicrokitco - server notify | 2952 | 136.33 | 4.62% | 7255 | 134.21 | 1.85% | 
