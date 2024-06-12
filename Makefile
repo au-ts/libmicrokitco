@@ -32,6 +32,10 @@ else
 MAX_COTHREADS := -DLIBMICROKITCO_MAX_COTHREADS=$(LIBMICROKITCO_MAX_COTHREADS)
 endif
 
+ifndef LIBCO_PATH
+LIBCO_PATH := $(LIBMICROKITCO_PATH)/libco
+endif
+
 ifdef LIBMICROKITCO_UNSAFE
 UNSAFE := -DLIBMICROKITCO_UNSAFE
 else
@@ -86,7 +90,7 @@ all: libmicrokitco_directory $(LIBMICROKITCO_FINAL_OBJ)
 libmicrokitco_directory: 
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
-$(LIBCO_OBJ): $(LIBMICROKITCO_PATH)/libco/libco.c
+$(LIBCO_OBJ): $(LIBCO_PATH)/libco.c
 	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $^ -o $@
 
 $(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c

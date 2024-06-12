@@ -91,8 +91,9 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
 10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs,
-11. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`: opt-in flag of preemptive unblocking feature, and
-12. The variables as outlined in Prerequisite.
+11. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`: opt-in flag of preemptive unblocking feature, 
+12. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
+13. The variables as outlined in Prerequisite.
 
 The compiled object filename will have the form:
 ```Make
