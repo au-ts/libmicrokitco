@@ -28,7 +28,7 @@ LIBS = -lmicrokit -Tmicrokit.ld
 directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
-LIBMICROKITCO_PATH := ../../
+LIBMICROKITCO_PATH := ../../../
 LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
 
 LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1
