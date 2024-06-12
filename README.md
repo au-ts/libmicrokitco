@@ -48,6 +48,25 @@ Is an opt-in feature that allow incoming notifications from all channels to be q
 
 To opt-in, define `LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1` in your Makefile and export it.
 
+### Performance
+This data shows I/O performance of all possible communications model in Microkit between two separate address spaces compared to blocking with `libmicrokitco`. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
+
+| Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
+|---|---|---|---|---|---|---|
+| One way ppcall | 398 | 46.43 | 11.67% | 553 | 31.72 | 5.74% |
+| Round trip (RT) ppcall | 852 | 38.38 | 4.50% | 1270 | 46.89 | 3.69% | 
+| RT client notify - server notify (async model) | 2441 | 89.53 | 3.67% | 5900 | 87.73 | 1.49% | 
+| RT client notify - wait with libco - server notify | 2728 | 158.01 | 5.79% | 6448 | 155.91 | 2.42% |  
+| RT client notify - wait with libmicrokitco - server notify | 2952 | 136.33 | 4.62% | 7255 | 134.21 | 1.85% | 
+
+![Performance chart](./docs/performance_chart.png)
+
+We observe that usage of this library to perform synchronous I/O in Microkit incur a ~500 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~220 cycles compared to using bare coroutine primitives to achieve blocking I/O.
+
+This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
+
+Note: Significant slow-down in RISC-V is due to signal fastpath not implemented.
+
 ## Usage
 ### Prerequisite
 You have two choices of toolchain: LLVM clang or GCC.
