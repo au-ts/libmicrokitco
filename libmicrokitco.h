@@ -6,7 +6,7 @@
 typedef enum {
     co_no_err,
 
-    co_err_generic_not_initialised,
+    co_err_generic_not_initialised = 0,
     co_err_generic_invalid_handle,
 
     co_err_init_already_initialised,
@@ -56,8 +56,8 @@ const char *microkit_cothread_pretty_error(const co_err_t err_num);
 
 // Business logic
 #define MICROKITCO_ROOT_THREAD 0
-#define MINIMUM_STACK_SIZE 0x1000
-#define MAXIMUM_CO_ARGS 4
+#define MINIMUM_STACK_SIZE 0x1000 // Minimum is page size
+#define MAXIMUM_CO_ARGS 4 // Hard define so we can statically allocate memory
 
 typedef size_t (*client_entry_t)(void);
 typedef int microkit_cothread_t;
@@ -78,7 +78,6 @@ co_err_t microkit_cothread_get_arg(const int nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
 
-// @billn: this needs some rethinking for case where client waits on an async api that fires a callback.
 co_err_t microkit_cothread_wait(const microkit_channel wake_on);
 
 void microkit_cothread_yield();
