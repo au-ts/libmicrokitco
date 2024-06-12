@@ -65,7 +65,7 @@ We observe that usage of this library to perform synchronous I/O in Microkit inc
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
-Note: Significant slow-down in RISC-V is due to signal fastpath not implemented.
+Note: Significant slow-down in RISC-V is due to signal fastpath not implemented and no ASID.
 
 ## Usage
 ### Prerequisite
