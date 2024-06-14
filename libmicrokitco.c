@@ -281,6 +281,7 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
     }
 
     microkit_cothread_t blocked_list_head = co_controller->blocked_channel_map[ch].head;
+    microkit_cothread_t blocked_list_tail = co_controller->blocked_channel_map[ch].tail;
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
     if (blocked_list_head == -1) {
@@ -299,26 +300,43 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
 
 #endif
 
-    microkit_cothread_t cur = blocked_list_head;
+    if (blocked_list_head == blocked_list_tail) {
+        // Fast-path: enter when there is only 1 cothread blocked on this channel.
 
-    // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
-    while (cur != -1) {
-        const co_err_t err = microkit_cothread_mark_ready(cur);
-        if (err != co_no_err) {
-            return err;
+        // Delete the waiting list
+        co_controller->blocked_channel_map[ch].head = -1;
+        co_controller->blocked_channel_map[ch].tail = -1;
+
+        // Directly switch to the singular blocked cothread, bypassing the scheduling queue
+        co_controller->tcbs[co_controller->running].state = cothread_ready;
+        co_controller->tcbs[blocked_list_head].state = cothread_running;
+        co_controller->running = blocked_list_head;
+        co_switch(co_controller->tcbs[blocked_list_head].local_storage);
+
+    } else {
+
+        // Slow-path: 2 >= cothreads blocked on this channel.
+        microkit_cothread_t cur = blocked_list_head;
+
+        // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
+        while (cur != -1) {
+            const co_err_t err = microkit_cothread_mark_ready(cur);
+            if (err != co_no_err) {
+                return err;
+            }
+
+            const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
+            co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
+            cur = next;
         }
 
-        const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
-        co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
-        cur = next;
+        // Erase the list after we are done waking up the cothreads
+        co_controller->blocked_channel_map[ch].head = -1;
+        co_controller->blocked_channel_map[ch].tail = -1;
+
+        // Run the cothreads
+        microkit_cothread_yield();
     }
-
-    // Erase the list after we are done waking up the cothreads
-    co_controller->blocked_channel_map[ch].head = -1;
-    co_controller->blocked_channel_map[ch].tail = -1;
-
-    // Run the cothreads
-    microkit_cothread_yield();
 
     return co_no_err;
 
