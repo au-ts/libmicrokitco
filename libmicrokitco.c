@@ -31,6 +31,7 @@ void microkit_cothread_panic() {
 
 // MAX_THREADS includes the root thread whereas LIBMICROKITCO_MAX_COTHREADS does not
 #define MAX_THREADS LIBMICROKITCO_MAX_COTHREADS + 1
+
 #define SCHEDULER_NULL_CHOICE -1
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
@@ -96,7 +97,7 @@ typedef enum {
     // This id is not being used
     cothread_not_active = 0,
 
-    cothread_initialised = 1, // but not ready
+    cothread_initialised = 1, // but not ready, transition to ready with mark_ready()
     cothread_blocked_on_channel = 2,
     cothread_blocked_on_join = 3,
     cothread_ready = 4,
@@ -207,6 +208,7 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const in
         }
 
         // sanity check the stacks, crash if stack not as big as we think
+        // we only memzero the stack on cothread spawn.
         char *stack = (char *) co_controller->tcbs[i + 1].local_storage;
         stack[0] = 0;
         stack[co_stack_size - 1] = 0;
@@ -281,44 +283,58 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
     }
 
     microkit_cothread_t blocked_list_head = co_controller->blocked_channel_map[ch].head;
+    microkit_cothread_t blocked_list_tail = co_controller->blocked_channel_map[ch].tail;
+
+    // Delete the waiting list
+    co_controller->blocked_channel_map[ch].head = -1;
+    co_controller->blocked_channel_map[ch].tail = -1;
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
     if (blocked_list_head == -1) {
-        if (co_controller->blocked_channel_map[ch].queued == 0) {
+        if (co_controller->blocked_channel_map[ch].queued < MAX_NTFN_QUEUE) {
             co_controller->blocked_channel_map[ch].queued += 1;
             return co_no_err;
         } else if (co_controller->blocked_channel_map[ch].queued == MAX_NTFN_QUEUE) {
             return co_err_recv_ntfn_already_queued;
         }
     }
-
 #else
     if (blocked_list_head == -1) {
         return co_err_recv_ntfn_no_blocked;
     }
-
 #endif
 
-    microkit_cothread_t cur = blocked_list_head;
+#ifdef LIBMICROKITCO_RECV_NTFN_NO_FASTPATH
+    if (0) {
+#else
+    if (blocked_list_head == blocked_list_tail) {
+#endif
+        // Fast-path: enter when there is only 1 cothread blocked on this channel.
+        // Directly switch to the singular blocked cothread, bypassing the scheduling queue
+        co_controller->tcbs[co_controller->running].state = cothread_ready;
+        co_controller->tcbs[blocked_list_head].state = cothread_running;
+        co_controller->running = blocked_list_head;
+        co_switch(co_controller->tcbs[blocked_list_head].local_storage);        
+    } else {
+        // Slow-path: 2 >= cothreads blocked on this channel.
+        microkit_cothread_t cur = blocked_list_head;
+        microkit_cothread_t cur = blocked_list_head;
 
-    // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
-    while (cur != -1) {
-        const co_err_t err = microkit_cothread_mark_ready(cur);
-        if (err != co_no_err) {
-            return err;
+        // Iterate over the blocked linked list, unblocks all the cothreads and schedule them
+        while (cur != -1) {
+            const co_err_t err = microkit_cothread_mark_ready(cur);
+            if (err != co_no_err) {
+                return err;
+            }
+
+            const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
+            co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
+            cur = next;
         }
 
-        const microkit_cothread_t next = co_controller->tcbs[cur].next_blocked_on_same_channel;
-        co_controller->tcbs[cur].next_blocked_on_same_channel = -1;
-        cur = next;
+        // Run the cothreads
+        microkit_cothread_yield();
     }
-
-    // Erase the list after we are done waking up the cothreads
-    co_controller->blocked_channel_map[ch].head = -1;
-    co_controller->blocked_channel_map[ch].tail = -1;
-
-    // Run the cothreads
-    microkit_cothread_yield();
 
     return co_no_err;
 
@@ -348,7 +364,7 @@ static inline void internal_entry_return(microkit_cothread_t cothread, size_t re
     co_controller->joined_map[cothread].head = -1;
     co_controller->joined_map[cothread].tail = -1;
 
-    // Switch to another cothread. We never actually return.
+    // Switch to another cothread. We never actually return internally.
     internal_destroy_me();
 }
 static inline void cothread_entry_wrapper() {
@@ -553,6 +569,8 @@ void microkit_cothread_yield() {
     internal_go_next();
 }
 
+// This function get executed when the client cothread returns. We updates the internal states of the library
+// to indicate that the cothread's TCB is no longer used, and switch to the next ready cothread.
 static inline void internal_destroy_me() {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
