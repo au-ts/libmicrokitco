@@ -194,7 +194,7 @@ A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `size_t (*)(void)`.
-- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
 - `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of `size_t`.
 - `num_args` arguments.

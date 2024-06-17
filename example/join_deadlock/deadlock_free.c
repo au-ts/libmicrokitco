@@ -70,9 +70,9 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3;
     
-    microkit_cothread_spawn(co_entry1, ready_true, &co1, 0);
-    microkit_cothread_spawn(co_entry2, ready_true, &co2, 0);
-    microkit_cothread_spawn(co_entry3, ready_true, &co3, 0);
+    microkit_cothread_spawn(co_entry1, true, &co1, 0);
+    microkit_cothread_spawn(co_entry2, true, &co2, 0);
+    microkit_cothread_spawn(co_entry3, true, &co3, 0);
 
     printf("Deadlock-free PD: cothreads spawned\n");
 

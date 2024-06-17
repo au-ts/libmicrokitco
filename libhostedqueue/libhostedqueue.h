@@ -7,6 +7,7 @@
 #pragma once
 
 #include <microkit.h>
+#include "../libmicrokitco.h"
 
 // A simple fixed capacity circular queue of `microkit_cothread_t`s.
 

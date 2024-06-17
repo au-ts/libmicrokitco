@@ -74,7 +74,7 @@ void init(void) {
     }
 
     microkit_cothread_t _handle;
-    err = microkit_cothread_spawn(runner, ready_true, &_handle, 0);
+    err = microkit_cothread_spawn(runner, true, &_handle, 0);
     if (err != co_no_err) {
         sddf_printf_("CLIENT: Cannot spawn runner cothread, err is :%s\n", microkit_cothread_pretty_error(err));
     } else {
