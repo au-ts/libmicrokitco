@@ -39,17 +39,28 @@ ifndef LIBCO_PATH
 LIBCO_PATH := $(LIBMICROKITCO_PATH)/libco
 endif
 
-ifdef LIBMICROKITCO_UNSAFE
-UNSAFE := -DLIBMICROKITCO_UNSAFE
-else
-UNSAFE :=  
-endif
-
 ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
 PREEMPTIVE_UNBLOCK := -DLIBMICROKITCO_PREEMPTIVE_UNBLOCK
 else
 PREEMPTIVE_UNBLOCK := 
 endif
+
+# Begin undocumented features, you should need to touch them
+ifdef LIBMICROKITCO_UNSAFE
+# Skip most safety checks in the APIs
+UNSAFE := -DLIBMICROKITCO_UNSAFE
+else
+UNSAFE :=  
+endif
+
+ifdef LIBMICROKITCO_RECV_NTFN_NO_FASTPATH
+# Disable fastpath in recv_ntfn, used for benchmarking
+NO_FASTPATH := -DLIBMICROKITCO_RECV_NTFN_NO_FASTPATH
+else
+NO_FASTPATH :=
+endif
+
+# End of undocumented features
 
 ifdef LLVM
 CO_CC := clang
@@ -98,7 +109,7 @@ $(LIBCO_OBJ): $(LIBCO_PATH)/libco.c
 	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $^ -o $@
 
 $(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c
-	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_LIBCO_FLAG) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $(PREEMPTIVE_UNBLOCK) $^ -o $@
+	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_LIBCO_FLAG) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(UNSAFE) $(MAX_COTHREADS) $(PREEMPTIVE_UNBLOCK) $(NO_FASTPATH) $^ -o $@
 
 $(LIBMICROKITCO_FINAL_OBJ): $(LIBCO_OBJ) $(LIBMICROKITCO_BARE_OBJ)
 	$(CO_LD) $(CO_LDFLAGS) -r $^ -o $@
