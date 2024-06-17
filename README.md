@@ -25,6 +25,9 @@ All ready cothreads are placed in a queue, the cothread at the front will be res
 
 In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
 
+### Receiving notifications fastpath
+When `microkit_cothread_recv_ntfn()` receives a notification and only 1 cothread is blocked on that channel, it will enter a fastpath that directly unblock the cothread, bypassing the scheduling queue to save time.
+
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
