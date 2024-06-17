@@ -18,10 +18,10 @@ Design, implementation and performance evaluation of a library that provides a n
 
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple threads onto one kernel thread of a PD. Then, one or more threads can wait (block) for an incoming notification from a channel or another thread to return, while some threads are blocked, another thread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait (block) for an incoming notification from a channel or another cothread to return, while some cothreads are blocked, another cothread can execute. 
 
 ### Scheduling
-All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Threads should yield judiciously during long running computation to ensure other threads are not starved of CPU time. 
+All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time. 
 
 In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
 
@@ -40,7 +40,7 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ### Visualisation of execution
 
-This is an animation of a PD blocking on an incoming notification. The yellow area is the stack and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (`co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
+This is an animation of a PD blocking on an incoming notification. The yellow area is the stacks and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (i.e. `co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
 ![Blocking animation](./docs/blocking.gif)
 
 ### Pre-emptive unblocking
@@ -163,7 +163,7 @@ Finally, for any of your object files that uses this library, link it against `$
 
 ## Foot guns
 - If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
-- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
+- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications/PPCs. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.  
 - If you have 2 or more cothreads and they use `signal_delayed()`, the previous cothread's signal will get overwritten!
 
 
@@ -237,6 +237,8 @@ Maps an incoming notification to blocked cothreads, schedule them then yields to
 
 This will always runs in the context of the root PD thread.
 
+
+
 ##### Arguments
 - `ch` number that the notification came from.
 
@@ -244,6 +246,8 @@ This will always runs in the context of the root PD thread.
 
 ### `co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread)`
 Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
+
+If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
