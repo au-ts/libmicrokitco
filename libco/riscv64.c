@@ -123,6 +123,7 @@ section(text)
         // Unused because the Microkit SDK itself is soft-float
         // We can't link soft float and hard float objects together
 
+        // Uncomment these if you want hard-float support.
         // 0x0685b827, // fsd f8, 112(a1)  EQUIV fsd fs0, 112(a1)
         // 0x0695bc27, // fsd f9, 120(a1)
         // 0x0925b027, // fsd f18, 128(a1)
@@ -155,6 +156,7 @@ section(text)
         0x06053d03, // ld s10, 96(a0)
         0x06853d83, // ld s11, 104(a0)
 
+        // Uncomment these if you want hard-float support, no other changes are required.
         // 0x07053407, // fld f8, 112(a0)
         // 0x07853487, // fld f9, 120(a0)
         // 0x08053907, // fld f18, 128(a0)
