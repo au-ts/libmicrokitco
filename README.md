@@ -28,6 +28,8 @@ In cases where the scheduler is invoked and no cothreads are ready, the schedule
 ### Receiving notifications fastpath
 When `microkit_cothread_recv_ntfn()` receives a notification and only 1 cothread is blocked on that channel, it will enter a fastpath that directly unblock the cothread, bypassing the scheduling queue to save time.
 
+This fastpath can be disabled through a preprocessor directive, but you should not need to do so under normal circumstances, unless you are benchmarking.
+
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
@@ -102,6 +104,16 @@ These compiler triples have been well tested with this library:
 - `x86_64-elf`,
 - `riscv64-unknown-elf`.
 
+### Configuration
+You need to create a file called `libmicrokitco_opts.h` that specify this constant:
+1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system needs.
+
+Optionally, you can specify these constants to opt-in to/out of features as appropriate for your need:
+1. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
+2. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
+3. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance.
+
+`libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 
 ### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
@@ -112,37 +124,31 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
-10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs,
-11. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`: opt-in flag of preemptive unblocking feature, 
-12. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
-13. The variables as outlined in Prerequisite.
+8. `LIBMICROKITCO_OPT_PATH`: path to directory containing `libmicrokitco_opts.h`. 
+9. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
+10. The variables as outlined in Prerequisite.
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
+LIBMICROKITCO_OBJ := libmicrokitco_$(TARGET).o
 ```
-For example, a library object file with 5 cothreads configured for AArch64 would have the name:
+For example, the library object file built for AArch64 would have the name:
 ```Make
-libmicrokitco_5ct_aarch64-none-elf.o
+libmicrokitco_aarch64-none-elf.o
 ```
-
-<!-- ##### Danger zone
-> Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking. -->
 
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
 ```Make
 TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
+LIBMICROKITCO_OPT_PATH := $(shell pwd)
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
 
 LLVM = 1
-export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
+export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
 
-$(LIBMICROKITCO_1T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
-$(LIBMICROKITCO_3T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+$(LIBMICROKITCO_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 Or with GCC:
@@ -150,15 +156,13 @@ Or with GCC:
 TARGET=aarch64-none-elf
 TOOLCHAIN=$(TARGET)
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
+LIBMICROKITCO_OPT_PATH := $(shell pwd)
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
 
 export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
-$(LIBMICROKITCO_1T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
-$(LIBMICROKITCO_3T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+$(LIBMICROKITCO_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 Finally, for any of your object files that uses this library, link it against `$(LIBMICROKITCO_OBJ)`.
@@ -181,23 +185,23 @@ For the compiled configuration, returns the amount of memory the library will ne
 
 ---
 
-### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const int co_stack_size, ...)`
+### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-- `controller_memory_addr` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large.
+- `controller_memory_addr` points to the base of a buffer/MR that is at least `LIBMICROKITCO_CONTROLLER_SIZE` bytes large.
 - `co_stack_size` to be >= 0x1000 bytes.
 
 Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uintptr_t` that point to where each co-stack starts. Giving less than `LIBMICROKITCO_MAX_COTHREADS` is undefined behaviour!
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...);`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);`
 A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `size_t (*)(void)`.
-- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
 - `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of `size_t`.
 - `num_args` arguments.

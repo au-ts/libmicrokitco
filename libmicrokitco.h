@@ -7,6 +7,15 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
+
+#include <libmicrokitco_opts.h>
+
+// Cothread handle.
+typedef int microkit_cothread_t;
+#include "libhostedqueue/libhostedqueue.h"
+
+// ========== BEGIN ERROR HANDLING SECTION ==========
 
 // Error numbers and their meanings
 typedef enum {
@@ -59,27 +68,130 @@ typedef enum {
 // Returns a human friendly error message corresponding with the given err code.
 const char *microkit_cothread_pretty_error(const co_err_t err_num);
 
+// ========== END ERROR HANDLING SECTION ==========
+
+
+// ========== BEGIN DATA TYPES SECTION ==========
+
+// This err is caught by the provided Makefile so we should never trigger this. But it's included
+// in case the client want to compile the library manually.
+#ifndef LIBMICROKITCO_MAX_COTHREADS
+#error "libmicrokitco: max_cothreads must be known at compile time."
+#endif
+
+// No point to use this library if your max cothread is 0.
+#if LIBMICROKITCO_MAX_COTHREADS < 1
+#error "libmicrokitco: max_cothreads must be greater or equal to 1."
+#endif
+
+// MAX_THREADS includes the root thread whereas LIBMICROKITCO_MAX_COTHREADS does not
+#define MAX_THREADS LIBMICROKITCO_MAX_COTHREADS + 1
+
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+#define MAX_NTFN_QUEUE 1
+#endif
 
 // Business logic
 #define MICROKITCO_ROOT_THREAD 0
 #define MINIMUM_STACK_SIZE 0x1000 // Minimum is page size
 #define MAXIMUM_CO_ARGS 4 // Hard define so we can statically allocate memory
+#define SCHEDULER_NULL_CHOICE -1
 
+// The form of client entrypoint function.
 typedef size_t (*client_entry_t)(void);
-typedef int microkit_cothread_t;
 
 typedef enum {
-    ready_false,
-    ready_true
-} ready_status_t;
+    // This id is not being used
+    cothread_not_active = 0,
 
-size_t microkit_cothread_derive_memsize();
+    cothread_initialised = 1, // but not ready, transition to ready with mark_ready()
+    cothread_blocked_on_channel = 2,
+    cothread_blocked_on_join = 3,
+    cothread_ready = 4,
+    cothread_running = 5,
+} co_state_t;
 
-co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const int co_stack_size, ...);
+typedef struct {
+    // Thread local storage: context + stack
+    void* local_storage;
+
+    // Entrypoint for cothread
+    client_entry_t client_entry;
+
+    // Current execution state
+    co_state_t state;
+
+    // The next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
+    // -1 means this tcb is the tail.
+
+    // Only checked when state == cothread_blocked_on_channel.
+    microkit_cothread_t next_blocked_on_same_channel;
+
+    // Only checked when state == cothread_blocked_on_join.
+    microkit_cothread_t next_joined_on_same_cothread;
+
+    // The cothread that this cothread is waiting on to return (if applicable)
+    microkit_cothread_t joined_on;
+    // Retval of cothread that this TCB joined on
+    size_t joined_retval;
+
+    size_t this_retval;
+    // Zero if this TCB never returned before OR `this_retval` has been read once.
+    bool retval_valid;
+
+    size_t num_priv_args;
+    size_t priv_args[MAXIMUM_CO_ARGS];
+} co_tcb_t;
+
+// A linked list data structure that manage all cothreads blocking on a specific channel or joining on another cothread.
+typedef struct {
+
+#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
+    // True if preemptive unblock is opted-in AND a notification came in without any cothreads blocking on it.
+    int queued;
+#endif
+
+    microkit_cothread_t head;
+    microkit_cothread_t tail;
+} blocked_list_t;
+
+typedef struct cothreads_control {
+    int co_stack_size;
+    microkit_cothread_t running;
+
+    // All of these are queues of `microkit_cothread_t`
+    hosted_queue_t free_handle_queue;
+    hosted_queue_t scheduling_queue;
+
+    // Blocks of memory for our data structures:
+
+    // Array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
+    co_tcb_t tcbs[MAX_THREADS];
+
+    // Arrays for queues.
+    microkit_cothread_t free_handle_queue_mem[MAX_THREADS];
+    microkit_cothread_t scheduling_queue_mem[MAX_THREADS];
+
+    // Map of linked list on what cothreads are joined to which cothread.
+    blocked_list_t joined_map[MAX_THREADS];
+
+    // Map of linked list on what cothreads are blocked on which channel.
+    blocked_list_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
+} co_control_t;
+
+#define LIBMICROKITCO_CONTROLLER_SIZE sizeof(co_control_t)
+
+// ========== END DATA TYPES SECTION ==========
+
+
+// ========== BEGIN API SECTION ==========
+
+co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...);
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);
+
 co_err_t microkit_cothread_get_arg(const int nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
@@ -91,3 +203,5 @@ void microkit_cothread_yield();
 co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread);
 
 co_err_t microkit_cothread_join(const microkit_cothread_t cothread, size_t *retval);
+
+// ========== END API SECTION ==========

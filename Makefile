@@ -25,38 +25,20 @@ ifndef TARGET
 $(error TARGET is not set)
 endif
 
+# Absolute path to root directory of libmicrokitco
 ifndef LIBMICROKITCO_PATH
 $(error LIBMICROKITCO_PATH is not set)
 endif
 
-ifndef LIBMICROKITCO_MAX_COTHREADS 
-$(error LIBMICROKITCO_MAX_COTHREADS is not set)
+# Absolute path to the directory containing libmicrokitco_opts.h
+ifndef LIBMICROKITCO_OPT_PATH
+$(error LIBMICROKITCO_OPT_PATH is not set)
 else
-MAX_COTHREADS := -DLIBMICROKITCO_MAX_COTHREADS=$(LIBMICROKITCO_MAX_COTHREADS)
+CO_CC_INCLUDE_OPT_FLAG := -I$(LIBMICROKITCO_OPT_PATH)
 endif
 
 ifndef LIBCO_PATH
 LIBCO_PATH := $(LIBMICROKITCO_PATH)/libco
-endif
-
-ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
-PREEMPTIVE_UNBLOCK := -DLIBMICROKITCO_PREEMPTIVE_UNBLOCK
-else
-PREEMPTIVE_UNBLOCK := 
-endif
-
-# Begin undocumented features, you should not need to use them
-ifdef LIBMICROKITCO_UNSAFE
-UNSAFE := -DLIBMICROKITCO_UNSAFE
-else
-UNSAFE :=  
-endif
-
-ifdef LIBMICROKITCO_RECV_NTFN_NO_FASTPATH
-# Disable fastpath in recv_ntfn, used for benchmarking
-NO_FASTPATH := -DLIBMICROKITCO_RECV_NTFN_NO_FASTPATH
-else
-NO_FASTPATH :=
 endif
 
 ifdef LLVM
@@ -78,10 +60,10 @@ endif
 LIBMICROKITCO_BUILD_DIR := $(BUILD_DIR)/libmicrokitco
 
 LIBCO_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libco_$(TARGET).o
-LIBMICROKITCO_BARE_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
-LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
+LIBMICROKITCO_BARE_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare_$(TARGET).o
+LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(TARGET).o
 
-CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Werror -Wno-unused-function
+CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Werror -Wno-unused-function -Wno-unused-variable
 
 ifeq (aarch64,$(findstring aarch64,$(TARGET)))
 CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align
@@ -105,8 +87,8 @@ libmicrokitco_directory:
 $(LIBCO_OBJ): $(LIBCO_PATH)/libco.c
 	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $^ -o $@
 
-$(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c
-	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_LIBCO_FLAG) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(MAX_COTHREADS) $(PREEMPTIVE_UNBLOCK) $(UNSAFE) $(NO_FASTPATH) $^ -o $@
+$(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c $(LIBMICROKITCO_OPT_PATH)/libmicrokitco_opts.h
+	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_LIBCO_FLAG) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(CO_CC_INCLUDE_OPT_FLAG) $< -o $@
 
 $(LIBMICROKITCO_FINAL_OBJ): $(LIBCO_OBJ) $(LIBMICROKITCO_BARE_OBJ)
 	$(CO_LD) $(CO_LDFLAGS) -r $^ -o $@
