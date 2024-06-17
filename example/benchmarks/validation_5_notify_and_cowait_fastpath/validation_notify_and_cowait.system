@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <system>
-    <memory_region name="uart" size="0x1_000" phys_addr="0xff80_3000" />
+    <memory_region name="uart" size="0x1_000" phys_addr="0x1001_0000" />
 
     <memory_region name="co_control_mem" size="0x1_000" />
     <memory_region name="co_stack" size="0x1_000" />

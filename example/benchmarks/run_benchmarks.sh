@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# This script is used for automatically running the benchmarks on the Trustworthy Systems' machine queue within the keg network 
+
 # Change these if necessary for your system.
 # For example, this is my setup:
 export A64_TOOLCHAIN='/opt/toolchain/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf'
 export R64_TOOLCHAIN='/home/billn/riscv64-unknown-elf-toolchain-10.2.0-2020.12.8-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf'
 
 # Don't change these
+#export SDK=$(realpath microkit-sdk-1.2.6-libmicrokitco-bench-riscv_patched)
 export SDK=$(realpath microkit-sdk-1.2.6-linux_x86_64-libmicrokitco-bench-riscv_patched)
 export OPENSBI=$(realpath opensbi)
 
