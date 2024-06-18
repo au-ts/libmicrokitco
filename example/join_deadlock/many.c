@@ -78,10 +78,10 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry1, ready_true, &co1, 0);
-    microkit_cothread_spawn(co_entry2, ready_true, &co2, 0);
-    microkit_cothread_spawn(co_entry3, ready_true, &co3, 0);
-    microkit_cothread_spawn(co_entry4, ready_true, &co4, 0);
+    microkit_cothread_spawn(co_entry1, true, &co1, 0);
+    microkit_cothread_spawn(co_entry2, true, &co2, 0);
+    microkit_cothread_spawn(co_entry3, true, &co3, 0);
+    microkit_cothread_spawn(co_entry4, true, &co4, 0);
 
     printf("Many to one PD: cothreads %d %d %d %d spawned\n", co1, co2, co3, co4);
 
