@@ -113,7 +113,7 @@ You need to create a file called `libmicrokitco_opts.h` that specify this consta
 Optionally, you can specify these constants to opt-in to/out of features as appropriate for your need:
 1. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
 2. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
-3. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance.
+3. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance. Don't use unless you really know what you are doing.
 
 `libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 
