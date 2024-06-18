@@ -93,7 +93,7 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
 
     // Parses all the valid stack memory regions
     va_list ap;
-    va_start (ap, co_stack_size);
+    va_start(ap, co_stack_size);
     for (int i = 0; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
         co_controller->tcbs[i + 1].local_storage = (void *) va_arg(ap, uintptr_t);
 
@@ -311,7 +311,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool r
     memzero(co_controller->tcbs[new].priv_args, sizeof(size_t) * MAXIMUM_CO_ARGS);
 
     va_list ap;
-    va_start (ap, num_args);
+    va_start(ap, num_args);
     for (int i = 0; i < num_args; i++) {
         co_controller->tcbs[new].priv_args[i] = va_arg(ap, size_t);
     }
