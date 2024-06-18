@@ -11,7 +11,6 @@
 #include <sel4/sel4.h>
 
 #include "libmicrokitco.h"
-#include "libhostedqueue/libhostedqueue.h"
 #include <libco.h>
 
 void microkit_cothread_panic() {
@@ -49,8 +48,6 @@ const char *err_strs[] = {
     "libmicrokitco: mark_ready(): subject cothread is already ready.\n",
     "libmicrokitco: mark_ready(): cannot mark self as ready.\n",
     "libmicrokitco: mark_ready(): cannot schedule subject cothread.\n",
-
-    "libmicrokitco: switch(): cannot switch to self.\n",
 
     "libmicrokitco: wait(): invalid channel.\n",
 

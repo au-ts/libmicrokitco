@@ -49,8 +49,6 @@ typedef enum {
     co_err_mark_ready_cannot_mark_self,
     co_err_mark_ready_cannot_schedule,
 
-    co_err_switch_to_self,
-
     co_err_wait_invalid_channel,
 
     co_err_yield_cannot_schedule_caller,
