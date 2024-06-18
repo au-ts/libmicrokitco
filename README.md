@@ -58,13 +58,15 @@ This data shows I/O performance of all possible communications model in Microkit
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| One way Protected Prodecure Call (PPC) | 398 | 46.43 | 11.67% | 553 | 31.72 | 5.74% |
-| Round trip (RT) PPC | 852 | 38.38 | 4.50% | 1270 | 46.89 | 3.69% | 
-| RT client notify - server notify (async model) | 2441 | 89.53 | 3.67% | 5900 | 87.73 | 1.49% | 
-| RT client notify - wait with libco - server notify | 2728 | 158.01 | 5.79% | 6448 | 155.91 | 2.42% |  
-| RT client notify - wait with libmicrokitco - server notify | 2952 | 136.33 | 4.62% | 7255 | 134.21 | 1.85% | 
+| One way Protected Prodecure Call (PPC) | 392 | 38.47 | 9.81% | 549 | 31.22 | 5.69% |
+| Round trip (RT) PPC | 853 | 52.73 | 6.18% | 1272 | 35.31 | 2.78% | 
+| RT client notify - server notify (async model) | 2448 | 75.81 | 3.10% | 5931 | 129.52 | 2.18% | 
+| RT client notify - wait with libco - server notify | 2723 | 124.15 | 4.56% | 6322 | 128.31 | 2.03% |  
+| RT client notify - wait with libmicrokitco in fastpath - server notify | 2864 | 191.18 | 6.68% | 7135 | 166.52 | 2.33% | 
+| RT client notify - wait with libmicrokitco in slowpath - server notify | 2980 | 139.07 | 4.67% | 7254 | 132.76 | 1.83% | 
 
-![Performance chart](./docs/performance_chart.png)
+![Performance chart](./docs/odroidc4_perf.png)
+![Performance chart](./docs/hifive_perf.png)
 
 We observe that usage of this library to perform synchronous I/O in Microkit incur a ~500 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~220 cycles compared to using bare coroutine primitives to achieve blocking I/O.
 
