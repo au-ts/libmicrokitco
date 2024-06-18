@@ -19,7 +19,7 @@ MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 CC_INCLUDE_SERIAL := -Iserial_drv/include
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS =  $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
+CFLAGS =  $(ECFLAGS) -c -O2 -mstrict-align -nostdlib -ffreestanding -Wall -Wno-array-bounds -Wno-unused-function -I. $(CC_INCLUDE_MICROKIT_FLAG) $(CC_INCLUDE_SERIAL)
 LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib 
 LIBS = -lmicrokit -Tmicrokit.ld 
 
@@ -29,12 +29,11 @@ directories:
 	$(info $(shell mkdir -p $(BUILD_DIR)))
 
 LIBMICROKITCO_PATH := ../../../
-LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
-
-LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LIBMICROKITCO_PREEMPTIVE_UNBLOCK TOOLCHAIN
+LIBMICROKITCO_OPT_PATH := $(PWD)
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
+export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 $(LIBMICROKITCO_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1 TARGET=$(TARGET)
+	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
 
 $(BUILD_DIR)/putchar_serial.o: serial_drv/putchar_serial.c
 	$(CC) $(CFLAGS) $(SERIAL_CONFIG) $^ -o $@
