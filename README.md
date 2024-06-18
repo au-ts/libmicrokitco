@@ -68,7 +68,7 @@ This data shows I/O performance of all possible communications model in Microkit
 ![Performance chart](./docs/odroidc4_perf.png)
 ![Performance chart](./docs/hifive_perf.png)
 
-We observe that usage of this library to perform synchronous I/O in Microkit incur a ~500 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~220 cycles compared to using bare coroutine primitives to achieve blocking I/O.
+We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a ~400 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~150 cycles compared to using bare coroutine primitives to achieve blocking I/O.
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
@@ -179,11 +179,6 @@ Finally, for any of your object files that uses this library, link it against `$
 ## API
 ### `const char *microkit_cothread_pretty_error(const co_err_t err_num)`
 Map the error number returned by this library's functions into a human friendly error message string.
-
----
-
-### `size_t microkit_cothread_derive_memsize()`
-For the compiled configuration, returns the amount of memory the library will needs for it's data structure (excluding the costacks).
 
 ---
 
