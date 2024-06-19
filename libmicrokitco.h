@@ -146,7 +146,7 @@ typedef struct {
 
 #ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
     // True if preemptive unblock is opted-in AND a notification came in without any cothreads blocking on it.
-    int queued;
+    unsigned queued;
 #endif
 
     microkit_cothread_t head;
