@@ -51,35 +51,39 @@ directories:
 # Build libmicrokitco
 ifndef TOOLCHAIN
 LLVM = 1
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LLVM
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
 
 else
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS TOOLCHAIN
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
 endif
 
 $(LIBMICROKITCO_3T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/3_cothreads_clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_3T_AARCH64_OBJ)
 $(LIBMICROKITCO_4T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=$(TARGET)
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/4_cothreads_clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_4T_AARCH64_OBJ)
 
 $(LIBMICROKITCO_3T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/3_cothreads_clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_3T_RISCV64_OBJ)
 $(LIBMICROKITCO_4T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=4 TARGET=$(TARGET)
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/4_cothreads_clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_4T_RISCV64_OBJ)
 
 # Build client system
-$(BUILD_DIR)/printf.o: printf.c
+$(BUILD_DIR)/printf.o: src/printf.c
 	$(CC) $(CFLAGS) -DPRINTF_DISABLE_SUPPORT_FLOAT $^ -o $@
 
-$(BUILD_DIR)/deadlocked.o: deadlocked.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/deadlocked.o: src/3_cothreads_clients/deadlocked.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -I$(PWD)/src/3_cothreads_clients $^ -o $@
 
-$(BUILD_DIR)/deadlock_free.o: deadlock_free.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/deadlock_free.o: src/3_cothreads_clients/deadlock_free.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -I$(PWD)/src/3_cothreads_clients $^ -o $@
 
-$(BUILD_DIR)/many.o: many.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/many.o: src/4_cothreads_clients/many.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -I$(PWD)/src/4_cothreads_clients $^ -o $@
 
 # Link everything together
 .PHONY: aarch64_link_deadlocked
