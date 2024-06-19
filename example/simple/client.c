@@ -1,11 +1,10 @@
-#include <microkit.h>
+#include <microkit.h> 
 #include <libmicrokitco.h>
 #include <printf.h>
 
-#define COMEM_3CT_SIZE 952
 #define COSTACK_SIZE 0x1000
 
-char co_mem[COMEM_3CT_SIZE];
+char co_mem[LIBMICROKITCO_CONTROLLER_SIZE];
 
 // These should actually be in the system description file with guard page
 // but setvar_addr does not work in the x86 SDK currently so we putting them here
@@ -24,12 +23,8 @@ void init(void) {
     printf("CLIENT: starting\n");
 
     printf("CLIENT: libmicrokitco derived memsize is %lu bytes\n", 
-        microkit_cothread_derive_memsize()
+        LIBMICROKITCO_CONTROLLER_SIZE
     );
-    if (COMEM_3CT_SIZE < microkit_cothread_derive_memsize()) {
-        printf("CLIENT: ERROR: but we only allocated %d bytes!\n", COMEM_3CT_SIZE);
-        microkit_internal_crash(0);
-    }
 
     co_err_t err = microkit_cothread_init(
         (uintptr_t) co_mem, 
@@ -46,11 +41,11 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, ready_true, &co1, 1, 1);
-    microkit_cothread_spawn(co_entry, ready_true, &co2, 1, 2);
-    microkit_cothread_spawn(co_entry, ready_true, &co3, 1, 3);
+    microkit_cothread_spawn(co_entry, true, &co1, 1, 1);
+    microkit_cothread_spawn(co_entry, true, &co2, 1, 2);
+    microkit_cothread_spawn(co_entry, true, &co3, 1, 3);
 
-    if (microkit_cothread_spawn(co_entry, ready_true, &co4, 1, 4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, true, &co4, 1, 4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }

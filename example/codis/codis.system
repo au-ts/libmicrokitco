@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <system>
-    <memory_region name="serv_co_mem" size="0x1000"/>
+    <memory_region name="serv_co_mem" size="0x2000"/>
     <memory_region name="serv_stack1" size="0x2000"/>
     <memory_region name="serv_stack2" size="0x2000"/>
     <memory_region name="serv_stack3" size="0x2000"/>

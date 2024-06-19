@@ -13,11 +13,17 @@
     #include "arm.c"
   #elif defined(__aarch64__)
     #include "aarch64.c"
-  #elif defined(__riscv)
-    #include "riscv64.c"
+  #elif defined(__riscv) && __riscv_xlen == 64
+    #if ! defined(__riscv_flen)
+      #include "riscv64.c"
+    #elif defined(__riscv_flen) && __riscv_flen == 64
+      #include "riscv64.c"
+    #elif defined(__riscv_flen) && __riscv_flen != 64
+      #error "libco: err1: unsupported RISC-V processor"
+    #endif
   #else
-    #error "libco: err1: unsupported processor, compiler or operating system"
+    #error "libco: err2: unsupported processor, compiler or operating system"
   #endif
 #else
-  #error "libco: err2: unsupported processor, compiler or operating system"
+  #error "libco: err3: unsupported processor, compiler or operating system"
 #endif

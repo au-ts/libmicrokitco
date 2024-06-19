@@ -9,6 +9,7 @@ endif
 # Debug so we have serial without an actual serial driver
 MICROKIT_CONFIG := debug
 BUILD_DIR := build
+PWD := $(shell pwd)
 
 # default to building with LLVM
 ifndef TOOLCHAIN
@@ -25,7 +26,6 @@ endif
 MICROKIT_TOOL = $(MICROKIT_SDK)/bin/microkit
 
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_MAX_COTHREADS = 3
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
 CFLAGS += -c -g
@@ -36,9 +36,9 @@ LDFLAGS = -L$(BOARD_DIR)/lib
 LIBS = -lmicrokit -Tmicrokit.ld
 
 # Arch specific obj
-LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
-LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
-LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
+LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
+LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 X86_64_TARGET_RULE := $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/capdl-initialiser-with-spec.elf
@@ -58,12 +58,13 @@ $(BUILD_DIR)/client.o: client.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
 # Build libmicrokitco
+LIBMICROKITCO_OPT_PATH := $(PWD)/include
 ifndef TOOLCHAIN
 LLVM = 1
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LLVM
+export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
 
 else
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS TOOLCHAIN
+export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
 endif
 

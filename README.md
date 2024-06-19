@@ -18,12 +18,17 @@ Design, implementation and performance evaluation of a library that provides a n
 
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a queue-based scheduler for use within Microkit. In essence, it allow mapping of multiple threads onto one kernel thread of a PD. Then, one or more threads can wait (block) for an incoming notification from a channel or another thread to return, while some threads are blocked, another thread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait (block) for an incoming notification from a channel or another cothread to return, while some cothreads are blocked, another cothread can execute. 
 
 ### Scheduling
-All ready threads are placed in a queue, the thread at the front will be resumed by the scheduler when it is invoked. Threads should yield judiciously during long running computation to ensure other threads are not starved of CPU time. 
+All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time.
 
 In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
+
+### Receiving notifications fastpath
+When `microkit_cothread_recv_ntfn()` receives a notification and only 1 cothread is blocked on that channel, it will enter a fastpath that directly unblock the cothread, bypassing the scheduling queue to save time.
+
+This fastpath can be disabled through a preprocessor directive, but you should not need to do so under normal circumstances, unless you are benchmarking.
 
 ### Memory model
 The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
@@ -40,7 +45,7 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 
 ### Visualisation of execution
 
-This is an animation of a PD blocking on an incoming notification. The yellow area is the stack and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (`co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
+This is an animation of a PD blocking on an incoming notification. The yellow area is the stacks and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (i.e. `co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
 ![Blocking animation](./docs/blocking.gif)
 
 ### Pre-emptive unblocking
@@ -53,15 +58,17 @@ This data shows I/O performance of all possible communications model in Microkit
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| One way Protected Prodecure Call (PPC) | 398 | 46.43 | 11.67% | 553 | 31.72 | 5.74% |
-| Round trip (RT) PPC | 852 | 38.38 | 4.50% | 1270 | 46.89 | 3.69% | 
-| RT client notify - server notify (async model) | 2441 | 89.53 | 3.67% | 5900 | 87.73 | 1.49% | 
-| RT client notify - wait with libco - server notify | 2728 | 158.01 | 5.79% | 6448 | 155.91 | 2.42% |  
-| RT client notify - wait with libmicrokitco - server notify | 2952 | 136.33 | 4.62% | 7255 | 134.21 | 1.85% | 
+| One way Protected Prodecure Call (PPC) | 392 | 38.47 | 9.81% | 549 | 31.22 | 5.69% |
+| Round trip (RT) PPC | 853 | 52.73 | 6.18% | 1272 | 35.31 | 2.78% | 
+| RT client notify - server notify (async model) | 2448 | 75.81 | 3.10% | 5931 | 129.52 | 2.18% | 
+| RT client notify - wait with libco - server notify | 2723 | 124.15 | 4.56% | 6322 | 128.31 | 2.03% |  
+| RT client notify - wait with libmicrokitco in fastpath - server notify | 2864 | 191.18 | 6.68% | 7135 | 166.52 | 2.33% | 
+| RT client notify - wait with libmicrokitco in slowpath - server notify | 2980 | 139.07 | 4.67% | 7254 | 132.76 | 1.83% | 
 
-![Performance chart](./docs/performance_chart.png)
+![Performance chart](./docs/odroidc4_perf.png)
+![Performance chart](./docs/hifive_perf.png)
 
-We observe that usage of this library to perform synchronous I/O in Microkit incur a ~500 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~220 cycles compared to using bare coroutine primitives to achieve blocking I/O.
+We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a ~400 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~150 cycles compared to using bare coroutine primitives to achieve blocking I/O.
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
@@ -99,6 +106,16 @@ These compiler triples have been well tested with this library:
 - `x86_64-elf`,
 - `riscv64-unknown-elf`.
 
+### Configuration
+You need to create a file called `libmicrokitco_opts.h` that specify this constant:
+1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system needs.
+
+Optionally, you can specify these constants to opt-in to/out of features as appropriate for your need:
+1. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
+2. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
+3. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance. Don't use unless you really know what you are doing.
+
+`libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 
 ### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
@@ -109,37 +126,31 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
 6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
 7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
-10. `LIBMICROKITCO_MAX_COTHREADS`: maximum number of cothreads your system needs,
-11. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`: opt-in flag of preemptive unblocking feature, 
-12. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
-13. The variables as outlined in Prerequisite.
+8. `LIBMICROKITCO_OPT_PATH`: path to directory containing `libmicrokitco_opts.h`. 
+9. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
+10. The variables as outlined in Prerequisite.
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(LIBMICROKITCO_MAX_COTHREADS)ct_$(TARGET).o
+LIBMICROKITCO_OBJ := libmicrokitco_$(TARGET).o
 ```
-For example, a library object file with 5 cothreads configured for AArch64 would have the name:
+For example, the library object file built for AArch64 would have the name:
 ```Make
-libmicrokitco_5ct_aarch64-none-elf.o
+libmicrokitco_aarch64-none-elf.o
 ```
-
-<!-- ##### Danger zone
-> Define `LIBMICROKITCO_UNSAFE` in your preprocessor to skip most pedantic error checking. -->
 
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
 ```Make
 TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
+LIBMICROKITCO_OPT_PATH := $(shell pwd)
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
 
 LLVM = 1
-export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
+export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
 
-$(LIBMICROKITCO_1T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
-$(LIBMICROKITCO_3T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+$(LIBMICROKITCO_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 Or with GCC:
@@ -147,15 +158,13 @@ Or with GCC:
 TARGET=aarch64-none-elf
 TOOLCHAIN=$(TARGET)
 LIBMICROKITCO_PATH := ../../
-LIBMICROKITCO_1T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_aarch64-none-elf.o
-LIBMICROKITCO_3T_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_aarch64-none-elf.o
+LIBMICROKITCO_OPT_PATH := $(shell pwd)
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
 
 export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
-$(LIBMICROKITCO_1T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1
-$(LIBMICROKITCO_3T_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3
+$(LIBMICROKITCO_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile
 ```
 
 Finally, for any of your object files that uses this library, link it against `$(LIBMICROKITCO_OBJ)`.
@@ -163,7 +172,7 @@ Finally, for any of your object files that uses this library, link it against `$
 
 ## Foot guns
 - If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
-- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
+- The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications/PPCs. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
 - If you have 2 or more cothreads and they use `signal_delayed()`, the previous cothread's signal will get overwritten!
 
 
@@ -173,28 +182,23 @@ Map the error number returned by this library's functions into a human friendly 
 
 ---
 
-### `size_t microkit_cothread_derive_memsize()`
-For the compiled configuration, returns the amount of memory the library will needs for it's data structure (excluding the costacks).
-
----
-
-### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const int co_stack_size, ...)`
+### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
-- `controller_memory_addr` points to the base of an MR that is at least `microkit_cothread_derive_memsize(max_cothreads)` bytes large.
+- `controller_memory_addr` points to the base of a buffer/MR that is at least `LIBMICROKITCO_CONTROLLER_SIZE` bytes large.
 - `co_stack_size` to be >= 0x1000 bytes.
 
 Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uintptr_t` that point to where each co-stack starts. Giving less than `LIBMICROKITCO_MAX_COTHREADS` is undefined behaviour!
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const ready_status_t ready, microkit_cothread_t *ret, const int num_args, ...);`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);`
 A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `size_t (*)(void)`.
-- `ready` indicates whether to schedule your cothread for execution. If you pass `ready_true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `ready_false`, you must later call `mark_ready()` for this cothread to be scheduled.
+- `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
 - `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of `size_t`.
 - `num_args` arguments.
@@ -244,6 +248,8 @@ This will always runs in the context of the root PD thread.
 
 ### `co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread)`
 Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
+
+If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
