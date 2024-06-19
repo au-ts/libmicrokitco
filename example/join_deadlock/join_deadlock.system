@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system>
+    <!-- Define your system here -->
+
+    <memory_region name="deadlocked_co_mem" size="0x1000"/>
+    <memory_region name="deadlocked_stack1" size="0x1000"/>
+    <memory_region name="deadlocked_stack2" size="0x1000"/>
+    <memory_region name="deadlocked_stack3" size="0x1000"/>
+
+    <protection_domain name="deadlocked" priority="200">
+        <program_image path="deadlocked.elf" />
+
+        <map mr="deadlocked_co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="deadlocked_stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack1" />
+        <map mr="deadlocked_stack2" vaddr="0x2006000" perms="rw" setvar_vaddr="stack2" />
+        <map mr="deadlocked_stack3" vaddr="0x2008000" perms="rw" setvar_vaddr="stack3" />
+
+    </protection_domain>
+
+
+    <memory_region name="many_co_mem" size="0x2000"/>
+    <memory_region name="many_stack1" size="0x1000"/>
+    <memory_region name="many_stack2" size="0x1000"/>
+    <memory_region name="many_stack3" size="0x1000"/>
+    <memory_region name="many_stack4" size="0x1000"/>
+    
+    <protection_domain name="many" priority="150">
+        <program_image path="many.elf" />
+
+        <map mr="many_co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="many_stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack1" />
+        <map mr="many_stack2" vaddr="0x2006000" perms="rw" setvar_vaddr="stack2" />
+        <map mr="many_stack3" vaddr="0x2008000" perms="rw" setvar_vaddr="stack3" />
+        <map mr="many_stack4" vaddr="0x200A000" perms="rw" setvar_vaddr="stack4" />
+
+    </protection_domain>
+
+
+    <memory_region name="deadlock_free_co_mem" size="0x1000"/>
+    <memory_region name="deadlock_free_stack1" size="0x1000"/>
+    <memory_region name="deadlock_free_stack2" size="0x1000"/>
+    <memory_region name="deadlock_free_stack3" size="0x1000"/>
+
+    <protection_domain name="deadlock_free" priority="100">
+        <program_image path="deadlock_free.elf" />
+
+        <map mr="deadlock_free_co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="deadlock_free_stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack1" />
+        <map mr="deadlock_free_stack2" vaddr="0x2006000" perms="rw" setvar_vaddr="stack2" />
+        <map mr="deadlock_free_stack3" vaddr="0x2008000" perms="rw" setvar_vaddr="stack3" />
+
+    </protection_domain>
+</system>
+

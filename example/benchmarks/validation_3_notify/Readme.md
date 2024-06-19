@@ -1,0 +1,1 @@
+A benchmark that measures the cycle count of round trip microkit_notify() in a tight loop of 32 passes on the Odroid C4 and HiFive Unleashed.

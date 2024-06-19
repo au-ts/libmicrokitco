@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system>
+    <memory_region name="serv_co_mem" size="0x2000"/>
+    <memory_region name="serv_stack1" size="0x2000"/>
+    <memory_region name="serv_stack2" size="0x2000"/>
+    <memory_region name="serv_stack3" size="0x2000"/>
+
+    <memory_region name="client1_co_mem" size="0x1000"/>
+    <memory_region name="client1_co_stack" size="0x2000"/>
+
+    <memory_region name="client2_co_mem" size="0x1000"/>
+    <memory_region name="client2_co_stack" size="0x2000"/>
+
+    <memory_region name="client3_co_mem" size="0x1000"/>
+    <memory_region name="client3_co_stack" size="0x2000"/>
+
+
+    <!-- data passing between server and client -->
+    <memory_region name="client1_ipc" size="0x1000"/>
+    <memory_region name="client2_ipc" size="0x1000"/>
+    <memory_region name="client3_ipc" size="0x1000"/>
+
+    <!-- the in memory cache, 255 "buckets", 4k for each bucket -->
+    <memory_region name="serv_priv_data" size="0xFF_1000"/>
+
+    <protection_domain name="server" priority="250">
+        <program_image path="server.elf" />
+
+        <map mr="serv_co_mem" vaddr="0x2000000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="serv_priv_data" vaddr="0x3000000" perms="rw" setvar_vaddr="db" />
+
+        <!-- guard page between the stacks! -->
+        <map mr="serv_stack1" vaddr="0x2004000" perms="rw" setvar_vaddr="stack1" />
+        <map mr="serv_stack2" vaddr="0x2007000" perms="rw" setvar_vaddr="stack2" />
+        <map mr="serv_stack3" vaddr="0x200a000" perms="rw" setvar_vaddr="stack3" />
+
+        <!-- guard page between the IPC buffer! -->
+        <map mr="client1_ipc" vaddr="0x2011000" perms="rw" setvar_vaddr="client1_ipc" />
+        <map mr="client2_ipc" vaddr="0x2013000" perms="rw" setvar_vaddr="client2_ipc" />
+        <map mr="client3_ipc" vaddr="0x2015000" perms="rw" setvar_vaddr="client3_ipc" />
+
+    </protection_domain>
+
+    <protection_domain name="client1" priority="203">
+        <program_image path="client1.elf" />
+        <!-- trick to pass the client number to the singular executable -->
+        <map mr="client1_ipc" vaddr="0x2001000" perms="rw" setvar_vaddr="ipc" />
+
+        <map mr="client1_co_mem" vaddr="0x2003000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="client1_co_stack" vaddr="0x2005000" perms="rw" setvar_vaddr="co_stack" />
+    </protection_domain>
+
+    <protection_domain name="client2" priority="202">
+        <program_image path="client2.elf" />
+        <map mr="client2_ipc" vaddr="0x2002000" perms="rw" setvar_vaddr="ipc" />
+
+        <map mr="client2_co_mem" vaddr="0x2004000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="client2_co_stack" vaddr="0x2006000" perms="rw" setvar_vaddr="co_stack" />
+    </protection_domain>
+
+    <protection_domain name="client3" priority="201">
+        <program_image path="client3.elf" />
+        <map mr="client3_ipc" vaddr="0x2003000" perms="rw" setvar_vaddr="ipc" />
+
+        <map mr="client3_co_mem" vaddr="0x2005000" perms="rw" setvar_vaddr="co_mem" />
+        <map mr="client3_co_stack" vaddr="0x2007000" perms="rw" setvar_vaddr="co_stack" />
+    </protection_domain>
+
+
+    <channel>
+        <end pd="client1" id="0" />
+        <end pd="server" id="1" />
+    </channel>
+
+    <channel>
+        <end pd="client2" id="0" />
+        <end pd="server" id="2" />
+    </channel>
+
+    <channel>
+        <end pd="client3" id="0" />
+        <end pd="server" id="3" />
+    </channel>
+
+</system>

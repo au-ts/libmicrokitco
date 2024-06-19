@@ -1,0 +1,1 @@
+This is the coroutine primitives bundled with `libmicrokitco`. You are free to use your own coroutine primitives as long as it shares the same interface. Simply specify `LIBCO_PATH` Makefile variable.
