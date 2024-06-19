@@ -51,8 +51,6 @@ This is an animation of a PD blocking on an incoming notification. The yellow ar
 ### Pre-emptive unblocking
 Is an opt-in feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
 
-To opt-in, define `LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1` in your Makefile and export it.
-
 ### Performance
 This data shows I/O performance of all possible communications model in Microkit between two separate address spaces compared to blocking with `libmicrokitco`. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
 
