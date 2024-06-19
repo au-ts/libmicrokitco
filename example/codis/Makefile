@@ -28,15 +28,15 @@ MICROKIT_TOOL ?= $(MICROKIT_SDK)/bin/microkit
 LIBMICROKITCO_PATH := ../../
 
 CC_INCLUDE_MICROKIT_FLAG = -I$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/include
-CFLAGS += -c -mstrict-align -nostdlib -ffreestanding -g -Wall -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
+CFLAGS += -c -mstrict-align -nostdlib -ffreestanding -gdwarf-2 -Wall -Wno-unused-function -Iinclude $(CC_INCLUDE_MICROKIT_FLAG)
 LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
 LIBS = -lmicrokit -Tmicrokit.ld
 
 # Our PDs have different needs for number of cothreads so we need multiple configs of the library.
-LIBMICROKITCO_1T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
-LIBMICROKITCO_3T_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
-LIBMICROKITCO_1T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
-LIBMICROKITCO_3T_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_CLIENT_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
+LIBMICROKITCO_SERVER_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_CLIENT_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
+LIBMICROKITCO_SERVER_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 RISCV64_TARGET_RULE := $(BUILD_DIR)/loader_riscv64.img
@@ -52,56 +52,60 @@ directories:
 LIBMICROKITCO_PREEMPTIVE_UNBLOCK = 1
 ifndef TOOLCHAIN
 LLVM = 1
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LIBMICROKITCO_PREEMPTIVE_UNBLOCK LLVM
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
 
 else
-export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LIBMICROKITCO_MAX_COTHREADS LIBMICROKITCO_PREEMPTIVE_UNBLOCK TOOLCHAIN
+export LIBMICROKITCO_PATH MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
 endif
 
-$(LIBMICROKITCO_1T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1 TARGET=$(TARGET)
-$(LIBMICROKITCO_3T_AARCH64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
+$(LIBMICROKITCO_CLIENT_AARCH64_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
+$(LIBMICROKITCO_SERVER_AARCH64_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
 
-$(LIBMICROKITCO_1T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=1 TARGET=$(TARGET)
-$(LIBMICROKITCO_3T_RISCV64_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_MAX_COTHREADS=3 TARGET=$(TARGET)
+$(LIBMICROKITCO_CLIENT_RISCV64_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
+$(LIBMICROKITCO_SERVER_RISCV64_OBJ):
+	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
 
 # Build client system
-$(BUILD_DIR)/printf.o: printf.c
+$(BUILD_DIR)/printf.o: src/printf.c
 	$(CC) $(CFLAGS) -DPRINTF_DISABLE_SUPPORT_FLOAT $^ -o $@
 
-$(BUILD_DIR)/client1.o: client1.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/client1.o: src/clients/client1.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -Isrc/clients $^ -o $@
 
-$(BUILD_DIR)/client2.o: client2.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/client2.o: src/clients/client2.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -Isrc/clients $^ -o $@
 
-$(BUILD_DIR)/client3.o: client3.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/client3.o: src/clients/client3.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -Isrc/clients $^ -o $@
 
-$(BUILD_DIR)/server.o: server.c
-	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
+$(BUILD_DIR)/server.o: src/server/server.c
+	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) -Isrc/server $^ -o $@
 
 # Link everything together
 .PHONY: aarch64_link_clients
-aarch64_link_clients: $(BUILD_DIR)/client1.o $(BUILD_DIR)/client2.o $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_AARCH64_OBJ)
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client1.elf
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client2.elf
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client3.elf
+aarch64_link_clients: $(BUILD_DIR)/client1.o $(BUILD_DIR)/client2.o $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client1.elf
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client2.elf
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ) $(LIBS) -o $(BUILD_DIR)/client3.elf
 .PHONY: aarch64_link_server
-aarch64_link_server:  $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_3T_AARCH64_OBJ)
+aarch64_link_server:  $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $(BUILD_DIR)/server.elf
 
 .PHONY: riscv64_link_clients
-riscv64_link_clients: $(BUILD_DIR)/client1.o $(BUILD_DIR)/client2.o $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_RISCV64_OBJ)
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client1.elf
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client2.elf
-	$(LD) $(LDFLAGS) $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_1T_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client3.elf
+riscv64_link_clients: $(BUILD_DIR)/client1.o $(BUILD_DIR)/client2.o $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client1.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client1.elf
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client2.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client2.elf
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/client3.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ) $(LIBS) -o $(BUILD_DIR)/client3.elf
 .PHONY: riscv64_link_server
-riscv64_link_server:  $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_3T_RISCV64_OBJ)
+riscv64_link_server:  $(BUILD_DIR)/server.o $(BUILD_DIR)/printf.o $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $(BUILD_DIR)/server.elf
 
 # Build bootable image
