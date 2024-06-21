@@ -102,11 +102,12 @@ typedef enum {
     // This id is not being used
     cothread_not_active = 0,
 
-    cothread_initialised = 1, // but not ready, transition to ready with mark_ready()
-    cothread_blocked_on_channel = 2,
-    cothread_blocked_on_join = 3,
-    cothread_ready = 4,
-    cothread_running = 5,
+    cothread_initialised, // but not ready, transition to ready with mark_ready()
+    cothread_blocked, // generic block, client decides the logic of when the cothread wake up.
+    cothread_blocked_on_channel,
+    cothread_blocked_on_join,
+    cothread_ready,
+    cothread_running,
 } co_state_t;
 
 typedef struct {
@@ -186,6 +187,8 @@ typedef struct cothreads_control {
 
 co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
 
+co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
+
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);
@@ -196,7 +199,9 @@ co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
 
 co_err_t microkit_cothread_wait(const microkit_channel wake_on);
 
-void microkit_cothread_yield();
+co_err_t microkit_cothread_block();
+
+co_err_t microkit_cothread_yield();
 
 co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread);
 

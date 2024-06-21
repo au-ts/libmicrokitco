@@ -162,6 +162,17 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
     return co_no_err;
 }
 
+co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle) {
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+#endif
+
+    *ret_handle = co_controller->running;
+    return co_no_err;
+}
+
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
@@ -447,10 +458,16 @@ co_err_t microkit_cothread_wait(const microkit_channel wake_on) {
     return co_no_err;
 }
 
-void microkit_cothread_yield() {
+co_err_t microkit_cothread_block() {
+    co_controller->tcbs[co_controller->running].state = cothread_blocked;
+    internal_go_next();
+    return co_no_err;
+}
+
+co_err_t microkit_cothread_yield() {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
-        return;
+        return co_err_generic_not_initialised;
     }
 #endif
 
@@ -461,6 +478,8 @@ void microkit_cothread_yield() {
 
     // If the scheduling queues are empty beforehand, the caller just get runned again.
     internal_go_next();
+
+    return co_no_err;
 }
 
 // This function get executed when the client cothread returns. We updates the internal states of the library
