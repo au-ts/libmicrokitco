@@ -12,11 +12,10 @@ char stack1[COSTACK_SIZE];
 char stack2[COSTACK_SIZE];
 char stack3[COSTACK_SIZE];
 
-size_t co_entry() {
-    size_t our_id;
-    microkit_cothread_get_arg(0, &our_id);
+void co_entry() {
+    uintptr_t our_id;
+    microkit_cothread_my_arg(&our_id);
     printf("CO%ld: hello world\n", our_id);
-    return 0;
 }
 
 void init(void) {
@@ -41,11 +40,11 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, true, &co1, 1, 1);
-    microkit_cothread_spawn(co_entry, true, &co2, 1, 2);
-    microkit_cothread_spawn(co_entry, true, &co3, 1, 3);
+    microkit_cothread_spawn(co_entry, true, &co1, 1);
+    microkit_cothread_spawn(co_entry, true, &co2, 2);
+    microkit_cothread_spawn(co_entry, true, &co3, 3);
 
-    if (microkit_cothread_spawn(co_entry, true, &co4, 1, 4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, true, &co4, 4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
