@@ -18,7 +18,7 @@ Design, implementation and performance evaluation of a library that provides a n
 
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait (block) for an incoming notification from a channel or another cothread to return, while some cothreads are blocked, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or another cothread to return, while some cothreads are blocked, another cothread can execute. 
 
 ### Scheduling
 All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time.
@@ -109,9 +109,10 @@ You need to create a file called `libmicrokitco_opts.h` that specify this consta
 1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system needs.
 
 Optionally, you can specify these constants to opt-in to/out of features as appropriate for your need:
-1. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
-2. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
-3. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance. Don't use unless you really know what you are doing.
+1. `MAXIMUM_CO_ARGS`: a positive integer indicating how much memory to allocate for each cothread's arguments buffer. Each argument is word size. If not defined, defaults to 4.
+2. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
+3. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
+4. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance. Don't use unless you really know what you are doing.
 
 `libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 
