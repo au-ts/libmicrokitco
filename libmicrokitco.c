@@ -41,8 +41,9 @@ const char *err_strs[] = {
     "libmicrokitco: spawn(): maximum amount of cothreads reached.\n",
     "libmicrokitco: spawn(): cannot schedule the new cothread.\n",
 
+    "libmicrokitco: set_arg(): argument index is out of bound.\n",
+
     "libmicrokitco: get_arg(): called from root thread.\n",
-    "libmicrokitco: get_arg(): argument index is negative.\n",
     "libmicrokitco: get_arg(): argument index is out of bound.\n",
 
     "libmicrokitco: mark_ready(): subject cothread is already ready.\n",
@@ -282,7 +283,7 @@ static inline void cothread_entry_wrapper() {
     microkit_cothread_panic();
 }
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...) {
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const unsigned num_args, ...) {
 #if !defined LIBMICROKITCO_UNSAFE
     if (co_controller == NULL) {
         return co_err_generic_not_initialised;
@@ -338,7 +339,24 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool r
     return co_no_err;
 }
 
-co_err_t microkit_cothread_get_arg(const int nth, size_t *ret) {
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t handle, const unsigned nth, size_t data) {
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+    if (cothread >= MAX_THREADS || cothread < 0) {
+        return co_err_generic_invalid_handle;
+    }
+    if (nth >= MAXIMUM_CO_ARGS) {
+        return co_err_set_arg_nth_is_greater_than_max;
+    }
+#endif
+
+    co_controller->tcbs[handle].priv_args[nth] = data;
+    return co_no_err;
+}
+
+co_err_t microkit_cothread_get_arg(const unsigned nth, size_t *ret) {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
         return co_err_generic_not_initialised;
@@ -348,9 +366,6 @@ co_err_t microkit_cothread_get_arg(const int nth, size_t *ret) {
     }
     if (nth >= MAXIMUM_CO_ARGS) {
         return co_err_get_arg_nth_is_greater_than_max;
-    }
-    if (nth < 0) {
-        return co_err_get_arg_nth_is_negative;
     }
 #endif
 

@@ -41,8 +41,9 @@ typedef enum {
     co_err_spawn_max_cothreads_reached,
     co_err_spawn_cannot_schedule,
 
+    co_err_set_arg_nth_is_greater_than_max,
+
     co_err_get_arg_called_from_root,
-    co_err_get_arg_nth_is_negative,
     co_err_get_arg_nth_is_greater_than_max,
 
     co_err_mark_ready_already_ready,
@@ -197,9 +198,11 @@ co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const unsigned num_args, ...);
 
-co_err_t microkit_cothread_get_arg(const int nth, size_t *ret);
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t handle, const unsigned nth, size_t *ret);
+
+co_err_t microkit_cothread_get_arg(const unsigned nth, size_t *ret);
 
 co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
 
