@@ -93,8 +93,10 @@ const char *microkit_cothread_pretty_error(const co_err_t err_num);
 #define MICROKITCO_ROOT_THREAD 0
 #define MINIMUM_STACK_SIZE 0x1000 // Minimum is page size
 
-#ifndef MAXIMUM_CO_ARGS
+#ifndef LIBMICROKITCO_MAXIMUM_CO_ARGS
 #define MAXIMUM_CO_ARGS 4 // Default to 4 args if not set by client
+#else
+#define MAXIMUM_CO_ARGS LIBMICROKITCO_MAXIMUM_CO_ARGS
 #endif
 
 #define SCHEDULER_NULL_CHOICE -1

@@ -109,7 +109,7 @@ You need to create a file called `libmicrokitco_opts.h` that specify this consta
 1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system needs.
 
 Optionally, you can specify these constants to opt-in to/out of features as appropriate for your need:
-1. `MAXIMUM_CO_ARGS`: a positive integer indicating how much memory to allocate for each cothread's arguments buffer. Each argument is word size. If not defined, defaults to 4.
+1. `LIBMICROKITCO_MAXIMUM_CO_ARGS`: a positive integer indicating how much memory to allocate for each cothread's arguments buffer. Each argument is word size. If not defined, defaults to 4.
 2. `LIBMICROKITCO_PREEMPTIVE_UNBLOCK`,
 3. `LIBMICROKITCO_RECV_NTFN_NO_FASTPATH`,
 4. `LIBMICROKITCO_UNSAFE`: disable most error checking for fastest performance. Don't use unless you really know what you are doing.
