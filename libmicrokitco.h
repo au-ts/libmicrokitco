@@ -200,7 +200,7 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const unsigned num_args, ...);
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t handle, const unsigned nth, size_t *ret);
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t handle, const unsigned nth, size_t data);
 
 co_err_t microkit_cothread_get_arg(const unsigned nth, size_t *ret);
 
