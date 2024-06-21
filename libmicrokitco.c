@@ -163,6 +163,18 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
     return co_no_err;
 }
 
+co_err_t microkit_cothread_free_handle_available(bool *ret) {
+#if !defined(LIBMICROKITCO_UNSAFE)
+    if (co_controller == NULL) {
+        return co_err_generic_not_initialised;
+    }
+#endif
+
+    microkit_cothread_t _next_free_handle;
+    *ret = hostedqueue_peek(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &_next_free_handle) == LIBHOSTEDQUEUE_NOERR;
+    return co_no_err;
+}
+
 co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle) {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
@@ -344,7 +356,7 @@ co_err_t microkit_cothread_set_arg(const microkit_cothread_t handle, const unsig
     if (co_controller == NULL) {
         return co_err_generic_not_initialised;
     }
-    if (cothread >= MAX_THREADS || cothread < 0) {
+    if (handle >= MAX_THREADS || handle < 0) {
         return co_err_generic_invalid_handle;
     }
     if (nth >= MAXIMUM_CO_ARGS) {

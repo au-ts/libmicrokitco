@@ -194,6 +194,8 @@ typedef struct cothreads_control {
 
 co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
 
+co_err_t microkit_cothread_free_handle_available(bool *ret);
+
 co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
