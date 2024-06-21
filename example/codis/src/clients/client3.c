@@ -15,17 +15,16 @@ uintptr_t co_stack;
 
 int our_client_num;
 
-size_t co_main(void) {
+void co_main(void) {
     char *our_ipc = (char *) ipc;
     printf("CLIENT #%d: called server for read, waiting...", our_client_num);
     our_ipc[COMMAND_IPC_IDX] = READ_CMD;
     our_ipc[COMMAND_BUCKET_IDX] = 0;
     microkit_notify(SERVER_CHANNEL);
-    microkit_cothread_wait(SERVER_CHANNEL);
+    microkit_cothread_wait_on_channel(SERVER_CHANNEL);
     printf("done, data is: %s\n", our_ipc);
 
     // cothread get destroyed after we return.
-    return 0;
 }
 
 void init(void) {

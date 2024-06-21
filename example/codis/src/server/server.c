@@ -14,7 +14,7 @@
 #define CLIENT2_CHANNEL 2
 #define CLIENT3_CHANNEL 3
 
-// database things
+// database
 // large buffer storing N_BUCKETS of 4k strings
 uintptr_t db;
 // length of the string in each bucket (exclusive of null terminator)
@@ -32,21 +32,28 @@ uintptr_t client1_ipc;
 uintptr_t client2_ipc;
 uintptr_t client3_ipc;
 
+// argument passing structure to worker cothread
+typedef struct {
+    microkit_channel channel;
+    uintptr_t ipc;
+} arg_t;
+
 char *bucket_to_db_vaddr(int bucket) {
     return (char *)((bucket * BUCKET_SIZE) + (char *) db);
 }
 
-size_t client_handler() {
-    microkit_channel this_client_channel;
-    char *this_client_ipc;
+void client_handler() {
+    arg_t *arg_ptr;
+    microkit_cothread_my_arg(&arg_ptr);
 
-    microkit_cothread_get_arg(0, (size_t *) &this_client_channel);
-    microkit_cothread_get_arg(1, (size_t *) &this_client_ipc);
+    arg_t my_owned_args = *arg_ptr;
+    microkit_channel this_client_channel = my_owned_args.channel;
+    char *this_client_ipc = (char *) my_owned_args.ipc;
 
     printf("SERVER: client #%d cothread: starting with ipc %p\n", this_client_channel, this_client_ipc);
 
     while (1) {
-        microkit_cothread_wait(this_client_channel);
+        microkit_cothread_wait_on_channel(this_client_channel);
 
         // got a req from the specific client
         char cmd = this_client_ipc[COMMAND_IPC_IDX];
@@ -86,8 +93,6 @@ size_t client_handler() {
 
         microkit_notify(this_client_channel);
     }
-
-    return 0;
 }
 
 void init(void) {
@@ -106,7 +111,8 @@ void init(void) {
     microkit_cothread_t _handle;
 
     printf("SERVER: starting first cothread\n");
-    err = microkit_cothread_spawn(client_handler, true, &_handle, 2, CLIENT1_CHANNEL, client1_ipc);
+    arg_t arg1 = { .channel = CLIENT1_CHANNEL, .ipc = client1_ipc };
+    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg1);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init first cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
@@ -118,7 +124,8 @@ void init(void) {
     // we get back here after the handler thread does the wait()
 
     printf("SERVER: starting second cothread\n");
-    err = microkit_cothread_spawn(client_handler, true, &_handle, 2, CLIENT2_CHANNEL, client2_ipc);
+    arg_t arg2 = { .channel = CLIENT2_CHANNEL, .ipc = client2_ipc };
+    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg2);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init second cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
@@ -128,7 +135,8 @@ void init(void) {
 
 
     printf("SERVER: starting third cothread\n");
-    err = microkit_cothread_spawn(client_handler, true, &_handle, 2, CLIENT3_CHANNEL, client3_ipc);
+    arg_t arg3 = { .channel = CLIENT3_CHANNEL, .ipc = client3_ipc };
+    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg3);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init third cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));

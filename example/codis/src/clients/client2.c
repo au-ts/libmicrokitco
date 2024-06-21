@@ -15,7 +15,7 @@ uintptr_t co_stack;
 
 int our_client_num;
 
-size_t co_main(void) {
+void co_main(void) {
     char *our_ipc = (char *) ipc;
 
     our_ipc[COMMAND_IPC_IDX] = APPEND_CMD;
@@ -25,7 +25,7 @@ size_t co_main(void) {
 
     printf("CLIENT #%d: called server for append, waiting...", our_client_num);
     microkit_notify(SERVER_CHANNEL);
-    microkit_cothread_wait(SERVER_CHANNEL);
+    microkit_cothread_wait_on_channel(SERVER_CHANNEL);
     printf("done, bucket new len is: %d\n", ((uint16_t *) our_ipc)[0]);
     
 
@@ -35,11 +35,10 @@ size_t co_main(void) {
 
     printf("CLIENT #%d: called server for append, waiting...", our_client_num);
     microkit_notify(SERVER_CHANNEL);
-    microkit_cothread_wait(SERVER_CHANNEL);
+    microkit_cothread_wait_on_channel(SERVER_CHANNEL);
     printf("done, bucket new len is: %d\n", ((uint16_t *) our_ipc)[0]);
 
     // cothread get destroyed after we return.
-    return 0;
 }
 
 void init(void) {
