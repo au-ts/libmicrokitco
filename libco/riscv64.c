@@ -150,7 +150,7 @@ section(text)
 
 #error RISC-V hard float implementation is currently broken.
 // I meticulously checked this but I keep running into an instruction fault.
-// Maybe seL4 is not initialising the FPU correctly...
+// Maybe seL4 is not initialising the FPU correctly or I compiled the hard-float Microkit SDK incorrectly
 
 // section(text)
 //     // This has not been tested due to a lack of hard-float Microkit binary
@@ -230,8 +230,8 @@ section(text)
 #endif
 
 static void co_entrypoint(void) {
-    uintptr_t *buffer = (uintptr_t *)co_active_handle;
-    void (*entrypoint)(void) = (void (*)(void))buffer[-client_entry];
+    uintptr_t *buffer_top = (uintptr_t *)co_active_handle;
+    void (*entrypoint)(void) = (void (*)(void))buffer_top[-client_entry];
     entrypoint();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
