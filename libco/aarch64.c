@@ -16,28 +16,28 @@ void co_panic() {
 }
 
 enum {
-    d15,
-    d14,
-    d13,
-    d12,
-    d11,
-    d10,
-    d9,
-    d8,
-    fp,
-    x28,
-    x27,
-    x26,
-    x25,
-    x24,
-    x23,
-    x22,
-    x21,
-    x20,
-    x19, // stores client entry on initialisation
     lr, // x30
     sp,
-    reserved,
+    fp,
+    x19,
+    x20,
+    x21,
+    x22,
+    x23,
+    x24,
+    x25,
+    x26,
+    x27,
+    x28,
+    d8,
+    d9,
+    d10,
+    d11,
+    d12,
+    d13,
+    d14,
+    d15,
+    client_entry,
     regs_count
 };
 
@@ -59,37 +59,53 @@ section(text)
         // x8 (XR): Indirect return value address.
         // x0 to x7: Argument values passed to and results returned from a subroutine.
 
-        0xD1028000, // add x0, x0, -160
-        0xD1028021, // add x1, x1, -160
+        0xF900003E, // str lr, [x1]
+        0x910003F0, // mov x16,sp
+        0xF81F8030, // str x16, [x1, -8]
+        0xF81F003D, // str fp, [x1, -16]
+        0xF81E8033, // str x19, [x1, -24]
+        0xF81E0034, // str x20, [x1, -32]
+        0xF81D8035, // str x21, [x1, -40]
+        0xF81D0036, // str x22, [x1, -48]
+        0xF81C8037, // str x23, [x1, -56]
+        0xF81C0038, // str x24, [x1, -64]
+        0xF81B8039, // str x25, [x1, -72]
+        0xF81B003A, // str x26, [x1, -80]
+        0xF81A803B, // str x27, [x1, -88]
+        0xF81A003C, // str x28, [x1, -96]
+        0xFC198028, // str d8, [x1, -104]
+        0xFC190029, // str d9, [x1, -112]
+        0xFC18802A, // str d10, [x1, -120]
+        0xFC18002B, // str d11, [x1, -128]
+        0xFC17802C, // str d12, [x1, -136]
+        0xFC17002D, // str d13, [x1, -144]
+        0xFC16802E, // str d14, [x1, -152]
+        0xFC16002F, // str d15, [x1, -160]
 
-        0x910003f0, /* mov x16,sp           */ // x16 = sp
-        0xa9007830, /* stp x16,x30,[x1]     */ // from[0] = x16, from[8] = x30
-        0xa9407810, /* ldp x16,x30,[x0]     */ // x16 = to[0], x30 = to[8]
-        0x9100021f, /* mov sp,x16           */ // sp = x16
-        0xa9015033, /* stp x19,x20,[x1, 16] */ // from[16] = x19, from[24] = x20
-        0xa9415013, /* ldp x19,x20,[x0, 16] */ // x19 = to[16], x20 = to[24]
-        0xa9025835, /* stp x21,x22,[x1, 32] */ // and so on...
-        0xa9425815, /* ldp x21,x22,[x0, 32] */
-        0xa9036037, /* stp x23,x24,[x1, 48] */
-        0xa9436017, /* ldp x23,x24,[x0, 48] */
-        0xa9046839, /* stp x25,x26,[x1, 64] */
-        0xa9446819, /* ldp x25,x26,[x0, 64] */
-        0xa905703b, /* stp x27,x28,[x1, 80] */
-        0xa945701b, /* ldp x27,x28,[x0, 80] */ // end of callee saved
-        0xf900303d, /* str x29,    [x1, 96] */ // from[96] = frame pointer
-        0xf940301d, /* ldr x29,    [x0, 96] */ // frame pointer = to[96]
-        0x6d072428, /* stp d8, d9, [x1,112] */ // from[112] = d8, from[120] = d9
-        0x6d472408, /* ldp d8, d9, [x0,112] */ // d8 = to[112], d9 = to[120]
-        0x6d082c2a, /* stp d10,d11,[x1,128] */ // and so on...
-        0x6d482c0a, /* ldp d10,d11,[x0,128] */
-        0x6d09342c, /* stp d12,d13,[x1,144] */
-        0x6d49340c, /* ldp d12,d13,[x0,144] */
-        0x6d0a3c2e, /* stp d14,d15,[x1,160] */
-        0x6d4a3c0e, /* ldp d14,d15,[x0,160] */ // end of floating point register saves
+        0xF940001E, // ldr lr, [x0]
+        0xF85F8010, // ldr x16, [x0, -8]
+        0x9100021F, // mov sp, x16
+        0xF85F001D, // ldr fp, [x0, -16]
+        0xF85E8013, // ldr x19, [x0, -24]
+        0xF85E0014, // ldr x20, [x0, -32]
+        0xF85D8015, // ldr x21, [x0, -40]
+        0xF85D0016, // ldr x22, [x0, -48]
+        0xF85C8017, // ldr x23, [x0, -56]
+        0xF85C0018, // ldr x24, [x0, -64]
+        0xF85B8019, // ldr x25, [x0, -72]
+        0xF85B001A, // ldr x26, [x0, -80]
+        0xF85A801B, // ldr x27, [x0, -88]
+        0xF85A001C, // ldr x28, [x0, -96]
+        0xFC598008, // ldr d8, [x0, -104]
+        0xFC590009, // ldr d9, [x0, -112]
+        0xFC58800A, // ldr d10, [x0, -120]
+        0xFC58000B, // ldr d11, [x0, -128]
+        0xFC57800C, // ldr d12, [x0, -136]
+        0xFC57000D, // ldr d13, [x0, -144]
+        0xFC56800E, // ldr d14, [x0, -152]
+        0xFC56000F, // ldr d15, [x0, -160]
 
-        0xD29BD5A6,
-
-        0xd61f03c0, /* br x30               */ // PC = x30 = to[8]
+        0xD61F03C0, // br lr
 };
 
 static void co_entrypoint(cothread_t handle) {
@@ -127,9 +143,9 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) 
 }
 
 void co_switch(cothread_t handle) {
-    uintptr_t *memory = (uintptr_t *)handle;
     cothread_t co_previous_handle = co_active_handle;
-    co_swap(co_active_handle = handle, co_previous_handle);
+    co_active_handle = handle;
+    co_swap(handle, co_previous_handle);
 }
 
 #ifdef __cplusplus
