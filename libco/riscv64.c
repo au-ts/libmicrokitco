@@ -23,44 +23,11 @@ void co_panic() {
 
 // Cothread context memory layout:
 // base | ... | <-stack top | ra | sp | fp | ... | pc | client_entry | top
-// If stack overflows then result is undefined. It is recommended that you dedicate
+// If stack overflows then behaviour is undefined. It is recommended that you dedicate
 // a discrete Microkit Memory Region for each stack with a guard page at base and top.
 // So if a stack does overflow it crashes instead of overwriting other data.
 
-// #ifndef __riscv_flen
-// enum
-// {
-//     ra, // always NULL
-//     sp,
-//     fp, // AKA s0
-//     s1,
-//     s2,
-//     s3,
-//     s4,
-//     s5,
-//     s6,
-//     s7,
-//     s8,
-//     s9,
-//     s10,
-//     s11,
-//     f8, // AKA fs0
-//     f9, // and so on...
-//     f18,
-//     f19,
-//     f20,
-//     f21,
-//     f22,
-//     f23,
-//     f24,
-//     f25,
-//     f26,
-//     f27,
-//     pc,
-//     client_entry,
-//     num_saved
-// };
-// #else
+#ifndef __riscv_flen
 enum
 {
     client_entry,
@@ -81,25 +48,60 @@ enum
     ra, // always NULL
     num_saved
 };
-// #endif
+#else
+enum
+{
+    client_entry,
+    pc,
+    f27,
+    f26,
+    f25,
+    f24,
+    f23,
+    f22,
+    f21,
+    f20,
+    f19,
+    f18,
+    f9, // and so on...
+    f8, // AKA fs0
+    s11,
+    s10,
+    s9,
+    s8,
+    s7,
+    s6,
+    s5,
+    s4,
+    s3,
+    s2,
+    s1,
+    fp, // AKA s0
+    sp,
+    ra, // always NULL
+    num_saved
+};
+#endif
 
 static thread_local uintptr_t root_cothread_buffer[num_saved] = { 0 };
+
+// All cothread_t will point to the top word in the buffer
 static thread_local cothread_t co_active_handle = &root_cothread_buffer[num_saved - 1];
 
-// co_swap(char *to, char *from)
+// co_swap(void *to, void *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
 
 // Quick reference: https://www.cl.cam.ac.uk/teaching/1617/ECAD+Arch/files/docs/RISCVGreenCardv8-20151013.pdf
+// Instructions encoded with this tool: https://luplab.gitlab.io/rvcodecjs/
 
 #ifndef __riscv_flen
 // Soft float only
 section(text)
     const uint32_t co_swap_function[] = {
-        // Instructions encoded with this tool: https://luplab.gitlab.io/rvcodecjs/
-
+        // RV64I InsSet
         // Begin saving callee saved registers of current context
 
-        // RV64I InsSet
+        // We first shift the context buffer ptr down 15 words, then saving from there
         0xf885859b, // addiw a1, a1, -120
 
         0x0015b023, // sd ra, 0(a1)
@@ -142,18 +144,17 @@ section(text)
         // discard link result
         0x07053603, // ld a2, 112(a0)
         0x00060067, // jalr a2, 0(a2)
-        // Note to reader, `jalr a2, a2` is not equivalent!
 };
 #else
-
 // Hard float
 section(text)
-    const uint32_t co_swap_function[1024] = {
-        // Instructions encoded with this tool: https://luplab.gitlab.io/rvcodecjs/
-
+    // This has not been tested due to a lack of hard-float Microkit binary
+    const uint32_t co_swap_function[] = {
+        // RV64I InsSet
         // Begin saving callee saved registers of current context
 
-        // RV64I InsSet
+        0xf285859b, // addiw a1, a1, -216
+
         0x0015b023, // sd ra, 0(a1)
         0x0025b423, // sd sp, 8(a1)
         0x0085b823, // sd s0, 16(a1)
@@ -183,7 +184,9 @@ section(text)
         0x0db5b427, // fsd f27, 200(a1)
 
         // When co_swap is called, `ra` have the PC we need to resume the `from` cothread!
-        0x0c15bc23, // sd ra, 216(a1)
+        0x0c15b823, // sd ra, 208(a1)
+
+        0xf285051b, // addiw a0, a0, -216
 
         // Begin loading callee saved registers of the context we are switching to
         0x00053083, // ld ra, 0(a0)
@@ -216,17 +219,12 @@ section(text)
 
         // load the PC of the destination context then jump to it
         // discard link result
-        0x0d853603, // ld a2, 216(a0)
+        0x0d053603, // ld a2, 208(a0)
         0x00060067, // jalr a2, 0(a2)
-        // Note to reader, `jalr a2, a2` is not equivalent!
 };
 #endif
 
 static void co_entrypoint(void) {
-    __asm__(
-        "li t6, 0xdead"
-    );
-
     uintptr_t *buffer = (uintptr_t *)co_active_handle;
     void (*entrypoint)(void) = (void (*)(void))buffer[-client_entry];
     entrypoint();
@@ -243,10 +241,10 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) 
 
     // We chop up the memory into an array of words.
     uintptr_t *co_local_storage_bottom = (uintptr_t *)memory;
-    size_t num_words_storable = size % sizeof(uintptr_t);
+    size_t num_words_storable = size / sizeof(uintptr_t);
     uintptr_t *co_local_storage_top = &co_local_storage_bottom[num_words_storable - 1]; // inclusive
  
-    // Reserve the top num_saved words for registers saves.
+    // Reserve the top num_saved words for registers saves. Then come the stack
     uintptr_t *unaligned_sp = &co_local_storage_bottom[num_words_storable - num_saved - 1];
 
     // 16-bit align "down" the stack ptr
