@@ -256,7 +256,7 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
         co_controller->tcbs[co_controller->running].state = cothread_ready;
         co_controller->tcbs[blocked_list_head].state = cothread_running;
         co_controller->running = blocked_list_head;
-        co_switch(co_controller->tcbs[blocked_list_head].local_storage);
+        co_switch(co_controller->tcbs[blocked_list_head].co_handle);
     } else {
         // Slow-path: 2 >= cothreads blocked on this channel.
         microkit_cothread_t cur = blocked_list_head;
