@@ -14,10 +14,34 @@ void co_panic() {
     *panic_addr = (char)0;
 }
 
-#define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
+enum {
+    sp,
+    lr, // x30
+    x19, // stores client entry on initialisation
+    x20,
+    x21,
+    x22,
+    x23,
+    x24,
+    x25,
+    x26,
+    x27,
+    x28,
+    fp,
+    d8,
+    d9,
+    d10,
+    d11,
+    d12,
+    d13,
+    d14,
+    d15,
+    reserved, // don't remove this, this ensures the co_active_buffer has enough memory!
+    regs_count
+};
 
-static thread_local uintptr_t co_active_buffer[32];
-static thread_local cothread_t co_active_handle = 0;
+static thread_local uintptr_t co_active_buffer[regs_count] = { 0 };
+static thread_local cothread_t co_active_handle = &co_active_buffer[0];
 // co_swap(char *to, char *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
 
@@ -70,12 +94,6 @@ static void co_entrypoint(cothread_t handle) {
 }
 
 cothread_t co_active() {
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[22] = STACK_CANARY;
-    }
-
     return co_active_handle;
 }
 
@@ -84,21 +102,15 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) 
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
 
-    if (!co_active_handle)
-    {
-        co_active_handle = &co_active_buffer;
-        co_active_buffer[22] = STACK_CANARY;
-    }
 
     if ((handle = (uintptr_t *)memory))
     {
         unsigned int offset = (size & ~15);
         uintptr_t *p = (uintptr_t *)((unsigned char *)handle + offset);
-        handle[0] = (uintptr_t)p;             /* x16 (stack pointer) */
-        handle[1] = (uintptr_t)co_entrypoint; /* x30 (link register) */
-        handle[2] = (uintptr_t)entrypoint;    /* x19 (entry point) */
-        handle[12] = (uintptr_t)p;            /* x29 (frame pointer) */
-        handle[22] = STACK_CANARY;
+        handle[sp] = (uintptr_t)p;
+        handle[lr] = (uintptr_t)co_entrypoint;
+        handle[x19] = (uintptr_t)entrypoint;
+        handle[fp] = (uintptr_t)p;
     }
 
     return handle;
@@ -106,10 +118,6 @@ cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) 
 
 void co_switch(cothread_t handle) {
     uintptr_t *memory = (uintptr_t *)handle;
-    if (co_active_buffer[22] != STACK_CANARY || memory[22] != STACK_CANARY)
-    {
-        co_panic();
-    }
     cothread_t co_previous_handle = co_active_handle;
     co_swap(co_active_handle = handle, co_previous_handle);
 }
