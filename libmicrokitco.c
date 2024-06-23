@@ -106,7 +106,8 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
     va_end(ap);
 
     // Initialise the root thread's handle;
-    co_controller->tcbs[0].local_storage = co_active();
+    co_controller->tcbs[0].local_storage = NULL;
+    co_controller->tcbs[0].co_handle = co_active();
     co_controller->tcbs[0].state = cothread_running;
     co_controller->tcbs[0].next_blocked_on_same_channel = -1;
     co_controller->tcbs[0].next_joined_on_same_cothread = -1;
@@ -337,7 +338,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool r
     memzero(costack, co_controller->co_stack_size);
     co_controller->tcbs[new].client_entry = client_entry;
     co_controller->tcbs[new].private_arg = private_arg;
-    co_controller->tcbs[new].local_storage = co_derive(costack, co_controller->co_stack_size, cothread_entry_wrapper);
+    co_controller->tcbs[new].co_handle = co_derive(costack, co_controller->co_stack_size, cothread_entry_wrapper);
     co_controller->tcbs[new].state = cothread_initialised;
     co_controller->tcbs[new].next_blocked_on_same_channel = -1;
     co_controller->tcbs[new].next_joined_on_same_cothread = -1;
@@ -420,7 +421,7 @@ static inline void internal_go_next() {
 
     co_controller->tcbs[next].state = cothread_running;
     co_controller->running = next;
-    co_switch(co_controller->tcbs[next].local_storage);
+    co_switch(co_controller->tcbs[next].co_handle);
 }
 
 co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on) {

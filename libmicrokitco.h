@@ -107,9 +107,12 @@ typedef enum {
     cothread_running,
 } co_state_t;
 
+typedef void* cothread_t;
+
 typedef struct {
     // Thread local storage: context + stack
     void* local_storage;
+    cothread_t co_handle;
 
     // Entrypoint for cothread
     client_entry_t client_entry;
