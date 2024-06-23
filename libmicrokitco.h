@@ -183,7 +183,7 @@ co_err_t microkit_cothread_free_handle_available(bool *ret_flag);
 
 co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 
-co_err_t microkit_cothread_my_arg(uintptr_t *private_arg);
+co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg);
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 

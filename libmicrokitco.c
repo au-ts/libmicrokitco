@@ -197,7 +197,7 @@ co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle) {
     return co_no_err;
 }
 
-co_err_t microkit_cothread_my_arg(uintptr_t *private_arg) {
+co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg) {
     #if !defined(LIBMICROKITCO_UNSAFE)
         if (co_controller == NULL) {
             return co_err_generic_not_initialised;
@@ -207,7 +207,7 @@ co_err_t microkit_cothread_my_arg(uintptr_t *private_arg) {
         }
     #endif
 
-    *private_arg = co_controller->tcbs[co_controller->running].private_arg;
+    *ret_priv_arg = co_controller->tcbs[co_controller->running].private_arg;
     return co_no_err;
 }
 
