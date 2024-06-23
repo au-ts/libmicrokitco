@@ -15,6 +15,12 @@ void co_panic() {
     *panic_addr = (char)0;
 }
 
+// Cothread context memory layout:
+// base | ... | <-stack top | lr | sp | fp | ... | d14 | d15 | top
+// If stack overflows then behaviour is undefined. It is recommended that you dedicate
+// a discrete Microkit Memory Region for each stack with a guard page at base and top.
+// So if a stack does overflow it crashes instead of overwriting other data.
+
 enum {
     lr, // x30
     sp,
@@ -37,7 +43,6 @@ enum {
     d13,
     d14,
     d15,
-    client_entry,
     regs_count
 };
 
@@ -61,49 +66,29 @@ section(text)
 
         0xF900003E, // str lr, [x1]
         0x910003F0, // mov x16,sp
-        0xF81F8030, // str x16, [x1, -8]
-        0xF81F003D, // str fp, [x1, -16]
-        0xF81E8033, // str x19, [x1, -24]
-        0xF81E0034, // str x20, [x1, -32]
-        0xF81D8035, // str x21, [x1, -40]
-        0xF81D0036, // str x22, [x1, -48]
-        0xF81C8037, // str x23, [x1, -56]
-        0xF81C0038, // str x24, [x1, -64]
-        0xF81B8039, // str x25, [x1, -72]
-        0xF81B003A, // str x26, [x1, -80]
-        0xF81A803B, // str x27, [x1, -88]
-        0xF81A003C, // str x28, [x1, -96]
-        0xFC198028, // str d8, [x1, -104]
-        0xFC190029, // str d9, [x1, -112]
-        0xFC18802A, // str d10, [x1, -120]
-        0xFC18002B, // str d11, [x1, -128]
-        0xFC17802C, // str d12, [x1, -136]
-        0xFC17002D, // str d13, [x1, -144]
-        0xFC16802E, // str d14, [x1, -152]
-        0xFC16002F, // str d15, [x1, -160]
+        0xA93F403D, // stp fp, x16, [x1, -16]
+        0xA93E4C34, // stp x20, x19, [x1, -32]
+        0xA93D5436, // stp x22, x21, [x1, -48]
+        0xA93C5C38, // stp x24, x23, [x1, -64]
+        0xA93B643A, // stp x26, x25, [x1, -80]
+        0xA93A6C3C, // stp x28, x27, [x1, -96]
+        0x6D392029, // stp d9, d8, [x1, -112]
+        0x6D38282B, // stp d11, d10, [x1, -128]
+        0x6D37302D, // stp d13, d12, [x1, -144]
+        0x6D36382F, // stp d15, d14, [x1, -160]
 
         0xF940001E, // ldr lr, [x0]
-        0xF85F8010, // ldr x16, [x0, -8]
+        0xA97F401D, // ldp fp, x16, [x0, -16]
         0x9100021F, // mov sp, x16
-        0xF85F001D, // ldr fp, [x0, -16]
-        0xF85E8013, // ldr x19, [x0, -24]
-        0xF85E0014, // ldr x20, [x0, -32]
-        0xF85D8015, // ldr x21, [x0, -40]
-        0xF85D0016, // ldr x22, [x0, -48]
-        0xF85C8017, // ldr x23, [x0, -56]
-        0xF85C0018, // ldr x24, [x0, -64]
-        0xF85B8019, // ldr x25, [x0, -72]
-        0xF85B001A, // ldr x26, [x0, -80]
-        0xF85A801B, // ldr x27, [x0, -88]
-        0xF85A001C, // ldr x28, [x0, -96]
-        0xFC598008, // ldr d8, [x0, -104]
-        0xFC590009, // ldr d9, [x0, -112]
-        0xFC58800A, // ldr d10, [x0, -120]
-        0xFC58000B, // ldr d11, [x0, -128]
-        0xFC57800C, // ldr d12, [x0, -136]
-        0xFC57000D, // ldr d13, [x0, -144]
-        0xFC56800E, // ldr d14, [x0, -152]
-        0xFC56000F, // ldr d15, [x0, -160]
+        0xA97E4C14, // ldp x20, x19, [x0, -32]
+        0xA97D5416, // ldp x22, x21, [x0, -48]
+        0xA97C5C18, // ldp x24, x23, [x0, -64]
+        0xA97B641A, // ldp x26, x25, [x0, -80]
+        0xA97A6C1C, // ldp x28, x27, [x0, -96]
+        0x6D792009, // ldp d9, d8, [x0, -112]
+        0x6D78280B, // ldp d11, d10, [x0, -128]
+        0x6D77300D, // ldp d13, d12, [x0, -144]
+        0x6D76380F, // ldp d15, d14, [x0, -160]
 
         0xD61F03C0, // br lr
 };
