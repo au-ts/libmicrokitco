@@ -9,6 +9,7 @@
 #include "settings.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -24,7 +25,7 @@ void co_panic() {
 // Registers... | c_entry | pc | canary | ... | <- stack
 // If stack grows into canary then we crash!
 
-// control region indexes at the beginning of cothread local storage
+#ifndef __riscv_flen
 enum
 {
     ra,
@@ -53,45 +54,36 @@ enum
     f25,
     f26,
     f27,
-    client_entry,
     pc,
-    canary
+    client_entry,
+    num_saved
 };
-
-#define STACK_CANARY (uintptr_t) 0x341294AA8642FE71
-
-static thread_local uintptr_t co_active_buffer[32] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    STACK_CANARY
+#else
+enum
+{
+    ra,
+    sp,
+    fp, // AKA s0
+    s1,
+    s2,
+    s3,
+    s4,
+    s5,
+    s6,
+    s7,
+    s8,
+    s9,
+    s10,
+    s11,
+    pc,
+    client_entry,
+    num_saved
 };
-static thread_local cothread_t co_active_handle = &co_active_buffer;
+#endif
+
+static thread_local uintptr_t root_cothread_buffer[num_saved] = { 0 };
+static thread_local cothread_t root_cothread_handle = &root_cothread_buffer[num_saved - 1];
+static thread_local cothread_t co_active_handle = root_cothread_handle;
 
 // co_swap(char *to, char *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
@@ -227,7 +219,7 @@ section(text)
 
 static void co_entrypoint(void) {
     uintptr_t *buffer = (uintptr_t *)co_active_handle;
-    void (*entrypoint)(void) = (void (*)(void))buffer[client_entry];
+    void (*entrypoint)(void) = (void (*)(void))buffer[-client_entry];
     entrypoint();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
@@ -237,36 +229,34 @@ cothread_t co_active() {
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) {
-    uintptr_t *handle;
-
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
 
-    handle = (uintptr_t *)memory;
+    // We chop up the memory into an array of words.
+    uintptr_t *co_local_storage_bottom = (uintptr_t *)memory;
+    size_t num_words_storable = size % sizeof(uintptr_t);
+    uintptr_t *co_local_storage_top = &co_local_storage_bottom[num_words_storable - 1]; // inclusive
+ 
+    // Reserve the top num_saved words for registers saves.
+    uintptr_t unaligned_sp = &memory[num_words_storable - num_saved];
+
     // 16-bit align "down" the stack ptr
-    unsigned int offset = (size & ~15);
-    uintptr_t *p = (uintptr_t *)((unsigned char *)handle + offset);
+    uintptr_t aligned_sp = unaligned_sp & ~0xF;
 
-    handle[ra] = 0; /* crash if cothread return! */
-    handle[sp] = (uintptr_t)p;
-    handle[fp] = (uintptr_t)p;
+    co_local_storage_top[-ra] = 0; /* crash if cothread return! */
+    co_local_storage_top[-sp] = aligned_sp;
+    co_local_storage_top[-fp] = aligned_sp;
 
-    handle[client_entry] = (uintptr_t)entrypoint;
-    handle[pc] = (uintptr_t)co_entrypoint;
-    handle[canary] = STACK_CANARY;
+    co_local_storage_top[-client_entry] = (uintptr_t)entrypoint;
+    co_local_storage_top[-pc] = (uintptr_t)co_entrypoint;
 
-    return handle;
+    return co_local_storage_top;
 }
 
 void co_switch(cothread_t handle) {
-    uintptr_t *memory = (uintptr_t *)handle;
-    if (co_active_buffer[canary] != STACK_CANARY || memory[canary] != STACK_CANARY)
-    {
-        co_panic();
-    }
-
-    cothread_t co_previous_handle = co_active_handle;
-    co_swap(co_active_handle = handle, co_previous_handle);
+    uintptr_t *memory_top = (uintptr_t *)handle;
+    cothread_t co_previous_handle = co_active_handle; 
+    co_swap(co_active_handle = memory_top, co_previous_handle);
 }
 
 #ifdef __cplusplus
