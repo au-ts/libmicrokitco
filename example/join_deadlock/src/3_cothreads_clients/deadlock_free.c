@@ -12,43 +12,43 @@ uintptr_t stack1;
 uintptr_t stack2;
 uintptr_t stack3;
 
-size_t co_entry1() {
-    size_t retval;
+size_t cothreads_return_codes[4] = { 0 };
+
+void co_entry1() {
     printf("Deadlock-free PD: co1: joining co2\n");
-    co_err_t err = microkit_cothread_join(2, &retval);
+    co_err_t err = microkit_cothread_join(2);
     if (err != co_no_err) {
         printf("Deadlock-free PD: co1: cannot join, err: %s\n", microkit_cothread_pretty_error(err));
     }
 
-    if (retval != MAGIC_2) {
+    if (cothreads_return_codes[2] != MAGIC_2) {
         printf("Deadlock-free PD: co1: magic 2 NOT correct\n");
     } else {
         printf("Deadlock-free PD: co1: magic 2 correct, returning magic 3\n");
     }
 
-    return MAGIC_3;
+    cothreads_return_codes[1] = MAGIC_3;
 };
 
-size_t co_entry2() {
-    size_t retval;
+void co_entry2() {
     printf("Deadlock-free PD: co2: joining co3\n");
-    co_err_t err = microkit_cothread_join(3, &retval);
+    co_err_t err = microkit_cothread_join(3);
     if (err != co_no_err) {
         printf("Deadlock-free PD: co1: cannot join, err: %s\n", microkit_cothread_pretty_error(err));
     }
 
-    if (retval != MAGIC_1) {
+    if (cothreads_return_codes[3] != MAGIC_1) {
         printf("Deadlock-free PD: co2: magic 1 NOT correct\n");
     } else {
         printf("Deadlock-free PD: co2: magic 1 correct, return magic 2\n");
     }
 
-    return MAGIC_2;
+    cothreads_return_codes[2] = MAGIC_2;
 };
 
-size_t co_entry3() {
+void co_entry3() {
     printf("Deadlock-free PD: co3: return magic 1\n");
-    return MAGIC_1;
+    cothreads_return_codes[3] = MAGIC_1;
 };
 
 void init(void) {
@@ -75,11 +75,9 @@ void init(void) {
     microkit_cothread_spawn(co_entry3, true, &co3, 0);
 
     printf("Deadlock-free PD: cothreads spawned\n");
-
-    size_t retval;
     printf("Deadlock-free PD: root: joining co1\n");
-    microkit_cothread_join(1, &retval);
-    if (retval == MAGIC_3) {
+    microkit_cothread_join(1);
+    if (cothreads_return_codes[1] == MAGIC_3) {
         printf("Deadlock-free PD: root: magic 3 correct\n");
     } else {
         printf("Deadlock-free PD: root: magic 3 NOT correct\n");

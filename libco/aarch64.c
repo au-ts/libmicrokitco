@@ -3,6 +3,7 @@
 #include "settings.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -14,10 +15,17 @@ void co_panic() {
     *panic_addr = (char)0;
 }
 
+// Cothread context memory layout:
+// base | ... | <-stack top | lr | sp | fp | ... | d14 | d15 | top
+// If stack overflows then behaviour is undefined. It is recommended that you dedicate
+// a discrete Microkit Memory Region for each stack with a guard page at base and top.
+// So if a stack does overflow it crashes instead of overwriting other data.
+
 enum {
-    sp,
     lr, // x30
-    x19, // stores client entry on initialisation
+    sp,
+    fp,
+    x19,
     x20,
     x21,
     x22,
@@ -27,7 +35,6 @@ enum {
     x26,
     x27,
     x28,
-    fp,
     d8,
     d9,
     d10,
@@ -36,12 +43,11 @@ enum {
     d13,
     d14,
     d15,
-    reserved, // don't remove this, this ensures the co_active_buffer has enough memory!
     regs_count
 };
 
 static thread_local uintptr_t co_active_buffer[regs_count] = { 0 };
-static thread_local cothread_t co_active_handle = &co_active_buffer[0];
+static thread_local cothread_t co_active_handle = &co_active_buffer[regs_count - 1];
 // co_swap(char *to, char *from)
 static void (*co_swap)(cothread_t, cothread_t) = 0;
 
@@ -58,37 +64,38 @@ section(text)
         // x8 (XR): Indirect return value address.
         // x0 to x7: Argument values passed to and results returned from a subroutine.
 
-        0x910003f0, /* mov x16,sp           */ // x16 = sp
-        0xa9007830, /* stp x16,x30,[x1]     */ // from[0] = x16, from[8] = x30
-        0xa9407810, /* ldp x16,x30,[x0]     */ // x16 = to[0], x30 = to[8]
-        0x9100021f, /* mov sp,x16           */ // sp = x16
-        0xa9015033, /* stp x19,x20,[x1, 16] */ // from[16] = x19, from[24] = x20
-        0xa9415013, /* ldp x19,x20,[x0, 16] */ // x19 = to[16], x20 = to[24]
-        0xa9025835, /* stp x21,x22,[x1, 32] */ // and so on...
-        0xa9425815, /* ldp x21,x22,[x0, 32] */
-        0xa9036037, /* stp x23,x24,[x1, 48] */
-        0xa9436017, /* ldp x23,x24,[x0, 48] */
-        0xa9046839, /* stp x25,x26,[x1, 64] */
-        0xa9446819, /* ldp x25,x26,[x0, 64] */
-        0xa905703b, /* stp x27,x28,[x1, 80] */
-        0xa945701b, /* ldp x27,x28,[x0, 80] */ // end of callee saved
-        0xf900303d, /* str x29,    [x1, 96] */ // from[96] = frame pointer
-        0xf940301d, /* ldr x29,    [x0, 96] */ // frame pointer = to[96]
-        0x6d072428, /* stp d8, d9, [x1,112] */ // from[112] = d8, from[120] = d9
-        0x6d472408, /* ldp d8, d9, [x0,112] */ // d8 = to[112], d9 = to[120]
-        0x6d082c2a, /* stp d10,d11,[x1,128] */ // and so on...
-        0x6d482c0a, /* ldp d10,d11,[x0,128] */
-        0x6d09342c, /* stp d12,d13,[x1,144] */
-        0x6d49340c, /* ldp d12,d13,[x0,144] */
-        0x6d0a3c2e, /* stp d14,d15,[x1,160] */
-        0x6d4a3c0e, /* ldp d14,d15,[x0,160] */ // end of floating point register saves
-        0xd61f03c0,
-        /* br x30               */ // PC = x30 = to[8]
+        0xF900003E, // str lr, [x1]
+        0x910003F0, // mov x16,sp
+        0xA93F403D, // stp fp, x16, [x1, -16]
+        0xA93E4C34, // stp x20, x19, [x1, -32]
+        0xA93D5436, // stp x22, x21, [x1, -48]
+        0xA93C5C38, // stp x24, x23, [x1, -64]
+        0xA93B643A, // stp x26, x25, [x1, -80]
+        0xA93A6C3C, // stp x28, x27, [x1, -96]
+        0x6D392029, // stp d9, d8, [x1, -112]
+        0x6D38282B, // stp d11, d10, [x1, -128]
+        0x6D37302D, // stp d13, d12, [x1, -144]
+        0x6D36382F, // stp d15, d14, [x1, -160]
+
+        0xF940001E, // ldr lr, [x0]
+        0xA97F401D, // ldp fp, x16, [x0, -16]
+        0x9100021F, // mov sp, x16
+        0xA97E4C14, // ldp x20, x19, [x0, -32]
+        0xA97D5416, // ldp x22, x21, [x0, -48]
+        0xA97C5C18, // ldp x24, x23, [x0, -64]
+        0xA97B641A, // ldp x26, x25, [x0, -80]
+        0xA97A6C1C, // ldp x28, x27, [x0, -96]
+        0x6D792009, // ldp d9, d8, [x0, -112]
+        0x6D78280B, // ldp d11, d10, [x0, -128]
+        0x6D77300D, // ldp d13, d12, [x0, -144]
+        0x6D76380F, // ldp d15, d14, [x0, -160]
+
+        0xD61F03C0, // br lr
 };
 
 static void co_entrypoint(cothread_t handle) {
-    uintptr_t *buffer = (uintptr_t *)handle;
-    void (*entrypoint)(void) = (void (*)(void))buffer[2];
+    uintptr_t *buffer_top = (uintptr_t *)handle;
+    void (*entrypoint)(void) = (void (*)(void))buffer_top[-x19];
     entrypoint();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
@@ -98,28 +105,32 @@ cothread_t co_active() {
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) {
-    uintptr_t *handle;
     if (!co_swap)
         co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
 
+    // We chop up the memory into an array of words.
+    uintptr_t *co_local_storage_bottom = (uintptr_t *)memory;
+    size_t num_words_storable = size / sizeof(uintptr_t);
+    uintptr_t *co_local_storage_top = &co_local_storage_bottom[num_words_storable - 1]; // inclusive
 
-    if ((handle = (uintptr_t *)memory))
-    {
-        unsigned int offset = (size & ~15);
-        uintptr_t *p = (uintptr_t *)((unsigned char *)handle + offset);
-        handle[sp] = (uintptr_t)p;
-        handle[lr] = (uintptr_t)co_entrypoint;
-        handle[x19] = (uintptr_t)entrypoint;
-        handle[fp] = (uintptr_t)p;
-    }
+    // Reserve the top num_saved words for registers saves. Then come the stack
+    uintptr_t *unaligned_sp = &co_local_storage_bottom[num_words_storable - regs_count - 1];
 
-    return handle;
+    // 16-bit align "down" the stack ptr
+    uintptr_t aligned_sp = (uintptr_t) unaligned_sp & ~0xF;
+
+    co_local_storage_top[-sp] = aligned_sp;
+    co_local_storage_top[-lr] = (uintptr_t)co_entrypoint;
+    co_local_storage_top[-x19] = (uintptr_t)entrypoint;
+    co_local_storage_top[-fp] = aligned_sp;
+
+    return co_local_storage_top;
 }
 
 void co_switch(cothread_t handle) {
-    uintptr_t *memory = (uintptr_t *)handle;
     cothread_t co_previous_handle = co_active_handle;
-    co_swap(co_active_handle = handle, co_previous_handle);
+    co_active_handle = handle;
+    co_swap(handle, co_previous_handle);
 }
 
 #ifdef __cplusplus

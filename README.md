@@ -18,7 +18,7 @@ Design, implementation and performance evaluation of a library that provides a n
 
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait (block) for an incoming notification from a channel or another cothread to return, while some cothreads are blocked, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or another cothread to return or a user-defined event, while some cothreads are blocked, another cothread can execute. 
 
 ### Scheduling
 All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time.
@@ -31,7 +31,7 @@ When `microkit_cothread_recv_ntfn()` receives a notification and only 1 cothread
 This fastpath can be disabled through a preprocessor directive, but you should not need to do so under normal circumstances, unless you are benchmarking.
 
 ### Memory model
-The library expects a large memory region (MR) for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
+The library expects a large buffer for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
 
 ### Architecture support
 This library supports AArch64, RISC-V (rv64imac) and x86_64.
@@ -191,24 +191,44 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *ret, const int num_args, ...);`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *handle_ret, uintptr_t private_arg)`
 A variadic function that creates a new cothread, but does not switch to it.
 
 ##### Arguments
-- `client_entry` points to your cothread's entrypoint function of the form `size_t (*)(void)`.
+- `client_entry` points to your cothread's entrypoint function of the form `void (*)(void)`.
 - `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
-- `*ret` points to a variable in the caller's stack to write the new cothread's handle to.
-- `num_args` indicates how many arguments you are passing into the cothreads, maximum 4 arguments of `size_t`.
-- `num_args` arguments.
+- `*handle_ret` points to a variable in the caller's stack to write the new cothread's handle to.
+- `private_arg` an argument into the newly spawned cothread that can later be retrieved within it's context with `get_arg()`.
 
 --- 
 
-### `co_err_t microkit_cothread_get_arg(const int nth, size_t *ret)`
-Fetch the argument of the calling cothread, returns error if called from the root thread.
+### `co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);`
+Returns the state of the given cothread handle.
+##### Arguments
+- `cothread` is the subject cothread handle.
+- `*ret_state` points to a variable in the caller's stack to write the state to.
+
+---
+
+### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag)`
+Returns whether the cothreads pool has been exhausted.
+##### Arguments
+- `*ret_flag` points to a variable in the caller's stack to write the flag to.
+
+---
+
+### `co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle)`
+Returns the calling cothread's handle.
+##### Arguments
+- `*ret_handle` points to a variable in the caller's stack to write the handle to.
+
+---
+
+### `co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg)`
+Fetch the private argument of the calling cothread that was set from `spawn()`, returns error if called from the root thread.
 
 ##### Arguments
-- `nth` argument to fetch.
-- `*ret` points to a variable in the caller's stack to write the argument to.
+- `*ret_priv_arg` points to a variable in the caller's stack to write the argument to.
 
 ---
 
@@ -218,6 +238,16 @@ Marks an initialised but not ready cothread as ready and schedule it, but does n
 ##### Arguments
 - `cothread` is the subject cothread handle.
 
+---
+
+### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
+Maps an incoming notification to blocked cothreads, schedule them then yields to let the newly ready cothreads execute. **Call this in your `notified()` if you have cothreads blocking on channel**, otherwise, co-threads will never wake up if they blocks.
+
+This will always runs in the context of the root PD thread.
+
+##### Arguments
+- `ch` number that the notification came from.
+
 --- 
 
 ### `void microkit_cothread_yield()`
@@ -226,7 +256,7 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 
 ---
 
-### `co_err_t microkit_cothread_wait(const microkit_channel wake_on)`
+### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
 Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel.
 
 ##### Arguments
@@ -234,18 +264,13 @@ Blocks the calling cothread on a notification of a specific Microkit channel the
 
 ---
 
-### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
-Maps an incoming notification to blocked cothreads, schedule them then yields to let the newly ready cothreads execute. **Call this in your `notified()`**, otherwise, co-threads will never wake up if they blocks.
-
-This will always runs in the context of the root PD thread.
-
-##### Arguments
-- `ch` number that the notification came from.
+### `microkit_cothread_block()`
+Blocks the calling cothread then yield. If there are no other ready cothreads, control is switched to the root PD thread. Upon a user-defined event, the blocked cothread can be woken up with `mark_ready()`.
 
 ---
 
-### `co_err_t microkit_cothread_destroy_specific(const microkit_cothread_t cothread)`
-Destroy a specific cothread regardless of their running state. Should be sparingly used because cothread might hold resources that needs free'ing.
+### `co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread)`
+Destroy a specific cothread regardless of their running state, then return it's resources back into the cothreads pool. Should be sparingly used because cothread might hold resources that needs free'ing.
 
 If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
 

@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+// cothread handle
 typedef void* cothread_t;
 
 cothread_t co_active(void);
