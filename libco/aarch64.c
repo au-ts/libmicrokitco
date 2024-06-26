@@ -64,7 +64,7 @@ section(text)
         // x8 (XR): Indirect return value address.
         // x0 to x7: Argument values passed to and results returned from a subroutine.
 
-        0xF900003E, // str lr, [x1]
+        0xF900003E, // str lr, [x1] // save current context "return from co_swap" pc
         0x910003F0, // mov x16,sp
         0xA93F403D, // stp fp, x16, [x1, -16]
         0xA93E4C34, // stp x20, x19, [x1, -32]
@@ -77,7 +77,7 @@ section(text)
         0x6D37302D, // stp d13, d12, [x1, -144]
         0x6D36382F, // stp d15, d14, [x1, -160]
 
-        0xF940001E, // ldr lr, [x0]
+        0xF940001E, // ldr lr, [x0] // load destination pc
         0xA97F401D, // ldp fp, x16, [x0, -16]
         0x9100021F, // mov sp, x16
         0xA97E4C14, // ldp x20, x19, [x0, -32]
@@ -90,13 +90,12 @@ section(text)
         0x6D77300D, // ldp d13, d12, [x0, -144]
         0x6D76380F, // ldp d15, d14, [x0, -160]
 
-        0xD61F03C0, // br lr
+        0xD61F03C0, // br lr // jump to destination pc
 };
 
 static void co_entrypoint(cothread_t handle) {
     uintptr_t *buffer_top = (uintptr_t *)handle;
-    void (*entrypoint)(void) = (void (*)(void))buffer_top[-x19];
-    entrypoint();
+    ((void (*)(void))buffer_top[-x19])();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
