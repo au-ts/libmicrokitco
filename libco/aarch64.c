@@ -64,32 +64,30 @@ section(text)
         // x8 (XR): Indirect return value address.
         // x0 to x7: Argument values passed to and results returned from a subroutine.
 
-        0xF900003E, // str lr, [x1] // save current context "return from co_swap" pc
+        0x6D36382F, // stp d15, d14, [x1, -160]
+        0x6D37302D, // stp d13, d12, [x1, -144]
+        0x6D38282B, // stp d11, d10, [x1, -128]
+        0x6D392029, // stp d9, d8, [x1, -112]
+        0xA93A6C3C, // stp x28, x27, [x1, -96]
+        0xA93B643A, // stp x26, x25, [x1, -80]
+        0xA93C5C38, // stp x24, x23, [x1, -64]
+        0xA93D5436, // stp x22, x21, [x1, -48]
+        0xA93E4C34, // stp x20, x19, [x1, -32]
         0x910003F0, // mov x16,sp
         0xA93F403D, // stp fp, x16, [x1, -16]
-        0xA93E4C34, // stp x20, x19, [x1, -32]
-        0xA93D5436, // stp x22, x21, [x1, -48]
-        0xA93C5C38, // stp x24, x23, [x1, -64]
-        0xA93B643A, // stp x26, x25, [x1, -80]
-        0xA93A6C3C, // stp x28, x27, [x1, -96]
-        0x6D392029, // stp d9, d8, [x1, -112]
-        0x6D38282B, // stp d11, d10, [x1, -128]
-        0x6D37302D, // stp d13, d12, [x1, -144]
-        0x6D36382F, // stp d15, d14, [x1, -160]
-
-        0xF940001E, // ldr lr, [x0] // load destination pc
+        0xF900003E, // str lr, [x1] // save current context "return from co_swap" pc
+        0x6D76380F, // ldp d15, d14, [x0, -160]
+        0x6D77300D, // ldp d13, d12, [x0, -144]
+        0x6D78280B, // ldp d11, d10, [x0, -128]
+        0x6D792009, // ldp d9, d8, [x0, -112]
+        0xA97A6C1C, // ldp x28, x27, [x0, -96]
+        0xA97B641A, // ldp x26, x25, [x0, -80]
+        0xA97C5C18, // ldp x24, x23, [x0, -64]
+        0xA97D5416, // ldp x22, x21, [x0, -48]
+        0xA97E4C14, // ldp x20, x19, [x0, -32]
         0xA97F401D, // ldp fp, x16, [x0, -16]
         0x9100021F, // mov sp, x16
-        0xA97E4C14, // ldp x20, x19, [x0, -32]
-        0xA97D5416, // ldp x22, x21, [x0, -48]
-        0xA97C5C18, // ldp x24, x23, [x0, -64]
-        0xA97B641A, // ldp x26, x25, [x0, -80]
-        0xA97A6C1C, // ldp x28, x27, [x0, -96]
-        0x6D792009, // ldp d9, d8, [x0, -112]
-        0x6D78280B, // ldp d11, d10, [x0, -128]
-        0x6D77300D, // ldp d13, d12, [x0, -144]
-        0x6D76380F, // ldp d15, d14, [x0, -160]
-
+        0xF940001E, // ldr lr, [x0] // load destination pc
         0xD61F03C0, // br lr // jump to destination pc
 };
 
