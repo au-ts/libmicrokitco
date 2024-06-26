@@ -24,7 +24,7 @@ uint64_t prev_cycle_count;
 
 static void FASTFN run() {
     microkit_notify(1);
-    microkit_cothread_wait(1);
+    microkit_cothread_wait_on_channel(1);
 }
 
 static void FASTFN measure(int nth) {
@@ -38,7 +38,7 @@ static void FASTFN measure(int nth) {
     sum_sq += result * result;
 }
 
-size_t runner(void) {
+void runner(void) {
     sddf_printf_("Starting round trip notify-cowait-notify benchmark\n");
 
     sel4bench_init();
@@ -61,8 +61,6 @@ size_t runner(void) {
     sddf_printf_("Stdev = sqrt(%lu)\n", ((MEASURE_PASSES * sum_sq - (sum_t * sum_t)) / (MEASURE_PASSES * (MEASURE_PASSES - 1))));
 
     sddf_printf_("BENCHFINISHED\n");
-
-    return 0;
 }
 
 void init(void) {
