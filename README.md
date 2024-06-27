@@ -210,10 +210,11 @@ Returns the state of the given cothread handle.
 
 ---
 
-### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag)`
-Returns whether the cothreads pool has been exhausted.
+### `microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle)`
+Returns a flag whether the cothreads pool has been exhausted. If the pool has not been exhausted, returns the handle number of the next available cothread. This invariant is guaranteed to be true if you call `spawn()` before any cothread returns or other `libmicrokitco` functions are invoked.
 ##### Arguments
 - `*ret_flag` points to a variable in the caller's stack to write the flag to.
+- `*ret_handle` points to a variable in the caller's stack to write the next available handle to.
 
 ---
 

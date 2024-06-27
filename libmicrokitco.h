@@ -182,7 +182,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool r
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);
 
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag);
+co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 

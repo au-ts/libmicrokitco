@@ -175,15 +175,13 @@ co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_st
     return co_no_err;
 }
 
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag) {
+co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle) {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
         return co_err_generic_not_initialised;
     }
 #endif
-
-    microkit_cothread_t _next_free_handle;
-    *ret_flag = hostedqueue_peek(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &_next_free_handle) == LIBHOSTEDQUEUE_NOERR;
+    *ret_flag = hostedqueue_peek(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, ret_handle) == LIBHOSTEDQUEUE_NOERR;
     return co_no_err;
 }
 
