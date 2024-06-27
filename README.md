@@ -52,21 +52,21 @@ This is an animation of a PD blocking on an incoming notification. The yellow ar
 Is an opt-in feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
 
 ### Performance
-This data shows I/O performance of all possible communications model in Microkit between two separate address spaces compared to blocking with `libmicrokitco`. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
+This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| One way Protected Prodecure Call (PPC) | 392 | 38.47 | 9.81% | 549 | 31.22 | 5.69% |
-| Round trip (RT) PPC | 853 | 52.73 | 6.18% | 1272 | 35.31 | 2.78% | 
-| RT client notify - server notify (async model) | 2448 | 75.81 | 3.10% | 5931 | 129.52 | 2.18% | 
-| RT client notify - wait with libco - server notify | 2723 | 124.15 | 4.56% | 6322 | 128.31 | 2.03% |  
-| RT client notify - wait with libmicrokitco in fastpath - server notify | 2864 | 191.18 | 6.68% | 7135 | 166.52 | 2.33% | 
-| RT client notify - wait with libmicrokitco in slowpath - server notify | 2980 | 139.07 | 4.67% | 7254 | 132.76 | 1.83% | 
+| One way Protected Prodecure Call (PPC) | 390 | 27.37 | 7.02% | 555 | 36.57 | 6.59% |
+| Round trip (RT) PPC | 871 | 59.89 | 6.88% | 1278 | 36.08 | 2.82% | 
+| RT client notify - server notify (async model) | 2496 | 83.99 | 3.37% | 5922 | 112.44 | 1.90% | 
+| RT client notify - wait with libco - server notify | 2749 | 156.35 | 5.69% | 6216 | 99.46 | 1.60% |  
+| RT client notify - wait with libmicrokitco in fastpath - server notify | 2861 | 159.28 | 5.57% | 6429 | 138.18 | 2.15% | 
+| RT client notify - wait with libmicrokitco in slowpath - server notify | 2935 | 158.56 | 5.40% | 6624 | 149.45 | 2.26% | 
 
 ![Performance chart](./docs/odroidc4_perf.png)
 ![Performance chart](./docs/hifive_perf.png)
 
-We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a ~400 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and ~150 cycles compared to using bare coroutine primitives to achieve blocking I/O.
+We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a 365 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and 112 cycles compared to using bare coroutine primitives to achieve blocking I/O.
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
