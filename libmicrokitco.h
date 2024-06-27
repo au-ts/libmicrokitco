@@ -188,6 +188,8 @@ co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg);
 
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg);
+
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
 co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);

@@ -198,7 +198,7 @@ A variadic function that creates a new cothread, but does not switch to it.
 - `client_entry` points to your cothread's entrypoint function of the form `void (*)(void)`.
 - `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
 - `*handle_ret` points to a variable in the caller's stack to write the new cothread's handle to.
-- `private_arg` an argument into the newly spawned cothread that can later be retrieved within it's context with `get_arg()`.
+- `private_arg` an argument into the newly spawned cothread that can later be retrieved within it's context with `my_arg()`.
 
 --- 
 
@@ -230,6 +230,15 @@ Fetch the private argument of the calling cothread that was set from `spawn()`, 
 
 ##### Arguments
 - `*ret_priv_arg` points to a variable in the caller's stack to write the argument to.
+
+---
+
+### `co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg);`
+Set the private argument of the given cothread handle, returns error if called from the root thread.
+
+##### Arguments
+- `cothread` is the subject cothread handle.
+- `private_arg` is the argument being set.
 
 ---
 

@@ -210,6 +210,23 @@ co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg) {
     return co_no_err;
 }
 
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg) {
+    #if !defined(LIBMICROKITCO_UNSAFE)
+        if (co_controller == NULL) {
+            return co_err_generic_not_initialised;
+        }
+        if (co_controller->running == 0) {
+            return co_err_my_arg_called_from_root_thread;
+        }
+        if (cothread >= MAX_THREADS || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
+            return co_err_generic_invalid_handle;
+        }
+    #endif
+
+    co_controller->tcbs[cothread].private_arg = private_arg;
+    return co_no_err;
+}
+
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
 #if !defined(LIBMICROKITCO_UNSAFE)
     if (co_controller == NULL) {
