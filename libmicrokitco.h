@@ -42,15 +42,15 @@ typedef int microkit_cothread_t;
 
 // Error numbers and their meanings
 typedef enum {
-    co_no_err,
-
-    co_err_generic_not_initialised = 0,
+    co_no_err = 0,
+    co_err_generic_not_initialised,
     co_err_generic_invalid_handle,
 
     co_err_init_already_initialised,
     co_err_init_stack_too_small,
     co_err_init_num_costacks_not_equal_defined,
     co_err_init_co_stack_null,
+    co_err_init_co_stack_overlap,
     co_err_init_free_handles_init_fail,
     co_err_init_sched_init_fail,
     co_err_init_free_handles_populate_fail,
