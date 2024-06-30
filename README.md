@@ -194,6 +194,8 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 ### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *handle_ret, uintptr_t private_arg)`
 A variadic function that creates a new cothread, but does not switch to it.
 
+A handle is an integer that is allocated in FIFO order. The first cothread created in a PD is guaranteed to have a handle number 1.
+
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `void (*)(void)`.
 - `ready` indicates whether to schedule your cothread for execution. If you pass `true`, the thread will be placed into the scheduling queue for execution when the calling thread yields or blocks. If you pass `false`, you must later call `mark_ready()` for this cothread to be scheduled.
