@@ -28,6 +28,7 @@ const char *err_strs[] = {
     "libmicrokitco: init(): co-stack size too small.\n",
     "libmicrokitco: init(): num_costacks not equal to LIBMICROKITCO_MAX_COTHREADS defined in preprocessing.\n",
     "libmicrokitco: init(): got a NULL co-stack pointer.\n",
+    "libmicrokitco: init(): overlapping stacks.\n",
     "libmicrokitco: init(): failed to initialise free handles queue.\n",
     "libmicrokitco: init(): failed to initialise scheduling queue.\n",
     "libmicrokitco: init(): failed to fill free handles queue.\n",
@@ -104,6 +105,23 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
         stack[co_stack_size - 1] = 0;
     }
     va_end(ap);
+
+    // Check that none of the stacks overlap
+    for (int i = 1; i <= LIBMICROKITCO_MAX_COTHREADS; i++) {
+        uintptr_t this_stack_start = (uintptr_t) co_controller->tcbs[i].local_storage;
+        uintptr_t this_stack_end = this_stack_start + co_stack_size - 1;
+
+        for (int j = 1; j <= LIBMICROKITCO_MAX_COTHREADS; j++) {
+            if (j != i) {
+                uintptr_t other_stack_start = (uintptr_t) co_controller->tcbs[j].local_storage;
+                uintptr_t other_stack_end = other_stack_start + co_stack_size - 1;
+
+                if (this_stack_start <= other_stack_end && other_stack_start <= this_stack_end) {
+                    return co_err_init_co_stack_overlap;
+                } 
+            }
+        }
+    }
 
     // Initialise the root thread's handle;
     co_controller->tcbs[0].local_storage = NULL;
