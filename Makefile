@@ -6,7 +6,7 @@ $(error MICROKIT_SDK is not set)
 endif
 
 ifndef BUILD_DIR 
-$(error TOOLCHAIN is not set)
+$(error BUILD_DIR is not set)
 endif
 
 ifndef MICROKIT_BOARD 
