@@ -143,7 +143,7 @@ static inline void cothread_entry_wrapper() {
 
 // =========== Semaphores ===========
 
-co_err_t microkit_cothread_semaphore_new(microkit_cothread_sem_t *ret_sem) {
+co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem) {
     ret_sem->head = NULL_HANDLE;
     ret_sem->tail = NULL_HANDLE;
     ret_sem->set = false;
@@ -195,7 +195,7 @@ inline bool internal_sem_do_signal(microkit_cothread_sem_t *sem) {
         if (next != NULL_HANDLE) {
             sem->head = next;
         } else {
-            microkit_cothread_semaphore_new(sem);
+            microkit_cothread_semaphore_init(sem);
         }
     }
     return true;

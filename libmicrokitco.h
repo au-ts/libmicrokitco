@@ -169,7 +169,7 @@ co_err_t microkit_cothread_yield(void);
 co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread);
 
 // Generic blocking mechanism: a userland semaphore
-co_err_t microkit_cothread_semaphore_new(microkit_cothread_sem_t *ret_sem);
+co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);
 co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
 co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem);
 co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem);
