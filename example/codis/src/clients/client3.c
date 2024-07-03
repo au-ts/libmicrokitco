@@ -38,7 +38,7 @@ void init(void) {
     }
 
     microkit_cothread_t _handle;
-    co_err = microkit_cothread_spawn(co_main, true, &_handle, 0);
+    co_err = microkit_cothread_spawn(co_main, 0, &_handle);
     if (co_err != co_no_err) {
         printf("CLIENT #%d: ERROR: %s\n", our_client_num, microkit_cothread_pretty_error(co_err));
         microkit_internal_crash(co_err);
@@ -54,9 +54,6 @@ void notified(microkit_channel channel) {
 
     if (err == co_no_err) {
         //printf("CLIENT #%d: notification %u mapped\n", our_client_num, channel);
-    } else if (err == co_err_recv_ntfn_no_blocked) {
-        printf("CLIENT #%d: received notification from unknown channel: %d\n", our_client_num, channel);
-        // You can handle ntfns from other channels here:
     } else {
         printf("CLIENT #%d: ERR: mapping notification encountered err: ", our_client_num);
         printf("%s\n", microkit_cothread_pretty_error(err));

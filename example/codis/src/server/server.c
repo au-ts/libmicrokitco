@@ -112,39 +112,35 @@ void init(void) {
 
     printf("SERVER: starting first cothread\n");
     arg_t arg1 = { .channel = CLIENT1_CHANNEL, .ipc = client1_ipc };
-    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg1);
+    err = microkit_cothread_spawn(client_handler, (uintptr_t) &arg1, &_handle);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init first cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
         microkit_internal_crash(err);
     }
 
-    // client handler thread #1 now execute.
-    microkit_cothread_yield();
     // we get back here after the handler thread does the wait()
 
     printf("SERVER: starting second cothread\n");
     arg_t arg2 = { .channel = CLIENT2_CHANNEL, .ipc = client2_ipc };
-    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg2);
+    err = microkit_cothread_spawn(client_handler, (uintptr_t) &arg2, &_handle);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init second cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
         microkit_internal_crash(err);
     }
-    microkit_cothread_yield();
 
 
     printf("SERVER: starting third cothread\n");
     arg_t arg3 = { .channel = CLIENT3_CHANNEL, .ipc = client3_ipc };
-    err = microkit_cothread_spawn(client_handler, true, &_handle, (uintptr_t) &arg3);
+    err = microkit_cothread_spawn(client_handler, (uintptr_t) &arg3, &_handle);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init third cothread, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
         microkit_internal_crash(err);
     }
-    microkit_cothread_yield();
 
-    // nothing happens since all 4 cothreads are waiting for channel ntfn.
+    // Run all the worker cothreads.
     microkit_cothread_yield();
 
     // returns to Microkit event loop for recv'ing notifications.
@@ -156,9 +152,6 @@ void notified(microkit_channel channel) {
 
     if (err == co_no_err) {
         // printf("SERVER: notification %u mapped\n", channel);
-    } else if (err == co_err_recv_ntfn_no_blocked) {
-        printf("SERVER: received notification from unknown channel: %d\n", channel);
-        // You can handle ntfns from other channels here:
     } else {
         printf("SERVER: ERR: mapping notification encountered err: ");
         printf("%s\n", microkit_cothread_pretty_error(err));
