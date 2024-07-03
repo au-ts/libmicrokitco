@@ -176,7 +176,7 @@ co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem) {
 
 // Mark 1 cothread as ready when a semaphore is signed.
 inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
-    int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &subject);
+    const int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &subject);
     if (sched_err != LIBHOSTEDQUEUE_NOERR) {
         return false;
     }
@@ -186,7 +186,7 @@ inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
 
 inline bool internal_sem_do_signal(microkit_cothread_sem_t *sem) {
     microkit_cothread_t head = sem->head;
-    microkit_cothread_t next = co_controller->tcbs[head].next_blocked_on_same_event;
+    const microkit_cothread_t next = co_controller->tcbs[head].next_blocked_on_same_event;
 
     if (!internal_sem_mark_cothread_ready(head)) {
         return false;
@@ -369,7 +369,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintpt
     return co_no_err;
 }
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg) {
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uintptr_t private_arg) {
     if (co_controller->running == 0) {
         return co_err_my_arg_called_from_root_thread;
     }
@@ -460,9 +460,6 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
     co_err_t err;
 
     if ((err = microkit_cothread_semaphore_signal_all(ch_sem)) != co_no_err) {
-        return err;
-    }
-    if ((err = microkit_cothread_yield()) != co_no_err) {
         return err;
     }
 

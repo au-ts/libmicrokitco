@@ -156,7 +156,7 @@ co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothre
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_t *handle_ret);
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg);
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uintptr_t private_arg);
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);
 
