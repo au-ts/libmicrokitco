@@ -15,10 +15,30 @@ Design, implementation and performance evaluation of a library that provides a n
 - Root TCB: the thread control block of the root thread within this library used to store it's execution context for cothread switching and blocking state.
 - Cothread: an execution context in userland that the seL4 kernel is not aware of. The client provides memory for the stack in the form of a Memory Region (MR) with guard page.
 - Cothread TCB: serves the same purpose as root TCB, but also stores the virtual address of the cothread's stack.
-
+- Semaphore: a userland object created by the library to manage a queue of cothreads blocking/waiting on an event to happen.
+- Protected region: a region of code that cannot execute until an asynchronous I/O operation completes.
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or another cothread to return or a user-defined event, while some cothreads are blocked, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or a user-defined event to happen, while some cothreads are blocked, another cothread can execute. 
+
+### Example problem
+In a typical Microkit system with asynchronous I/O, making an I/O might look like:
+```C
+	void init(void) {
+		// prepare req in shared memory
+		microkit_signal(SERVER_CH);
+		// register in local data structure that a req is in-flight.
+		// cannot do anything until the result come back.
+	}
+
+	void notified(microkit_channel channel) {
+		if (channel == SERVER_CH) {
+			// result has landed. Continue computation.
+		}
+	}
+```
+
+This is sufficient for a reactive event-based system such as a device driver. But is highly inconvenient for a more compute intensive workload where interactions with other PDs are only incidental. 
 
 ### Scheduling
 All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time.
