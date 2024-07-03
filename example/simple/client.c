@@ -40,11 +40,11 @@ void init(void) {
 
     microkit_cothread_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, true, &co1, 1);
-    microkit_cothread_spawn(co_entry, true, &co2, 2);
-    microkit_cothread_spawn(co_entry, true, &co3, 3);
+    microkit_cothread_spawn(co_entry, 1, &co1);
+    microkit_cothread_spawn(co_entry, 2, &co2);
+    microkit_cothread_spawn(co_entry, 3, &co3);
 
-    if (microkit_cothread_spawn(co_entry, true, &co4, 4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, 4, &co4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
