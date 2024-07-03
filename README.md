@@ -6,7 +6,27 @@ The [seL4 Microkit](https://trustworthy.systems/projects/microkit/) prescribes a
 
 Such a (more traditional) programming model can be implemented on top of the existing event-oriented model through a library that provides a synchronous API over the asynchronous event handlers.
 
-## Aim
+### Example
+In a typical Microkit system with asynchronous I/O, making an I/O request might look like:
+```C
+void init(void) {
+	// Single threaded computation going ... then need something remotely!
+	// Prepare req in shared memory
+	microkit_signal(SERVER_CH);
+	// Register in local data structure that a req is in-flight.
+	// Cannot do anything until the result come back.
+}
+
+void notified(microkit_channel channel) {
+	if (channel == SERVER_CH) {
+		// Result has landed. Restore previous context then continue computation.
+	}
+}
+```
+
+This is sufficient for a reactive event-based system such as a device driver. But is highly inconvenient for a more compute intensive workload where interactions with other PDs are only on an as-needed basis. We cannot spin-wait after signalling as the Microkit event loop will never get runs! 
+
+### Aim
 Design, implementation and performance evaluation of a library that provides a non-reactive (active process) programming model on top of the Microkit API.
 
 ## Solution
@@ -21,34 +41,50 @@ Design, implementation and performance evaluation of a library that provides a n
 ### Overview
 `libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or a user-defined event to happen, while some cothreads are blocked, another cothread can execute. 
 
-### Example problem
-In a typical Microkit system with asynchronous I/O, making an I/O might look like:
-```C
-	void init(void) {
-		// prepare req in shared memory
-		microkit_signal(SERVER_CH);
-		// register in local data structure that a req is in-flight.
-		// cannot do anything until the result come back.
-	}
+### Programming model
+We can prevent a protected region from running before an async I/O request comes back by running all compute on a worker cothread then blocks on a semaphore. Then in the root cothread, the Microkit event loop runs which can receive communications from outside and signal the semaphore, unblocking the compute cothread.
 
-	void notified(microkit_channel channel) {
-		if (channel == SERVER_CH) {
-			// result has landed. Continue computation.
-		}
+For example:
+```C
+char data[4096];
+microkit_cothread_sem_t resource_semaphore;
+
+void compute(void) {
+	// Computation going...
+	// Uh oh, need something from outside world.
+	enqueue(cmd_queue, data);
+	microkit_signal(SERVER_CH);
+
+	// Compute cothread blocks until semaphore is signaled in root cothread.
+	microkit_cothread_semaphore_wait(&resource_semaphore);
+
+	// Unblocked, computation resume elegantly...
+}
+
+void init(void) {
+	microkit_cothread_init();
+	microkit_cothread_spawn(compute);
+	microkit_cothread_yield();
+}
+
+void notified(microkit_channel channel) {
+	if (channel == SERVER_CH) {
+		// Result has landed...
+		dequeue(cmd_queue, data);
+		microkit_cothread_semaphore_signal_once(resource_semaphore);
 	}
+}
 ```
 
-This is sufficient for a reactive event-based system such as a device driver. But is highly inconvenient for a more compute intensive workload where interactions with other PDs are only incidental. 
+This is an animation of a similar system blocking on an incoming notification. The yellow area is the stacks and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (i.e. `co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
+
+![Blocking animation](./docs/blocking.gif)
+
 
 ### Scheduling
 All ready cothreads are placed in a queue, the cothread at the front will be resumed by the scheduler when it is invoked. Cothreads should yield judiciously during long running computation to ensure other cothreads are not starved of CPU time.
 
-In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications, see `microkit_cothread_recv_ntfn()`. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
-
-### Receiving notifications fastpath
-When `microkit_cothread_recv_ntfn()` receives a notification and only 1 cothread is blocked on that channel, it will enter a fastpath that directly unblock the cothread, bypassing the scheduling queue to save time.
-
-This fastpath can be disabled through a preprocessor directive, but you should not need to do so under normal circumstances, unless you are benchmarking.
+In cases where the scheduler is invoked and no cothreads are ready, the scheduler will return to the root thread to receive notifications. Thus, systems adopting this library will not be reactive since notifications are only received when all cothreads are blocked.
 
 ### Memory model
 The library expects a large buffer for it's internal data structures and many small MRs of *equal size* for the individual co-stacks allocated to it. These memory regions must only have read and write permissions. See `microkit_cothread_init()`.
@@ -63,13 +99,8 @@ This library supports AArch64, RISC-V (rv64imac) and x86_64.
 A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
 ![State transition diagram](./docs/state_diagram.png)
 
-### Visualisation of execution
-
-This is an animation of a PD blocking on an incoming notification. The yellow area is the stacks and CPU context (saved registers by ABI), every time the yellow arrow switches area, a world switch (i.e. `co_switch()`) happens. The green arrow is the program counter, when it fades to grey, that thread of execution is suspended.
-![Blocking animation](./docs/blocking.gif)
-
 ### Pre-emptive unblocking
-Is an opt-in feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
+Is a feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
 
 ### Performance
 This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
