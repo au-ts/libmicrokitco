@@ -29,21 +29,13 @@ typedef int microkit_cothread_t;
 // MAX_THREADS includes the root thread whereas LIBMICROKITCO_MAX_COTHREADS does not
 #define MAX_THREADS LIBMICROKITCO_MAX_COTHREADS + 1
 
-#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
-#define MAX_NTFN_QUEUE 1
-#endif
-
 // Business logic
-#define MICROKITCO_ROOT_THREAD 0
-#define MINIMUM_STACK_SIZE 0x1000 // Minimum is page size
-#define SCHEDULER_NULL_CHOICE -1
 
 // ========== BEGIN ERROR HANDLING SECTION ==========
 
 // Error numbers and their meanings
 typedef enum {
     co_no_err = 0,
-    co_err_generic_not_initialised,
     co_err_generic_invalid_handle,
 
     co_err_init_already_initialised,
@@ -57,12 +49,10 @@ typedef enum {
 
     co_err_my_arg_called_from_root_thread,
 
-    co_err_recv_ntfn_no_blocked,
-    co_err_recv_ntfn_already_queued,
+    co_err_recv_ntfn_called_from_non_root,
+    co_err_recv_ntfn_already_set,
 
     co_err_spawn_client_entry_null,
-    co_err_spawn_num_args_negative,
-    co_err_spawn_num_args_too_much,
     co_err_spawn_max_cothreads_reached,
     co_err_spawn_cannot_schedule,
 
@@ -70,15 +60,17 @@ typedef enum {
     co_err_mark_ready_cannot_mark_self,
     co_err_mark_ready_cannot_schedule,
 
+    co_err_sem_sig_once_cannot_schedule_ready_cothread,
+    co_err_sem_sig_once_already_set,
+    co_err_sem_sig_all_cannot_schedule_ready_cothreads,
+    co_err_sem_sig_all_already_set,
+
     co_err_wait_invalid_channel,
 
     co_err_yield_cannot_schedule_caller,
 
-    co_err_destroy_specific_cannot_release_handle,
-    co_err_destroy_specific_cannot_destroy_self,
-
-    co_err_join_cannot_join_to_root_thread,
-    co_err_join_deadlock_detected,
+    co_err_destroy_cannot_destroy_root,
+    co_err_destroy_cannot_release_handle,
 
     // this must be last to count how many errors combinations we have
     co_num_errors
@@ -99,10 +91,8 @@ typedef enum {
     // This id is not being used
     cothread_not_active = 0,
 
-    cothread_initialised, // but not ready, transition to ready with mark_ready()
-    cothread_blocked, // generic block, client decides the logic of when the cothread wake up.
+    cothread_blocked_on_sem,
     cothread_blocked_on_channel,
-    cothread_blocked_on_join,
     cothread_ready,
     cothread_running,
 } co_state_t;
@@ -121,52 +111,36 @@ typedef struct {
     // Current execution state
     co_state_t state;
 
-    // The next tcb that is blocked on the same channel or joined on the same cothread as this tcb.
-    // -1 means this tcb is the tail.
-    // Only checked when state == cothread_blocked_on_channel.
-    microkit_cothread_t next_blocked_on_same_channel;
-
-    // Data for join() operations:
-    // Only checked when state == cothread_blocked_on_join.
-    microkit_cothread_t next_joined_on_same_cothread;
-    // The cothread that this cothread is waiting on to return (if applicable)
-    microkit_cothread_t joined_on;
+    microkit_cothread_t next_blocked_on_same_event;
 } co_tcb_t;
 
-// A linked list data structure that manage all cothreads blocking on a specific channel or joining on another cothread.
+// A linked list data structure that manage all cothreads blocking on a specific sem/event.
 typedef struct {
+    // True if the sem is signaled without any cothread waiting on it.
+    bool set;
 
-#ifdef LIBMICROKITCO_PREEMPTIVE_UNBLOCK
-    // True if preemptive unblock is opted-in AND a notification came in without any cothreads blocking on it.
-    unsigned queued;
-#endif
-
+    // First cothread waiting on this semaphore
     microkit_cothread_t head;
     microkit_cothread_t tail;
-} blocked_list_t;
+} microkit_cothread_sem_t;
 
 typedef struct cothreads_control {
     int co_stack_size;
     microkit_cothread_t running;
 
+    // Array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
+    co_tcb_t tcbs[MAX_THREADS];
+
     // All of these are queues of `microkit_cothread_t`
     hosted_queue_t free_handle_queue;
     hosted_queue_t scheduling_queue;
-
-    // Blocks of memory for our data structures:
-
-    // Array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
-    co_tcb_t tcbs[MAX_THREADS];
 
     // Arrays for queues.
     microkit_cothread_t free_handle_queue_mem[MAX_THREADS];
     microkit_cothread_t scheduling_queue_mem[MAX_THREADS];
 
-    // Map of linked list on what cothreads are joined to which cothread.
-    blocked_list_t joined_map[MAX_THREADS];
-
     // Map of linked list on what cothreads are blocked on which channel.
-    blocked_list_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
+    microkit_cothread_sem_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
 } co_control_t;
 
 #define LIBMICROKITCO_CONTROLLER_SIZE sizeof(co_control_t)
@@ -178,30 +152,32 @@ typedef struct cothreads_control {
 
 co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const bool ready, microkit_cothread_t *handle_ret, uintptr_t private_arg);
+co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle);
+
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_t *handle_ret);
+
+co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg);
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);
-
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
 
 co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg);
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, uintptr_t private_arg);
-
-co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
-
-co_err_t microkit_cothread_mark_ready(const microkit_cothread_t cothread);
-
-co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on);
-
-co_err_t microkit_cothread_join(const microkit_cothread_t cothread);
-
-co_err_t microkit_cothread_block();
-
-co_err_t microkit_cothread_yield();
+co_err_t microkit_cothread_yield(void);
 
 co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread);
+
+// Generic blocking mechanism: a userland semaphore
+co_err_t microkit_cothread_semaphore_new(microkit_cothread_sem_t *ret_sem);
+co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
+co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem);
+co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem);
+bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem);
+bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
+
+// Microkit specific mechanism: blocking on channel
+co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on); 
+co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 
 // ========== END API SECTION ==========
