@@ -233,11 +233,11 @@ co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem) {
     return co_no_err;
 }
 
-bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem) {
+inline bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem) {
     return sem->head == NULL_HANDLE;
 }
 
-bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem) {
+inline bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem) {
     return sem->set;
 }
 
