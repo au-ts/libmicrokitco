@@ -11,6 +11,7 @@ In a typical Microkit system with asynchronous I/O, making an I/O request might 
 ```C
 void init(void) {
 	// Single threaded computation going ... then need something remotely!
+	// Pause computation
 	// Prepare req in shared memory
 	microkit_signal(SERVER_CH);
 	// Register in local data structure that a req is in-flight.
@@ -19,7 +20,7 @@ void init(void) {
 
 void notified(microkit_channel channel) {
 	if (channel == SERVER_CH) {
-		// Result has landed. Restore previous context then continue computation.
+		// Result has landed. Resume computation from where we left off.
 	}
 }
 ```
@@ -42,37 +43,43 @@ Design, implementation and performance evaluation of a library that provides a n
 `libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or a user-defined event to happen, while some cothreads are blocked, another cothread can execute. 
 
 ### Programming model
-We can prevent a protected region from running before an async I/O request comes back by running all compute on a worker cothread then blocks on a semaphore. Then in the root cothread, the Microkit event loop runs which can receive communications from outside and signal the semaphore, unblocking the compute cothread.
+We can prevent a protected region from running before an async I/O request comes back by running all compute on a worker cothread then block it on semaphore(s) when an async I/O request needs to be performed. Then in the root cothread, the Microkit event loop runs which can receive communications from outside and signal the semaphore, unblocking the compute cothread when the async I/O request resolves.
 
 For example:
 ```C
-char data[4096];
-microkit_cothread_sem_t resource_semaphore;
+uintptr_t cmd_queue;
+uintptr_t result_queue;
 
-void compute(void) {
+microkit_cothread_sem_t async_io_semaphore;
+
+void compute_worker(void) {
 	// Computation going...
 	// Uh oh, need something from outside world.
-	enqueue(cmd_queue, data);
+	int request = READ;
+	enqueue(cmd_queue, request);
 	microkit_signal(SERVER_CH);
 
 	// Compute cothread blocks until semaphore is signaled in root cothread.
-	microkit_cothread_semaphore_wait(&resource_semaphore);
+	microkit_cothread_semaphore_wait(&async_io_semaphore);
 
-	// Unblocked, computation resume elegantly...
+	// Unblocked, computation resumes ergonomically...
 }
 
 void init(void) {
 	microkit_cothread_init();
-	microkit_cothread_spawn(compute);
+	microkit_cothread_spawn(compute_worker);
+	microkit_cothread_semaphore_init(&async_io_semaphore)
 	microkit_cothread_yield();
 }
 
 void notified(microkit_channel channel) {
 	if (channel == SERVER_CH) {
-		// Result has landed...
+		// Result has landed...wake the blocked cothread.
 		dequeue(cmd_queue, data);
 		microkit_cothread_semaphore_signal_once(resource_semaphore);
 	}
+
+	microkit_cothread_yield();
 }
 ```
 
@@ -242,7 +249,7 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 
 ---
 
-### `microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle)`
+### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle)`
 Returns a flag whether the cothreads pool has been exhausted. If the pool has not been exhausted, returns the handle number of the next available cothread. This invariant is guaranteed to be true if you call `spawn()` before any cothread returns or other `libmicrokitco` functions are invoked.
 ##### Arguments
 - `*ret_flag` points to a variable in the caller's stack to write the flag to.
