@@ -103,7 +103,7 @@ This library supports AArch64, RISC-V (rv64imac) and x86_64.
 
 ### State transition
 
-A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library or external incoming notifications can trigger a state transition as follow:
+A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library can trigger a state transition as follow:
 ![State transition diagram](./docs/state_diagram.png)
 
 ### Pre-emptive unblocking
