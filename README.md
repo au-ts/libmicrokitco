@@ -310,19 +310,76 @@ If the caller destroy itself, the scheduler will be invoked to pick the next cot
 
 ---
 
+### `co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem)`
+Initialise a blocking semaphore at the given memory address. **This is not a synchronisation semaphore.**
+
+##### Arguments
+- `ret_sem` is the memory address to write the new
+
+---
+
+### `co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem)`
+Does nothing if the flag of the semaphore is true, else, block the calling cothread on the given semaphore and enqueue it into the semaphore's waiting queue.
+
+Internally, the state of the calling cothread is updated to blocked (i.e. non-schedulable) then `yield()` is called.
+
+##### Arguments
+- `sem` to block on.
+
+---
+
+### `co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem)`
+Unblock 1 cothread at the head of this semaphore's waiting queue and schedule it, but does not switch to it.
+
+Internally, the state of the calling cothread is updated to ready, it is then dequeued from the semaphore's waiting list and enqueued into the scheduling queue, ready to run when `yield()` is called.
+
+##### Arguments
+- `sem` to signal.
+
+---
+
+### `co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem)`
+Unblock all cothreads that is blocked on this semaphore and schedule them, but does not switch to them.
+
+Internally, `signal_once()` is called until the waiting list of this semaphore is empty.
+
+##### Arguments
+- `sem` to signal.
+
+---
+
+### `bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem)`
+Returns whether the waiting queue of the given semaphore is empty.
+
+##### Arguments
+- `sem` to check.
+
+---
+
+### `bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem)`
+Returns whether the flag of the semaphore is set.
+
+That is, whether a `signal()` has happened before anyone `wait()`'ed on this semaphore.
+
+##### Arguments
+- `sem` to check.
+
+---
+
+### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
+A specialisation of the blocking semaphore within the library, allowing convenient blocking on Microkit channels. Blocks the calling cothread on a notification of a specific Microkit channel. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel just like the generic blocking semaphore.
+
+##### Arguments
+- `wake_on` channel number. Make sure this channel is known to the PD, otherwise, the calling cothreads will block forever.
+
+---
+
 ### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
 Maps an incoming notification to blocked cothreads then schedules them. Equivalent to calling `semaphore_signal_all()`. **Call this in your `notified()` if you have cothreads blocking on channel**, otherwise, co-threads will never wake up if they blocks.
+
+Call `yield()` afterwards to allow your unblocked cothreads to run.
 
 This will always runs in the context of the root PD thread.
 
 ##### Arguments
 - `ch` number that the notification came from.
-
----
-
-### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
-Blocks the calling cothread on a notification of a specific Microkit channel then yield. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel.
-
-##### Arguments
-- `wake_on` channel number. Make sure this channel is known to the PD, otherwise, the calling cothreads will block forever.
-
