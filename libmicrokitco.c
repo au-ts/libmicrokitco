@@ -13,10 +13,17 @@
 #include "libmicrokitco.h"
 #include <libco.h>
 
+// Silence GCC warnings, we are going to crash anyways.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 void microkit_cothread_panic(const uintptr_t err) {
     char *panic_addr = (char *) err;
     *panic_addr = (char) 0;
 }
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
 // Error handling
 typedef enum {
@@ -151,7 +158,7 @@ co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem) {
 }
 
 // This internal version does not touch the state of the calling cothread, whereas the public version does!
-inline bool internal_sem_wait(microkit_cothread_sem_t *sem) {
+static inline bool internal_sem_wait(microkit_cothread_sem_t *sem) {
     if (sem->set) {
         co_controller->tcbs[co_controller->running].state = cothread_running;
         sem->set = false;
@@ -175,7 +182,7 @@ co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem) {
 }
 
 // Mark 1 cothread as ready when a semaphore is signed.
-inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
+static inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
     const int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &subject);
     if (sched_err != LIBHOSTEDQUEUE_NOERR) {
         return false;
@@ -184,7 +191,7 @@ inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
     return true;
 }
 
-inline bool internal_sem_do_signal(microkit_cothread_sem_t *sem) {
+static inline bool internal_sem_do_signal(microkit_cothread_sem_t *sem) {
     microkit_cothread_t head = sem->head;
     const microkit_cothread_t next = co_controller->tcbs[head].next_blocked_on_same_event;
 
