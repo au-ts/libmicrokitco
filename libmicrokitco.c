@@ -11,19 +11,16 @@
 #include <sel4/sel4.h>
 
 #include "libmicrokitco.h"
+
+#pragma GCC diagnostic error "-Wpedantic"
+#pragma GCC diagnostic push
+
 #include <libco.h>
 
-// Silence GCC warnings, we are going to crash anyways.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-void microkit_cothread_panic(const uintptr_t err) {
+char microkit_cothread_panic(const uintptr_t err) {
     char *panic_addr = (char *) err;
-    *panic_addr = (char) 0;
+    return *panic_addr;
 }
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
 
 // Error handling
 typedef enum {
@@ -141,7 +138,7 @@ static inline void internal_destroy_me(void) {
     microkit_cothread_panic(cannot_destroy_self_after_return);
 }
 
-static inline void cothread_entry_wrapper() {
+static inline void cothread_entry_wrapper(void) {
     // Execute the client entry point
     co_controller->tcbs[co_controller->running].client_entry();
 
@@ -411,7 +408,7 @@ co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg) {
     return co_no_err;
 }
 
-co_err_t microkit_cothread_yield() {
+co_err_t microkit_cothread_yield(void) {
     // Caller get pushed onto the appropriate scheduling queue.
     hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
     const int sched_err = hostedqueue_push(sched_queue, co_controller->scheduling_queue_mem, &co_controller->running);

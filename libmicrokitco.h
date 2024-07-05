@@ -85,7 +85,7 @@ const char *microkit_cothread_pretty_error(const co_err_t err_num);
 // ========== BEGIN DATA TYPES SECTION ==========
 
 // The form of client entrypoint function.
-typedef void (*client_entry_t)();
+typedef void (*client_entry_t)(void);
 
 typedef enum {
     // This id is not being used

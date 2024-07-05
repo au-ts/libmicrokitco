@@ -17,7 +17,7 @@ static const unsigned long co_swap_function[1024] = {
   0xe12fff1e,  /* bx lr                     */
 };
 
-cothread_t co_active() {
+cothread_t co_active(void) {
   if(!co_active_handle) co_active_handle = &co_active_buffer;
   return co_active_handle;
 }

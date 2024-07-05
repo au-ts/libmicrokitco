@@ -16,7 +16,7 @@ extern "C"
 {
 #endif
 
-void co_panic() {
+void co_panic(void) {
     char *panic_addr = (char *)0;
     *panic_addr = (char)0;
 }
@@ -236,7 +236,7 @@ static void co_entrypoint(void) {
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
-cothread_t co_active() {
+cothread_t co_active(void) {
     return co_active_handle;
 }
 
