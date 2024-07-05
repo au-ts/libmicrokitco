@@ -24,7 +24,7 @@ static void inline measure(int ith) {
 
     microkit_ppcall(1, microkit_msginfo_new(0, 0));
 
-    result = microkit_mr_get(0) - prev_cycle_count;
+    result = sel4bench_get_cycle_count() - prev_cycle_count;
 
     sum_t += result;
     sum_sq += result * result;
@@ -47,7 +47,7 @@ void notified(microkit_channel channel) {
 
         for (int i = 0; i < WARMUP_PASSES; i++) {
             microkit_ppcall(1, microkit_msginfo_new(0, 0));
-            volatile uint64_t warm = microkit_mr_get(0) - prev_cycle_count;
+            volatile uint64_t warm = sel4bench_get_cycle_count() - prev_cycle_count;
             warm--;
         }
         for (int i = 0; i < MEASURE_PASSES; i++) {

@@ -20,6 +20,5 @@ void notified(microkit_channel channel) {
 }
 
 microkit_msginfo protected(microkit_channel ch, microkit_msginfo msginfo) {
-    microkit_mr_set(0, sel4bench_get_cycle_count());
-    return microkit_msginfo_new(0, 1);
+    return microkit_msginfo_new(0, 0);
 }
