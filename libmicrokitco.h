@@ -49,28 +49,21 @@ typedef enum {
 
     co_err_my_arg_called_from_root_thread,
 
-    co_err_recv_ntfn_called_from_non_root,
-    co_err_recv_ntfn_already_set,
-
     co_err_spawn_client_entry_null,
     co_err_spawn_max_cothreads_reached,
     co_err_spawn_cannot_schedule,
-
-    co_err_mark_ready_already_ready,
-    co_err_mark_ready_cannot_mark_self,
-    co_err_mark_ready_cannot_schedule,
-
-    co_err_sem_sig_once_cannot_schedule_ready_cothread,
-    co_err_sem_sig_once_already_set,
-    co_err_sem_sig_all_cannot_schedule_ready_cothreads,
-    co_err_sem_sig_all_already_set,
-
-    co_err_wait_invalid_channel,
 
     co_err_yield_cannot_schedule_caller,
 
     co_err_destroy_cannot_destroy_root,
     co_err_destroy_cannot_release_handle,
+
+    co_err_sem_sig_once_cannot_schedule_caller,
+    co_err_sem_sig_once_already_set,
+
+    co_err_wait_invalid_channel,
+
+    co_err_recv_ntfn_called_from_non_root,
 
     // this must be last to count how many errors combinations we have
     co_num_errors
@@ -91,8 +84,7 @@ typedef enum {
     // This id is not being used
     cothread_not_active = 0,
 
-    cothread_blocked_on_sem,
-    cothread_blocked_on_channel,
+    cothread_blocked,
     cothread_ready,
     cothread_running,
 } co_state_t;
@@ -171,12 +163,11 @@ co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread);
 // Generic blocking mechanism: a userland semaphore
 co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);
 co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
-co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem);
-co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem);
+co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem);
 inline bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem);
 inline bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
 
-// Microkit specific mechanism: blocking on channel
+// Microkit specific semaphore wrapper: blocking on channel
 co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on); 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch);
 

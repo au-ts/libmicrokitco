@@ -46,26 +46,21 @@ const char *external_err_strs[] = {
 
     "libmicrokitco: my_arg(): my_arg() called from the root thread.\n",
 
-    "libmicrokitco: recv_ntfn(): called from cothread context.\n",
-    "libmicrokitco: recv_ntfn(): this channel's semaphore is already set.\n",
-
     "libmicrokitco: spawn(): client entrypoint is NULL.\n",
     "libmicrokitco: spawn(): maximum amount of cothreads reached.\n",
     "libmicrokitco: spawn(): cannot schedule the new cothread.\n",
-
-    "libmicrokitco: mark_ready(): subject cothread is already ready.\n",
-    "libmicrokitco: mark_ready(): cannot mark self as ready.\n",
-    "libmicrokitco: mark_ready(): cannot schedule subject cothread.\n",
-
-    "libmicrokitco: semaphore_signal_once(): cannot schedule the unblocked cothread.\n",
-    "libmicrokitco: semaphore_signal_all(): cannot schedule the unblocked cothreads.\n",
-
-    "libmicrokitco: wait(): invalid channel.\n",
 
     "libmicrokitco: yield(): cannot schedule caller.\n",
 
     "libmicrokitco: destroy(): cannot destroy root thread.\n",
     "libmicrokitco: destroy(): cannot release free handle back into queue.\n",
+
+    "libmicrokitco: semaphore_signal_once(): cannot schedule the unblocked cothread.\n",
+    "libmicrokitco: semaphore_signal_once(): semaphore flag already set.\n",
+
+    "libmicrokitco: wait(): invalid channel.\n",
+
+    "libmicrokitco: recv_ntfn(): called from cothread context.\n",
 };
 
 // Return a string of human friendly error message.
@@ -154,13 +149,12 @@ co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem) {
     return co_no_err;
 }
 
-// This internal version does not touch the state of the calling cothread, whereas the public version does!
-static inline bool internal_sem_wait(microkit_cothread_sem_t *sem) {
+co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem) {
     if (sem->set) {
-        co_controller->tcbs[co_controller->running].state = cothread_running;
         sem->set = false;
         return co_no_err;
     } else {
+        co_controller->tcbs[co_controller->running].state = cothread_blocked;
         if (sem->head == NULL_HANDLE) {
             sem->head = co_controller->running;
             sem->tail = co_controller->running;
@@ -173,62 +167,40 @@ static inline bool internal_sem_wait(microkit_cothread_sem_t *sem) {
     }
 }
 
-co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem) {
-    co_controller->tcbs[co_controller->running].state = cothread_blocked_on_sem;
-    return internal_sem_wait(sem);
-}
-
-// Mark 1 cothread as ready when a semaphore is signed.
-static inline bool internal_sem_mark_cothread_ready(microkit_cothread_t subject) {
-    const int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &subject);
-    if (sched_err != LIBHOSTEDQUEUE_NOERR) {
-        return false;
+co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem) {
+    if (microkit_cothread_semaphore_is_set(sem)) {
+        return co_err_sem_sig_once_already_set;
     }
-    co_controller->tcbs[subject].state = cothread_ready;
-    return true;
-}
 
-static inline bool internal_sem_do_signal(microkit_cothread_sem_t *sem) {
-    microkit_cothread_t head = sem->head;
+    if (microkit_cothread_semaphore_is_queue_empty(sem)) {
+        sem->set = true;
+        return co_no_err;
+    }
+
+    const microkit_cothread_t head = sem->head;
     const microkit_cothread_t next = co_controller->tcbs[head].next_blocked_on_same_event;
 
-    if (!internal_sem_mark_cothread_ready(head)) {
-        return false;
+    // Schedule caller
+    const int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &co_controller->running);
+    if (sched_err != LIBHOSTEDQUEUE_NOERR) {
+        return co_err_sem_sig_once_cannot_schedule_caller;
     } else {
-        co_controller->tcbs[head].next_blocked_on_same_event = NULL_HANDLE;
-        if (next != NULL_HANDLE) {
-            sem->head = next;
-        } else {
-            microkit_cothread_semaphore_init(sem);
-        }
+        co_controller->tcbs[co_controller->running].state = cothread_ready;
     }
-    return true;
-}
 
-co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem) {
-    if (sem->set) {
-        return co_err_sem_sig_once_already_set;
-    } else if (sem->head == NULL_HANDLE) {
-        sem->set = true;
-        return true;
-    } else {
-        return internal_sem_do_signal(sem) ? co_no_err : co_err_sem_sig_once_cannot_schedule_ready_cothread;
+    // Move semaphore list
+    sem->head = next;
+    co_controller->tcbs[head].next_blocked_on_same_event = NULL_HANDLE;
+    
+    if (next == NULL_HANDLE) {
+        // Reset semaphore if it's waiting queue is empty
+        microkit_cothread_semaphore_init(sem);
     }
-}
 
-co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem) {
-    if (sem->set) {
-        return co_err_sem_sig_once_already_set;
-    } else if (sem->head == NULL_HANDLE) {
-        sem->set = true;
-    } else {
-        while (!microkit_cothread_semaphore_is_queue_empty(sem)) {
-            bool success = internal_sem_do_signal(sem);
-            if (!success) {
-                return co_err_sem_sig_all_cannot_schedule_ready_cothreads;
-            }
-        }
-    }
+    // Directly switch to unblocked cothread
+    co_controller->running = head;
+    co_controller->tcbs[co_controller->running].state = cothread_running;
+    co_switch(co_controller->tcbs[co_controller->running].co_handle);
 
     return co_no_err;
 }
@@ -451,8 +423,7 @@ co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on) {
         return co_err_wait_invalid_channel;
     }
 
-    co_controller->tcbs[co_controller->running].state = cothread_blocked_on_channel;
-    return internal_sem_wait(&co_controller->blocked_channel_map[wake_on]);
+    return microkit_cothread_semaphore_wait(&co_controller->blocked_channel_map[wake_on]);
 }
 
 co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
@@ -460,12 +431,5 @@ co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch) {
         return co_err_recv_ntfn_called_from_non_root;
     }
 
-    microkit_cothread_sem_t* ch_sem = &co_controller->blocked_channel_map[ch];
-    co_err_t err;
-
-    if ((err = microkit_cothread_semaphore_signal_all(ch_sem)) != co_no_err) {
-        return err;
-    }
-
-    return co_no_err;
+    return microkit_cothread_semaphore_signal(&co_controller->blocked_channel_map[ch]);
 }

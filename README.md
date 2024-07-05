@@ -40,7 +40,7 @@ Design, implementation and performance evaluation of a library that provides a n
 - Protected region: a region of code that cannot execute until an asynchronous I/O operation completes.
 
 ### Overview
-`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for an incoming notification from a channel or a user-defined event to happen, while some cothreads are blocked, another cothread can execute. 
+`libmicrokitco` is a cooperative user-land multithreading library with a FIFO scheduler for use within Microkit. In essence, it allow mapping of multiple cothreads onto one kernel thread of a PD. Then, one or more cothreads can wait/block for a client-defined event to happen, while some cothreads are blocked, another cothread can execute. 
 
 ### Programming model
 We can prevent a protected region from running before an async I/O request comes back by running all compute on a worker cothread then block it on semaphore(s) when an async I/O request needs to be performed. Then in the root cothread, the Microkit event loop runs which can receive communications from outside and signal the semaphore, unblocking the compute cothread when the async I/O request resolves.
@@ -55,7 +55,7 @@ microkit_cothread_sem_t async_io_semaphore;
 void compute_worker(void) {
 	// Computation going...
 	// Uh oh, need something from outside world.
-	int request = READ;
+	int request = FS_READ;
 	enqueue(cmd_queue, request);
 	microkit_signal(SERVER_CH);
 
@@ -110,16 +110,14 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 Is a feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
 
 ### Performance
-This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
+<!-- This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| One way Protected Prodecure Call (PPC) | 390 | 27.37 | 7.02% | 555 | 36.57 | 6.59% |
-| Round trip (RT) PPC | 871 | 59.89 | 6.88% | 1278 | 36.08 | 2.82% | 
-| RT client notify - server notify (async model) | 2496 | 83.99 | 3.37% | 5922 | 112.44 | 1.90% | 
+| Protected Prodecure Call (synchronous model) | 392 | 31.53 | 8.04% | 556 | 25.57 | 4.60% |
+| Round trip (RT) client notify - server notify (async model) | 2496 | 83.99 | 3.37% | 5922 | 112.44 | 1.90% | 
 | RT client notify - wait with libco - server notify | 2749 | 156.35 | 5.69% | 6216 | 99.46 | 1.60% |  
-| RT client notify - wait with libmicrokitco in fastpath - server notify | 2861 | 159.28 | 5.57% | 6429 | 138.18 | 2.15% | 
-| RT client notify - wait with libmicrokitco in slowpath - server notify | 2935 | 158.56 | 5.40% | 6624 | 149.45 | 2.26% | 
+| RT client notify - wait with libmicrokitco semaphore - server notify | 2861 | 159.28 | 5.57% | 6429 | 138.18 | 2.15% | 
 
 ![Performance chart](./docs/odroidc4_perf.png)
 ![Performance chart](./docs/hifive_perf.png)
@@ -128,7 +126,7 @@ We observe that usage of this library to perform synchronous I/O over an asynchr
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
-Note: Significant slow-down in RISC-V is due to signal fastpath not implemented and no ASID.
+Note: Significant slow-down in RISC-V is due to signal fastpath not implemented and no ASID. -->
 
 ## Usage
 ### Prerequisite
@@ -318,7 +316,7 @@ If the caller destroy itself, the scheduler will be invoked to pick the next cot
 ---
 
 ### `co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem)`
-Initialise a blocking semaphore at the given memory address. **This is not a synchronisation semaphore.**
+Initialise a user-land blocking semaphore at the given memory address.
 
 ##### Arguments
 - `ret_sem` is the memory address to write the new
@@ -335,8 +333,8 @@ Internally, the state of the calling cothread is updated to blocked (i.e. non-sc
 
 ---
 
-### `co_err_t microkit_cothread_semaphore_signal_once(microkit_cothread_sem_t *sem)`
-Unblock 1 cothread at the head of this semaphore's waiting queue and schedule it, but does not switch to it.
+### `co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem)`
+Unblock 1 cothread at the head of this semaphore's waiting queue and switch to it.
 
 Internally, the state of the calling cothread is updated to ready, it is then dequeued from the semaphore's waiting list and enqueued into the scheduling queue, ready to run when `yield()` is called.
 
@@ -345,17 +343,7 @@ Internally, the state of the calling cothread is updated to ready, it is then de
 
 ---
 
-### `co_err_t microkit_cothread_semaphore_signal_all(microkit_cothread_sem_t *sem)`
-Unblock all cothreads that is blocked on this semaphore and schedule them, but does not switch to them.
-
-Internally, `signal_once()` is called until the waiting list of this semaphore is empty.
-
-##### Arguments
-- `sem` to signal.
-
----
-
-### `bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem)`
+### `inline bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem)`
 Returns whether the waiting queue of the given semaphore is empty.
 
 ##### Arguments
@@ -363,7 +351,7 @@ Returns whether the waiting queue of the given semaphore is empty.
 
 ---
 
-### `bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem)`
+### `inline bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem)`
 Returns whether the flag of the semaphore is set.
 
 That is, whether a `signal()` has happened before anyone `wait()`'ed on this semaphore.
@@ -374,19 +362,9 @@ That is, whether a `signal()` has happened before anyone `wait()`'ed on this sem
 ---
 
 ### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
-A specialisation of the blocking semaphore within the library, allowing convenient blocking on Microkit channels. Blocks the calling cothread on a notification of a specific Microkit channel. If there are no other ready cothreads, control is switched to the root PD thread for receiving notifications. Many cothreads can block on the same channel just like the generic blocking semaphore.
-
-##### Arguments
-- `wake_on` channel number. Make sure this channel is known to the PD, otherwise, the calling cothreads will block forever.
+A convenient thin wrapper of `semaphore_wait()` for waiting on Microkit channel.
 
 ---
 
 ### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
-Maps an incoming notification to blocked cothreads then schedules them. Equivalent to calling `semaphore_signal_all()`. **Call this in your `notified()` if you have cothreads blocking on channel**, otherwise, co-threads will never wake up if they blocks.
-
-Call `yield()` afterwards to allow your unblocked cothreads to run.
-
-This will always runs in the context of the root PD thread.
-
-##### Arguments
-- `ch` number that the notification came from.
+A convenient thin wrapper of `semaphore_signal()` for unblocking a cothread waiting on Microkit channel.
