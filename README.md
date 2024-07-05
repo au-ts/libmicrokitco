@@ -76,7 +76,7 @@ void notified(microkit_channel channel) {
 	if (channel == SERVER_CH) {
 		// Result has landed...wake the blocked cothread.
 		dequeue(cmd_queue, data);
-		microkit_cothread_semaphore_signal_once(resource_semaphore);
+		microkit_cothread_semaphore_signal(resource_semaphore);
 	}
 
 	microkit_cothread_yield();
