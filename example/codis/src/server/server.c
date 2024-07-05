@@ -10,9 +10,9 @@
 
 #include "protocol.h"
 
-#define CLIENT1_CHANNEL 1
-#define CLIENT2_CHANNEL 2
-#define CLIENT3_CHANNEL 3
+#define CLIENT1_CHANNEL 0
+#define CLIENT2_CHANNEL 1
+#define CLIENT3_CHANNEL 2
 
 // database
 // large buffer storing N_BUCKETS of 4k strings
@@ -151,7 +151,7 @@ void notified(microkit_channel channel) {
     co_err_t err = microkit_cothread_recv_ntfn(channel);
 
     if (err == co_no_err) {
-        microkit_cothread_yield();
+        // printf("SERVER: notification %u mapped\n", channel);
     } else {
         printf("SERVER: ERR: mapping notification encountered err: ");
         printf("%s\n", microkit_cothread_pretty_error(err));

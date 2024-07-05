@@ -69,17 +69,17 @@
 
     <channel>
         <end pd="client1" id="0" />
-        <end pd="server" id="1" />
+        <end pd="server" id="0" />
     </channel>
 
     <channel>
         <end pd="client2" id="0" />
-        <end pd="server" id="2" />
+        <end pd="server" id="1" />
     </channel>
 
     <channel>
         <end pd="client3" id="0" />
-        <end pd="server" id="3" />
+        <end pd="server" id="2" />
     </channel>
 
 </system>

@@ -13,6 +13,8 @@ uintptr_t ipc;
 uintptr_t co_mem;
 uintptr_t co_stack;
 
+microkit_cothread_sem_t server_async_io_sem;
+
 int our_client_num;
 
 void co_main(void) {
@@ -21,7 +23,7 @@ void co_main(void) {
     our_ipc[COMMAND_IPC_IDX] = READ_CMD;
     our_ipc[COMMAND_BUCKET_IDX] = 0;
     microkit_notify(SERVER_CHANNEL);
-    microkit_cothread_wait_on_channel(SERVER_CHANNEL);
+    microkit_cothread_semaphore_wait(&server_async_io_sem);
     printf("done, data is: %s\n", our_ipc);
 
     // cothread get destroyed after we return.
@@ -44,19 +46,15 @@ void init(void) {
         microkit_internal_crash(co_err);
     }
 
+    microkit_cothread_semaphore_init(&server_async_io_sem);
+
     printf("done\n");
 
     microkit_cothread_yield();
 }
 
 void notified(microkit_channel channel) {
-    co_err_t err = microkit_cothread_recv_ntfn(channel);
-
-    if (err == co_no_err) {
-        microkit_cothread_yield();
-    } else {
-        printf("CLIENT #%d: ERR: mapping notification encountered err: ", our_client_num);
-        printf("%s\n", microkit_cothread_pretty_error(err));
-        microkit_internal_crash(err);
+    if (channel == SERVER_CHANNEL) {
+        microkit_cothread_semaphore_signal(&server_async_io_sem);
     }
 }
