@@ -66,9 +66,9 @@ build_odroidc4: ECFLAGS = '-mtune=cortex-a55'
 build_odroidc4: SERIAL_CONFIG = -DCONFIG_PLAT_ODROIDC4
 build_odroidc4: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
 # A bit of a hack to map the correct serial device
-	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0xff80_3000/' validation_5_notify_and_cowait_semaphore.system >temp.system
-	mv temp.system validation_5_notify_and_cowait_semaphore.system
-	$(MICROKIT_TOOL) validation_5_notify_and_cowait_semaphore.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0xff80_3000/' validation_4_notify_and_cowait_sem.system >temp.system
+	mv temp.system validation_4_notify_and_cowait_sem.system
+	$(MICROKIT_TOOL) validation_4_notify_and_cowait_sem.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
 
 .PHONY: build_hifive
 build_hifive: MICROKIT_BOARD = hifive_unleashed
@@ -77,7 +77,7 @@ build_hifive: ECFLAGS = -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mabi=lp64 -m
 build_hifive: SERIAL_CONFIG = -DCONFIG_PLAT_HIFIVE
 build_hifive: directories $(BUILD_DIR)/server.elf $(BUILD_DIR)/client.elf $(BUILD_DIR)/start.elf
 # A bit of a hack to map the correct serial device
-	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_5_notify_and_cowait_semaphore.system >temp.system
-	mv temp.system validation_5_notify_and_cowait_semaphore.system
-	$(MICROKIT_TOOL) validation_5_notify_and_cowait_semaphore.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
+	sed -E 's/phys_addr=\"0x[0-9a-f]{4}_[0-9a-f]{4}/phys_addr=\"0x1001_0000/' validation_4_notify_and_cowait_sem.system >temp.system
+	mv temp.system validation_4_notify_and_cowait_sem.system
+	$(MICROKIT_TOOL) validation_4_notify_and_cowait_sem.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $(BUILD_DIR)/loader.img -r $(BUILD_DIR)/report.txt
 	make -C $(OPENSBI) -j1 PLATFORM=generic FW_PAYLOAD_PATH=$(PWD)/build/loader.img PLATFORM_RISCV_XLEN=64 PLATFORM_RISCV_ISA=rv64imac PLATFORM_RISCV_ABI=lp64 O=$(PWD)/build CROSS_COMPILE=$(TOOLCHAIN)-

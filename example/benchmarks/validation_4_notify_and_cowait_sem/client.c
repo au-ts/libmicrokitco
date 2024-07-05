@@ -86,7 +86,6 @@ void init(void) {
 
 void notified(microkit_channel channel) {
     if (channel == 1) {
-        microkit_cothread_semaphore_signal_all(&io_sem);
-        microkit_cothread_yield();
+        microkit_cothread_semaphore_signal(&io_sem);
     }
 }
