@@ -110,23 +110,23 @@ A thread (root or cothread) is in 1 distinct state at any given point in time, i
 Is a feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
 
 ### Performance
-<!-- This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
+This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
 
 | Benchmark | AArch64 Mean (cycles) | AArch64 stdev | stdev % of mean | RISC-V64 Mean (cycles) | RISC-V64 stdev | stdev % of mean |
 |---|---|---|---|---|---|---|
-| Protected Prodecure Call (synchronous model) | 392 | 31.53 | 8.04% | 556 | 25.57 | 4.60% |
-| Round trip (RT) client notify - server notify (async model) | 2496 | 83.99 | 3.37% | 5922 | 112.44 | 1.90% | 
-| RT client notify - wait with libco - server notify | 2749 | 156.35 | 5.69% | 6216 | 99.46 | 1.60% |  
-| RT client notify - wait with libmicrokitco semaphore - server notify | 2861 | 159.28 | 5.57% | 6429 | 138.18 | 2.15% | 
+| Protected Prodecure Call (synchronous model) | 886 | 96.87 | 10.93% | 1287 | 52.69 | 4.09% |
+| Round trip (RT) client notify - server notify (async model) | 2447 | 82.14 | 3.36% | 5922 | 137.03 | 2.31% | 
+| RT client notify - wait with libco - server notify | 2760 | 173.64 | 6.29% | 6222 | 125.80 | 2.02% |  
+| RT client notify - wait with libmicrokitco semaphore - server notify | 2880 | 165.84 | 5.76% | 6460 | 155.50 | 2.41% | 
 
 ![Performance chart](./docs/odroidc4_perf.png)
 ![Performance chart](./docs/hifive_perf.png)
 
-We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a 365 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and 112 cycles compared to using bare coroutine primitives to achieve blocking I/O.
+We observe that usage of this library to perform synchronous I/O over an asynchronous interface in Microkit incur a 433 cycles penalty on AArch64 compared to using the native asynchronous Microkit APIs and 120 cycles compared to using bare coroutine primitives to achieve blocking I/O.
 
 This is the cost of emulating synchronous I/O with coroutines and managing the state of said coroutines (which coroutines are blocking on what channel).
 
-Note: Significant slow-down in RISC-V is due to signal fastpath not implemented and no ASID. -->
+Note: Significant slow-down in RISC-V is due to signal fastpath not implemented in seL4 and no ASID.
 
 ## Usage
 ### Prerequisite
@@ -336,7 +336,7 @@ Internally, the state of the calling cothread is updated to blocked (i.e. non-sc
 ### `co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem)`
 Unblock 1 cothread at the head of this semaphore's waiting queue and switch to it.
 
-Internally, the state of the calling cothread is updated to ready, it is then dequeued from the semaphore's waiting list and enqueued into the scheduling queue, ready to run when `yield()` is called.
+Internally, the state of the calling cothread is updated to ready and the calling cothread is enqueued back into the scheduling queue. Then the state of the blocked cothread is updated to running and control is switched to it.
 
 ##### Arguments
 - `sem` to signal.
