@@ -64,7 +64,7 @@ void notified(microkit_channel channel) {
     co_err_t err = microkit_cothread_recv_ntfn(channel);
 
     if (err == co_no_err) {
-        //printf("CLIENT #%d: notification %u mapped\n", our_client_num, channel);
+        microkit_cothread_yield();
     } else {
         printf("CLIENT #%d: ERR: mapping notification encountered err: ", our_client_num);
         printf("%s\n", microkit_cothread_pretty_error(err));
