@@ -116,28 +116,17 @@ static inline void internal_go_next(void) {
     co_switch(co_controller->tcbs[next].co_handle);
 }
 
-// This function get executed when the client cothread returns. We updates the internal states of the library
-// to indicate that the cothread's TCB is no longer used, and switch to the next ready cothread.
-static inline void internal_destroy_me(void) {
-    if (hostedqueue_push(&co_controller->free_handle_queue, 
-                         co_controller->free_handle_queue_mem, 
-                         &co_controller->running) != LIBHOSTEDQUEUE_NOERR)
-    {
-        microkit_cothread_panic(cannot_release_our_handle_after_return);
-    }
-
-    co_controller->tcbs[co_controller->running].state = cothread_not_active;
-    internal_go_next();
-
-    // Should not return
-    microkit_cothread_panic(cannot_destroy_self_after_return);
-}
-
 static inline void cothread_entry_wrapper(void) {
     // Execute the client entry point
     co_controller->tcbs[co_controller->running].client_entry();
 
-    internal_destroy_me();
+    // Clean up after ourselves
+    if (microkit_cothread_destroy(co_controller->running) != co_no_err) {
+        microkit_cothread_panic(cannot_destroy_self_after_return);
+    }
+
+    // Should not return
+    microkit_cothread_panic(cannot_destroy_self_after_return);
 }
 
 // =========== Semaphores ===========
