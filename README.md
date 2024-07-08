@@ -106,9 +106,6 @@ This library supports AArch64, RISC-V (rv64imac) and x86_64.
 A thread (root or cothread) is in 1 distinct state at any given point in time, interaction with the library can trigger a state transition as follow:
 ![State transition diagram](./docs/state_diagram.png)
 
-### Pre-emptive unblocking
-Is a feature that allow incoming notifications from all channels to be queued, signifying that a shared resource is ready before a cothread blocks on it. There can only be a maximum of 1 queued notification per channel, if any more notifications come in and there is already a queued notification on that channel, they will be ignored. If a cothread blocks on a channel with a queued notification, that cothread is unblocked immediately with no state transition.
-
 ### Performance
 This data shows I/O performance of all possible communications model in Microkit between two separate address spaces. Ran on the Odroid C4 (AArch64) and HiFive Unleashed (RISC-V). The data represent 32 passes of operations after 8 warm up passes.
 
@@ -315,7 +312,7 @@ If the caller destroy itself, the scheduler will be invoked to pick the next cot
 ---
 
 ### `co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem)`
-Initialise a user-land blocking semaphore at the given memory address.
+Initialise a user-land blocking semaphore at the given memory address with an empty queue and false signalled flag.
 
 ##### Arguments
 - `ret_sem` is the memory address to write the new
@@ -323,7 +320,9 @@ Initialise a user-land blocking semaphore at the given memory address.
 ---
 
 ### `co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem)`
-Does nothing if the flag of the semaphore is true, else, block the calling cothread on the given semaphore and enqueue it into the semaphore's waiting queue.
+If the signalled flag of the semaphore is true, set it to false and return immediately.
+
+Otherwise, block the calling cothread on the given semaphore and enqueue it into the semaphore's waiting queue.
 
 Internally, the state of the calling cothread is updated to blocked (i.e. non-schedulable) then `yield()` is called.
 
@@ -333,7 +332,7 @@ Internally, the state of the calling cothread is updated to blocked (i.e. non-sc
 ---
 
 ### `co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem)`
-Unblock 1 cothread at the head of this semaphore's waiting queue and switch to it.
+Unblock 1 cothread at the head of this semaphore's waiting queue and switch to it. If there is no cothread blocked on this semaphore, the signalled flag is set to true.
 
 Internally, the state of the calling cothread is updated to ready and the calling cothread is enqueued back into the scheduling queue. Then the state of the blocked cothread is updated to running and control is switched to it.
 
