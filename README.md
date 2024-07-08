@@ -255,6 +255,8 @@ A variadic function that creates a new cothread then place it into the schedulin
 
 A handle is an integer that is allocated in FIFO order. The first cothread created in a PD is guaranteed to have a handle number 1.
 
+When `client_entry` returns, the cothread handle will be released back into the cothreads pool.
+
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `void (*)(void)`.
 - `private_arg` an argument into the newly spawned cothread that can later be retrieved within it's context with `my_arg()`.
@@ -301,9 +303,11 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 ---
 
 ### `co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread)`
-Destroy a specific cothread regardless of their running state, then return it's resources back into the cothreads pool. Do not use unless you know what you are doing because cothread might hold resources that needs free'ing or be in a semaphore queue.
+Destroy a specific cothread regardless of their running state. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
 
 If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
+
+**However, destroying a cothread whose state is blocked is undefined behaviour.**
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
@@ -358,6 +362,8 @@ That is, whether a `signal()` has happened before anyone `wait()`'ed on this sem
 
 ### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
 A convenient thin wrapper of `semaphore_wait()` for waiting on Microkit channel.
+
+Internally, an array maps each Microkit channel into a semaphore that can be used to block/unblock the calling cothread on notification from a channel.
 
 ---
 
