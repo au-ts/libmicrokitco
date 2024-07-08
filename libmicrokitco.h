@@ -164,8 +164,8 @@ co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread);
 co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);
 co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
 co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem);
-inline bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem);
-inline bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
+bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem);
+bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
 
 // Microkit specific semaphore wrapper: blocking on channel
 co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on); 
