@@ -49,12 +49,22 @@ void init(void) {
         return;
     }
     printf("CLIENT: cothreads limit test passed\n");
-
     printf("CLIENT: cothreads spawned\n");
 
     microkit_cothread_yield();
 
-    printf("CLIENT: done, exiting!\n");
+    printf("CLIENT: 1, 2, 3 exited, spawning 4, 5, 6\n");
+
+    microkit_cothread_spawn(co_entry, 4, &co1);
+    microkit_cothread_spawn(co_entry, 5, &co2);
+    microkit_cothread_spawn(co_entry, 6, &co3);
+
+    if (microkit_cothread_spawn(co_entry, 7, &co4) == co_no_err) {
+        printf("ERR: was able to spawn more cothreads than allowed\n");
+        return;
+    }
+
+    microkit_cothread_yield();
 
     // returns to Microkit event loop for recv'ing notifications when all cothreads finishes.
 }
