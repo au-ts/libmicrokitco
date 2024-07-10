@@ -25,9 +25,9 @@ typedef struct {
     int items;
 
     // points to item at front
-    int front;
+    int head;
     // next available index for insert, i.e. exclusive of last item
-    int back;
+    int tail;
 } hosted_queue_t;
 
 static inline int hostedqueue_init(hosted_queue_t *queue_controller, const int capacity) {
@@ -37,8 +37,8 @@ static inline int hostedqueue_init(hosted_queue_t *queue_controller, const int c
 
     queue_controller->capacity = capacity;
     queue_controller->items = 0;
-    queue_controller->front = 0;
-    queue_controller->back = 0;
+    queue_controller->head = 0;
+    queue_controller->tail = 0;
     return LIBHOSTEDQUEUE_NOERR;
 }
 
@@ -47,7 +47,7 @@ static inline int hostedqueue_peek(const hosted_queue_t *queue_controller, const
         return LIBHOSTEDQUEUE_ERR_EMPTY;
     }
 
-    *((ITEM_TYPE *) ret) = ((ITEM_TYPE *) queue_memory)[queue_controller->front];
+    *((ITEM_TYPE *) ret) = ((ITEM_TYPE *) queue_memory)[queue_controller->head];
 
     return LIBHOSTEDQUEUE_NOERR;
 }
@@ -55,11 +55,8 @@ static inline int hostedqueue_peek(const hosted_queue_t *queue_controller, const
 static inline int hostedqueue_pop(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, void *ret) {
     int err = hostedqueue_peek(queue_controller, queue_memory, ret);
     if (err == LIBHOSTEDQUEUE_NOERR) {
-        if (queue_controller->front == queue_controller->capacity - 1) {
-            queue_controller->front = 0;
-        } else {
-            queue_controller->front += 1;
-        }
+        queue_controller->head += 1;
+        queue_controller->head %= queue_controller->capacity;
         queue_controller->items -= 1;
     }
     return err;
@@ -70,14 +67,11 @@ static inline int hostedqueue_push(hosted_queue_t *queue_controller, ITEM_TYPE *
         return LIBHOSTEDQUEUE_ERR_FULL;
     }
 
-    queue_controller->items += 1;
-    ((ITEM_TYPE *) queue_memory)[queue_controller->back] = *((int *) item);
+    ((ITEM_TYPE *) queue_memory)[queue_controller->tail] = *((int *) item);
 
-    if (queue_controller->back == queue_controller->capacity - 1) {
-        queue_controller->back = 0;
-    } else {
-        queue_controller->back += 1;
-    }
+    queue_controller->items += 1;
+    queue_controller->tail += 1;
+    queue_controller->tail %= queue_controller->capacity;
 
     return LIBHOSTEDQUEUE_NOERR;
 }
