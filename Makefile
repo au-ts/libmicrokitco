@@ -63,7 +63,7 @@ LIBCO_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libco_$(TARGET).o
 LIBMICROKITCO_BARE_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare_$(TARGET).o
 LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(TARGET).o
 
-CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Werror -Wno-unused-function -Wno-unused-variable
+CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Wno-unused-function -Wno-unused-variable
 
 ifeq (aarch64,$(findstring aarch64,$(TARGET)))
 CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align

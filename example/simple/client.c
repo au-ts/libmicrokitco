@@ -13,8 +13,7 @@ char stack2[COSTACK_SIZE];
 char stack3[COSTACK_SIZE];
 
 void co_entry() {
-    void *our_id;
-    microkit_cothread_my_arg(&our_id);
+    void *our_id = microkit_cothread_my_arg();
     printf("CO%ld: hello world\n", our_id);
 }
 
@@ -25,26 +24,21 @@ void init(void) {
         LIBMICROKITCO_CONTROLLER_SIZE
     );
 
-    co_err_t err = microkit_cothread_init(
+    microkit_cothread_init(
         &co_control_mem, 
         COSTACK_SIZE,
         stack1, 
         stack2, 
         stack3
     );
-    if (err != co_no_err) {
-        printf("CLIENT: ERR: cannot init libmicrokitco, err is %s", microkit_cothread_pretty_error(err));
-        return;
-    }
+
     printf("CLIENT: libmicrokitco started\n");
-
-    microkit_cothread_ref_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, (void *) 1, &co1);
-    microkit_cothread_spawn(co_entry, (void *) 2, &co2);
-    microkit_cothread_spawn(co_entry, (void *) 3, &co3);
+    microkit_cothread_spawn(co_entry, (void *) 1);
+    microkit_cothread_spawn(co_entry, (void *) 2);
+    microkit_cothread_spawn(co_entry, (void *) 3);
 
-    if (microkit_cothread_spawn(co_entry, (void *) 4, &co4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, (void *) 4) != LIBMICROKITCO_NULL_HANDLE) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
@@ -55,11 +49,11 @@ void init(void) {
 
     printf("CLIENT: 1, 2, 3 exited, spawning 4, 5, 6\n");
 
-    microkit_cothread_spawn(co_entry, (void *) 4, &co1);
-    microkit_cothread_spawn(co_entry, (void *) 5, &co2);
-    microkit_cothread_spawn(co_entry, (void *) 6, &co3);
+    microkit_cothread_spawn(co_entry, (void *) 4);
+    microkit_cothread_spawn(co_entry, (void *) 5);
+    microkit_cothread_spawn(co_entry, (void *) 6);
 
-    if (microkit_cothread_spawn(co_entry, (void *) 7, &co4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, (void *) 7) != LIBMICROKITCO_NULL_HANDLE) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
