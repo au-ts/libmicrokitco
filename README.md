@@ -228,7 +228,7 @@ Map the error number returned by this library's functions into a human friendly 
 
 ---
 
-### `co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...)`
+### `void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
@@ -246,22 +246,23 @@ Returns a flag whether the cothreads pool has been exhausted. If the pool has no
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg, microkit_cothread_ref_t *handle_ret)`
+### `microkit_cothread_ref_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg)`
 A variadic function that creates a new cothread then place it into the scheduling queue, but does not switch to it.
 
 A handle is an integer that is allocated in FIFO order. The first cothread created in a PD is guaranteed to have a handle number 1.
 
 When `client_entry` returns, the cothread handle will be released back into the cothreads pool.
 
+This functions returns a handle to the created cothread, but returns `LIBMICROKITCO_NULL_HANDLE` when the cothreads pool has been exhausted.
+
 ##### Arguments
 - `client_entry` points to your cothread's entrypoint function of the form `void (*)(void)`.
 - `private_arg` an argument into the newly spawned cothread that can later be retrieved within it's context with `my_arg()`.
-- `*handle_ret` points to a variable in the caller's stack to write the new cothread's handle to.
 
 ---
 
-### `co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg)`
-Set the private argument of the given cothread handle, returns error if called from the root thread.
+### `void microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg)`
+Set the private argument of the given cothread handle which must be currently active.
 
 ##### Arguments
 - `cothread` is the subject cothread handle.
@@ -269,11 +270,10 @@ Set the private argument of the given cothread handle, returns error if called f
 
 --- 
 
-### `co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);`
+### `co_state_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread);`
 Returns the state of the given cothread handle.
 ##### Arguments
 - `cothread` is the subject cothread handle.
-- `*ret_state` points to a variable in the caller's stack to write the state to.
 
 ---
 
@@ -282,11 +282,8 @@ Returns the calling cothread's handle.
 
 ---
 
-### `co_err_t microkit_cothread_my_arg(void **ret_priv_arg)`
-Fetch the private argument of the calling cothread that was set from `spawn()` or `set_arg()`, returns error if called from the root thread.
-
-##### Arguments
-- `*ret_priv_arg` points to a variable in the caller's stack to write the argument to.
+### `void *microkit_cothread_my_arg(void)`
+Return the private argument of the calling cothread that was set from `spawn()` or `set_arg()`, returns error if called from the root thread.
 
 --- 
 
@@ -296,8 +293,8 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 
 ---
 
-### `co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread)`
-Destroy a specific cothread regardless of their running state. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
+### `void microkit_cothread_destroy(const microkit_cothread_ref_t cothread)`
+Destroy a specific cothread initialised cothread. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
 
 If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
 
@@ -356,12 +353,12 @@ That is, whether a `signal()` has happened before anyone `wait()`'ed on this sem
 
 ---
 
-### `co_err_t microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
+### `void microkit_cothread_wait_on_channel(const microkit_channel wake_on)`
 A convenient thin wrapper of `semaphore_wait()` for waiting on Microkit channel.
 
 Internally, an array maps each Microkit channel into a semaphore that can be used to block/unblock the calling cothread on notification from a channel.
 
 ---
 
-### `co_err_t microkit_cothread_recv_ntfn(const microkit_channel ch)`
+### `void microkit_cothread_recv_ntfn(const microkit_channel ch)`
 A convenient thin wrapper of `semaphore_signal()` for unblocking a cothread waiting on Microkit channel.
