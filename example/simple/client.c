@@ -4,7 +4,7 @@
 
 #define COSTACK_SIZE 0x1000
 
-char co_mem[LIBMICROKITCO_CONTROLLER_SIZE];
+co_control_t co_control_mem;
 
 // These should actually be in the system description file with guard page
 // but setvar_addr does not work in the x86 SDK currently so we putting them here
@@ -26,7 +26,7 @@ void init(void) {
     );
 
     co_err_t err = microkit_cothread_init(
-        (uintptr_t) co_mem, 
+        &co_control_mem, 
         COSTACK_SIZE,
         stack1, 
         stack2, 

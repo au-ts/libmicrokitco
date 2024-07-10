@@ -204,7 +204,7 @@ bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem) {
 
 // =========== Public functions ===========
 
-co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...) {
+co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...) {
     if (co_controller != NULL) {
         return co_err_init_already_initialised;
     }
@@ -214,7 +214,7 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
 
     // This part will VMFault on write if the given memory is not large enough.
     memzero((void *) controller_memory_addr, LIBMICROKITCO_CONTROLLER_SIZE);
-    co_controller = (co_control_t *) controller_memory_addr;
+    co_controller = controller_memory_addr;
     co_controller->co_stack_size = co_stack_size;
 
     // Parses all the valid stack memory regions

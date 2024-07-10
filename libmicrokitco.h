@@ -142,7 +142,7 @@ typedef struct cothreads_control {
 
 // ========== BEGIN API SECTION ==========
 
-co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
+co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...);
 
 co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle);
 

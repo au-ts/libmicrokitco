@@ -228,7 +228,7 @@ Map the error number returned by this library's functions into a human friendly 
 
 ---
 
-### `co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...)`
+### `co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments

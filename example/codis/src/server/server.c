@@ -100,7 +100,7 @@ void init(void) {
 
     printf("SERVER: starting\n");
 
-    co_err_t err = microkit_cothread_init(co_mem, stack_size, stack1, stack2, stack3);
+    co_err_t err = microkit_cothread_init((co_control_t *) co_mem, stack_size, stack1, stack2, stack3);
     if (err != co_no_err) {
         printf("SERVER: ERR: cannot init libmicrokitco, err:\n");
         printf("%s\n", microkit_cothread_pretty_error(err));
