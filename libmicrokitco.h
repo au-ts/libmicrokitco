@@ -21,13 +21,10 @@ typedef int microkit_cothread_ref_t;
 #error "libmicrokitco: max_cothreads must be known at compile time."
 #endif
 
-// No point to use this library if your max cothread is 0.
-#if LIBMICROKITCO_MAX_COTHREADS < 1
-#error "libmicrokitco: max_cothreads must be greater or equal to 1."
+// No point to use this library if you only have the root PD thread.
+#if LIBMICROKITCO_MAX_COTHREADS < 2
+#error "libmicrokitco: max_cothreads must be greater or equal to 2."
 #endif
-
-// MAX_THREADS includes the root thread whereas LIBMICROKITCO_MAX_COTHREADS does not
-#define MAX_THREADS LIBMICROKITCO_MAX_COTHREADS + 1
 
 // Business logic
 
@@ -114,15 +111,15 @@ typedef struct cothreads_control {
     microkit_cothread_ref_t running;
 
     // Array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
-    co_tcb_t tcbs[MAX_THREADS];
+    co_tcb_t tcbs[LIBMICROKITCO_MAX_COTHREADS];
 
     // All of these are queues of `microkit_cothread_ref_t`
     hosted_queue_t free_handle_queue;
     hosted_queue_t scheduling_queue;
 
     // Arrays for queues.
-    microkit_cothread_ref_t free_handle_queue_mem[MAX_THREADS];
-    microkit_cothread_ref_t scheduling_queue_mem[MAX_THREADS];
+    microkit_cothread_ref_t free_handle_queue_mem[LIBMICROKITCO_MAX_COTHREADS];
+    microkit_cothread_ref_t scheduling_queue_mem[LIBMICROKITCO_MAX_COTHREADS];
 
     // Map of linked list on what cothreads are blocked on which channel.
     microkit_cothread_sem_t blocked_channel_map[MICROKIT_MAX_CHANNELS];

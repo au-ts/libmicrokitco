@@ -159,7 +159,7 @@ These compiler triples have been well tested with this library:
 
 ### Configuration
 You need to create a file called `libmicrokitco_opts.h` that specify this constant:
-1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system needs.
+1. `LIBMICROKITCO_MAX_COTHREADS`: the number of cothreads your system have, including the root PD thread. For example, if you have the root PD thread and a worker cothread, this must be defined as 2.
 
 `libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 

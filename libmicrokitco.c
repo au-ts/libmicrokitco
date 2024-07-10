@@ -210,7 +210,7 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
     // Parses all the valid stack memory regions
     va_list ap;
     va_start(ap, co_stack_size);
-    for (int i = 1; i <= LIBMICROKITCO_MAX_COTHREADS; i++) {
+    for (int i = 1; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
         co_controller->tcbs[i].local_storage = (void *) va_arg(ap, uintptr_t);
 
         if (!co_controller->tcbs[i].local_storage) {
@@ -227,11 +227,11 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
     va_end(ap);
 
     // Check that none of the stacks overlap
-    for (int i = 1; i <= LIBMICROKITCO_MAX_COTHREADS; i++) {
+    for (int i = 1; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
         uintptr_t this_stack_start = (uintptr_t) co_controller->tcbs[i].local_storage;
         uintptr_t this_stack_end = this_stack_start + co_stack_size - 1;
 
-        for (int j = 1; j <= LIBMICROKITCO_MAX_COTHREADS; j++) {
+        for (int j = 1; j < LIBMICROKITCO_MAX_COTHREADS; j++) {
             if (j != i) {
                 uintptr_t other_stack_start = (uintptr_t) co_controller->tcbs[j].local_storage;
                 uintptr_t other_stack_end = other_stack_start + co_stack_size - 1;
@@ -253,11 +253,11 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
     // Initialise the queues
     const int err_hq = hostedqueue_init(
         &co_controller->free_handle_queue,
-        MAX_THREADS
+        LIBMICROKITCO_MAX_COTHREADS
     );
     const int err_sq = hostedqueue_init(
         &co_controller->scheduling_queue,
-        MAX_THREADS
+        LIBMICROKITCO_MAX_COTHREADS
     );
 
     if (err_hq != LIBHOSTEDQUEUE_NOERR) {
@@ -270,7 +270,7 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
     }
 
     // Enqueue all the free cothread handle IDs but exclude the root thread.
-    for (microkit_cothread_ref_t i = 1; i < MAX_THREADS; i++) {
+    for (microkit_cothread_ref_t i = 1; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
         if (hostedqueue_push(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &i) != LIBHOSTEDQUEUE_NOERR) {
             co_controller = NULL;
             return co_err_init_free_handles_populate_fail;
@@ -321,7 +321,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *privat
 }
 
 co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg) {
-    if (cothread >= MAX_THREADS || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
+    if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0 || co_controller->tcbs[cothread].state == cothread_not_active) {
         return co_err_generic_invalid_handle;
     }
 
@@ -330,7 +330,7 @@ co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void 
 }
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state) {
-    if (cothread >= MAX_THREADS || cothread < 0) {
+    if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0) {
         return co_err_generic_invalid_handle;
     }
 
@@ -366,7 +366,7 @@ void microkit_cothread_yield(void) {
 }
 
 co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
-    if (cothread >= MAX_THREADS || cothread < 0) {
+    if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0) {
         return co_err_generic_invalid_handle;
     }
 
