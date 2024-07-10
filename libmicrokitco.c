@@ -289,9 +289,7 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
 
     // Initialise the blocked table
     for (int i = 0; i < MICROKIT_MAX_CHANNELS; i++) {
-        co_controller->blocked_channel_map[i].head = NULL_HANDLE;
-        co_controller->blocked_channel_map[i].tail = NULL_HANDLE;
-        co_controller->blocked_channel_map[i].set = false;
+        microkit_cothread_semaphore_init(&co_controller->blocked_channel_map[i]);
     }
 
     return co_no_err;
