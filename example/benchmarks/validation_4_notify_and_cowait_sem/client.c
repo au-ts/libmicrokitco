@@ -66,20 +66,8 @@ void runner(void) {
 }
 
 void init(void) {
-    co_err_t err = microkit_cothread_init(co_mem, 0x1000, co_stack);
-    if (err != co_no_err) {
-        sddf_printf_("CLIENT: Cannot init libmicrokitco, err is :%s\n", microkit_cothread_pretty_error(err));
-    } else {
-        sddf_printf_("CLIENT: libmicrokitco started\n");
-    }
-
-    microkit_cothread_ref_t _handle;
-    err = microkit_cothread_spawn(runner, 0, &_handle);
-    if (err != co_no_err) {
-        sddf_printf_("CLIENT: Cannot spawn runner cothread, err is :%s\n", microkit_cothread_pretty_error(err));
-    } else {
-        sddf_printf_("CLIENT: runner cothread started\n");
-    }
+    microkit_cothread_init(co_mem, 0x1000, co_stack);
+    microkit_cothread_spawn(runner, 0);
     microkit_cothread_semaphore_init(&io_sem);
     microkit_cothread_yield();
 }
