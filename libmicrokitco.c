@@ -29,6 +29,7 @@ typedef enum {
     co_err_sem_sig_once_cannot_schedule_caller,
     destroy_cannot_destroy_root,
     destroy_cannot_release_handle,
+    destroy_already_not_initialised,
     generic_invalid_handle,
     init_already_initialised,
     init_co_stack_null,
@@ -336,6 +337,10 @@ void microkit_cothread_yield(void) {
 void microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
     if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0) {
         microkit_cothread_panic(generic_invalid_handle);
+    }
+
+    if (co_controller->tcbs[cothread].state == cothread_not_active) {
+        microkit_cothread_panic(destroy_already_not_initialised);
     }
 
     if (co_controller->running == 0) {
