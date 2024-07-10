@@ -89,16 +89,16 @@ typedef enum {
     cothread_running,
 } co_state_t;
 
-typedef void* cothread_t;
+typedef void *cothread_t;
 
 typedef struct {
     // Thread local storage: context + stack
-    void* local_storage;
+    void *local_storage;
     cothread_t co_handle;
 
     // Entrypoint for cothread
     client_entry_t client_entry;
-    uintptr_t private_arg;
+    void *private_arg;
 
     // Current execution state
     co_state_t state;
@@ -146,15 +146,15 @@ co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size
 
 co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle);
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret);
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg, microkit_cothread_ref_t *handle_ret);
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg);
+co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg);
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);
 
 co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle);
 
-co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg);
+co_err_t microkit_cothread_my_arg(void **ret_priv_arg);
 
 co_err_t microkit_cothread_yield(void);
 

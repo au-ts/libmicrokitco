@@ -247,7 +247,7 @@ Returns a flag whether the cothreads pool has been exhausted. If the pool has no
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret)`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg, microkit_cothread_ref_t *handle_ret)`
 A variadic function that creates a new cothread then place it into the scheduling queue, but does not switch to it.
 
 A handle is an integer that is allocated in FIFO order. The first cothread created in a PD is guaranteed to have a handle number 1.
@@ -261,7 +261,7 @@ When `client_entry` returns, the cothread handle will be released back into the 
 
 ---
 
-### `co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg);`
+### `co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg)`
 Set the private argument of the given cothread handle, returns error if called from the root thread.
 
 ##### Arguments
@@ -285,7 +285,7 @@ Returns the calling cothread's handle.
 
 ---
 
-### `co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg)`
+### `co_err_t microkit_cothread_my_arg(void **ret_priv_arg)`
 Fetch the private argument of the calling cothread that was set from `spawn()` or `set_arg()`, returns error if called from the root thread.
 
 ##### Arguments

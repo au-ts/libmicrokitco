@@ -302,7 +302,7 @@ co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothre
     return co_no_err;
 }
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret) {
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg, microkit_cothread_ref_t *handle_ret) {
     if (!client_entry) {
         return co_err_spawn_client_entry_null;
     }
@@ -334,7 +334,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintpt
     return co_no_err;
 }
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg) {
+co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void *private_arg) {
     if (co_controller->running == 0) {
         return co_err_my_arg_called_from_root_thread;
     }
@@ -360,7 +360,7 @@ co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle) {
     return co_no_err;
 }
 
-co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg) {
+co_err_t microkit_cothread_my_arg(void **ret_priv_arg) {
     if (co_controller->running == 0) {
         return co_err_my_arg_called_from_root_thread;
     }

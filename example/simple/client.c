@@ -13,7 +13,7 @@ char stack2[COSTACK_SIZE];
 char stack3[COSTACK_SIZE];
 
 void co_entry() {
-    uintptr_t our_id;
+    void *our_id;
     microkit_cothread_my_arg(&our_id);
     printf("CO%ld: hello world\n", our_id);
 }
@@ -40,11 +40,11 @@ void init(void) {
 
     microkit_cothread_ref_t co1, co2, co3, co4;
     
-    microkit_cothread_spawn(co_entry, 1, &co1);
-    microkit_cothread_spawn(co_entry, 2, &co2);
-    microkit_cothread_spawn(co_entry, 3, &co3);
+    microkit_cothread_spawn(co_entry, (void *) 1, &co1);
+    microkit_cothread_spawn(co_entry, (void *) 2, &co2);
+    microkit_cothread_spawn(co_entry, (void *) 3, &co3);
 
-    if (microkit_cothread_spawn(co_entry, 4, &co4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, (void *) 4, &co4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
@@ -55,11 +55,11 @@ void init(void) {
 
     printf("CLIENT: 1, 2, 3 exited, spawning 4, 5, 6\n");
 
-    microkit_cothread_spawn(co_entry, 4, &co1);
-    microkit_cothread_spawn(co_entry, 5, &co2);
-    microkit_cothread_spawn(co_entry, 6, &co3);
+    microkit_cothread_spawn(co_entry, (void *) 4, &co1);
+    microkit_cothread_spawn(co_entry, (void *) 5, &co2);
+    microkit_cothread_spawn(co_entry, (void *) 6, &co3);
 
-    if (microkit_cothread_spawn(co_entry, 7, &co4) == co_no_err) {
+    if (microkit_cothread_spawn(co_entry, (void *) 7, &co4) == co_no_err) {
         printf("ERR: was able to spawn more cothreads than allowed\n");
         return;
     }
