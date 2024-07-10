@@ -51,15 +51,8 @@ typedef enum {
 
     co_err_spawn_client_entry_null,
     co_err_spawn_max_cothreads_reached,
-    co_err_spawn_cannot_schedule,
-
-    co_err_yield_cannot_schedule_caller,
 
     co_err_destroy_cannot_destroy_root,
-    co_err_destroy_cannot_release_handle,
-
-    co_err_sem_sig_once_cannot_schedule_caller,
-    co_err_sem_sig_once_already_set,
 
     co_err_wait_invalid_channel,
 
@@ -144,7 +137,7 @@ typedef struct cothreads_control {
 
 co_err_t microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...);
 
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle);
+bool microkit_cothread_free_handle_available(microkit_cothread_ref_t *ret_handle);
 
 co_err_t microkit_cothread_spawn(const client_entry_t client_entry, void *private_arg, microkit_cothread_ref_t *handle_ret);
 
@@ -152,18 +145,18 @@ co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void 
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);
 
-co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle);
+microkit_cothread_ref_t microkit_cothread_my_handle();
 
 co_err_t microkit_cothread_my_arg(void **ret_priv_arg);
 
-co_err_t microkit_cothread_yield(void);
+void microkit_cothread_yield(void);
 
 co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread);
 
 // Generic blocking mechanism: a userland semaphore
-co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);
-co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
-co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem);
+void microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);
+void microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem);
+void microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem);
 bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *sem);
 bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
 
