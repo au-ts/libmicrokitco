@@ -239,10 +239,9 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 
 ---
 
-### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle)`
+### `bool microkit_cothread_free_handle_available(microkit_cothread_ref_t *ret_handle)`
 Returns a flag whether the cothreads pool has been exhausted. If the pool has not been exhausted, returns the handle number of the next available cothread. This invariant is guaranteed to be true if you call `spawn()` before any cothread returns or other `libmicrokitco` functions are invoked.
 ##### Arguments
-- `*ret_flag` points to a variable in the caller's stack to write the flag to.
 - `*ret_handle` points to a variable in the caller's stack to write the next available handle to.
 
 ---
@@ -278,10 +277,8 @@ Returns the state of the given cothread handle.
 
 ---
 
-### `co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle)`
+### `microkit_cothread_ref_t microkit_cothread_my_handle(void)`
 Returns the calling cothread's handle.
-##### Arguments
-- `*ret_handle` points to a variable in the caller's stack to write the handle to.
 
 ---
 
@@ -311,7 +308,7 @@ If the caller destroy itself, the scheduler will be invoked to pick the next cot
 
 ---
 
-### `co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem)`
+### `void microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem)`
 Initialise a user-land blocking semaphore at the given memory address with an empty queue and false signalled flag.
 
 ##### Arguments
@@ -319,19 +316,19 @@ Initialise a user-land blocking semaphore at the given memory address with an em
 
 ---
 
-### `co_err_t microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem)`
+### `void microkit_cothread_semaphore_wait(microkit_cothread_sem_t *sem)`
 If the signalled flag of the semaphore is true, set it to false and return immediately.
 
 Otherwise, block the calling cothread on the given semaphore and enqueue it into the semaphore's waiting queue.
 
-Internally, the state of the calling cothread is updated to blocked (i.e. non-schedulable) then `yield()` is called.
+Internally, the state of the calling cothread is updated to blocked (i.e. non-schedulable) then the CPU thread is yielded to another cothread.
 
 ##### Arguments
 - `sem` to block on.
 
 ---
 
-### `co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem)`
+### `void microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem)`
 Unblock 1 cothread at the head of this semaphore's waiting queue and switch to it. If there is no cothread blocked on this semaphore, the signalled flag is set to true.
 
 Internally, the state of the calling cothread is updated to ready and the calling cothread is enqueued back into the scheduling queue. Then the state of the blocked cothread is updated to running and control is switched to it.
