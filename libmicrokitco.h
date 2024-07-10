@@ -12,7 +12,7 @@
 #include <libmicrokitco_opts.h>
 
 // Cothread handle.
-typedef int microkit_cothread_t;
+typedef int microkit_cothread_ref_t;
 #include "libhostedqueue/libhostedqueue.h"
 
 // This err is caught by the provided Makefile so we should never trigger this. But it's included
@@ -103,7 +103,7 @@ typedef struct {
     // Current execution state
     co_state_t state;
 
-    microkit_cothread_t next_blocked_on_same_event;
+    microkit_cothread_ref_t next_blocked_on_same_event;
 } co_tcb_t;
 
 // A linked list data structure that manage all cothreads blocking on a specific sem/event.
@@ -112,24 +112,24 @@ typedef struct {
     bool set;
 
     // First cothread waiting on this semaphore
-    microkit_cothread_t head;
-    microkit_cothread_t tail;
+    microkit_cothread_ref_t head;
+    microkit_cothread_ref_t tail;
 } microkit_cothread_sem_t;
 
 typedef struct cothreads_control {
     int co_stack_size;
-    microkit_cothread_t running;
+    microkit_cothread_ref_t running;
 
     // Array of cothreads, first index is root thread AND len(tcbs) == (max_cothreads + 1)
     co_tcb_t tcbs[MAX_THREADS];
 
-    // All of these are queues of `microkit_cothread_t`
+    // All of these are queues of `microkit_cothread_ref_t`
     hosted_queue_t free_handle_queue;
     hosted_queue_t scheduling_queue;
 
     // Arrays for queues.
-    microkit_cothread_t free_handle_queue_mem[MAX_THREADS];
-    microkit_cothread_t scheduling_queue_mem[MAX_THREADS];
+    microkit_cothread_ref_t free_handle_queue_mem[MAX_THREADS];
+    microkit_cothread_ref_t scheduling_queue_mem[MAX_THREADS];
 
     // Map of linked list on what cothreads are blocked on which channel.
     microkit_cothread_sem_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
@@ -144,21 +144,21 @@ typedef struct cothreads_control {
 
 co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const size_t co_stack_size, ...);
 
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle);
+co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle);
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_t *handle_ret);
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret);
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uintptr_t private_arg);
+co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg);
 
-co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);
+co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);
 
-co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle);
+co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle);
 
 co_err_t microkit_cothread_my_arg(uintptr_t *ret_priv_arg);
 
 co_err_t microkit_cothread_yield(void);
 
-co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread);
+co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread);
 
 // Generic blocking mechanism: a userland semaphore
 co_err_t microkit_cothread_semaphore_init(microkit_cothread_sem_t *ret_sem);

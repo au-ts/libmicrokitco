@@ -85,8 +85,8 @@ static co_control_t *co_controller = NULL;
 // =========== Helper functions ===========
 
 // Pick a ready thread, essentially popping the first item from the scheduling queue.
-static inline microkit_cothread_t internal_schedule(void) {
-    microkit_cothread_t next_choice;
+static inline microkit_cothread_ref_t internal_schedule(void) {
+    microkit_cothread_ref_t next_choice;
     const int peek_err = hostedqueue_pop(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &next_choice);
     if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
         return SCHEDULER_NULL_CHOICE;
@@ -105,7 +105,7 @@ static inline microkit_cothread_t internal_schedule(void) {
 
 // Switch to the next ready thread, also handle cases where there is no ready thread.
 static inline void internal_go_next(void) {
-    microkit_cothread_t next = internal_schedule();
+    microkit_cothread_ref_t next = internal_schedule();
     if (next == SCHEDULER_NULL_CHOICE) {
         // no ready thread in the queue, go back to root execution thread to receive notifications
         next = 0;
@@ -166,8 +166,8 @@ co_err_t microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem) {
         return co_no_err;
     }
 
-    const microkit_cothread_t head = sem->head;
-    const microkit_cothread_t next = co_controller->tcbs[head].next_blocked_on_same_event;
+    const microkit_cothread_ref_t head = sem->head;
+    const microkit_cothread_ref_t next = co_controller->tcbs[head].next_blocked_on_same_event;
 
     // Schedule caller
     const int sched_err = hostedqueue_push(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &co_controller->running);
@@ -280,7 +280,7 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
     }
 
     // Enqueue all the free cothread handle IDs but exclude the root thread.
-    for (microkit_cothread_t i = 1; i < MAX_THREADS; i++) {
+    for (microkit_cothread_ref_t i = 1; i < MAX_THREADS; i++) {
         if (hostedqueue_push(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, &i) != LIBHOSTEDQUEUE_NOERR) {
             co_controller = NULL;
             return co_err_init_free_handles_populate_fail;
@@ -297,19 +297,19 @@ co_err_t microkit_cothread_init(const uintptr_t controller_memory_addr, const si
     return co_no_err;
 }
 
-co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle) {
+co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle) {
     *ret_flag = hostedqueue_peek(&co_controller->free_handle_queue, co_controller->free_handle_queue_mem, ret_handle) == LIBHOSTEDQUEUE_NOERR;
     return co_no_err;
 }
 
-co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_t *handle_ret) {
+co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret) {
     if (!client_entry) {
         return co_err_spawn_client_entry_null;
     }
 
     hosted_queue_t *free_handle_queue = &co_controller->free_handle_queue;
     hosted_queue_t *scheduling_queue = &co_controller->scheduling_queue;
-    microkit_cothread_t new;
+    microkit_cothread_ref_t new;
     const int pop_err = hostedqueue_pop(free_handle_queue, co_controller->free_handle_queue_mem, &new);
 
     if (pop_err != LIBHOSTEDQUEUE_NOERR) {
@@ -334,7 +334,7 @@ co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintpt
     return co_no_err;
 }
 
-co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uintptr_t private_arg) {
+co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg) {
     if (co_controller->running == 0) {
         return co_err_my_arg_called_from_root_thread;
     }
@@ -346,7 +346,7 @@ co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uin
     return co_no_err;
 }
 
-co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state) {
+co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state) {
     if (cothread >= MAX_THREADS || cothread < 0) {
         return co_err_generic_invalid_handle;
     }
@@ -355,7 +355,7 @@ co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_st
     return co_no_err;
 }
 
-co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle) {
+co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle) {
     *ret_handle = co_controller->running;
     return co_no_err;
 }
@@ -384,7 +384,7 @@ co_err_t microkit_cothread_yield(void) {
     return co_no_err;
 }
 
-co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread) {
+co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
     if (cothread >= MAX_THREADS || cothread < 0) {
         return co_err_generic_invalid_handle;
     }

@@ -108,7 +108,7 @@ void init(void) {
     }
     printf("SERVER: libmicrokitco started\n");
 
-    microkit_cothread_t _handle;
+    microkit_cothread_ref_t _handle;
 
     printf("SERVER: starting first cothread\n");
     arg_t arg1 = { .channel = CLIENT1_CHANNEL, .ipc = client1_ipc };

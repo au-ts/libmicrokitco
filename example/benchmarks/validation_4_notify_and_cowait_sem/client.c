@@ -73,7 +73,7 @@ void init(void) {
         sddf_printf_("CLIENT: libmicrokitco started\n");
     }
 
-    microkit_cothread_t _handle;
+    microkit_cothread_ref_t _handle;
     err = microkit_cothread_spawn(runner, 0, &_handle);
     if (err != co_no_err) {
         sddf_printf_("CLIENT: Cannot spawn runner cothread, err is :%s\n", microkit_cothread_pretty_error(err));

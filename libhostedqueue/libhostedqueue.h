@@ -8,11 +8,11 @@
 
 #include <microkit.h>
 
-// A simple fixed capacity circular queue of `microkit_cothread_t`s.
+// A simple fixed capacity circular queue of `microkit_cothread_ref_t`s.
 
 // "Hosted" meaning the user of the library provides the memory.
 
-#define ITEM_TYPE microkit_cothread_t
+#define ITEM_TYPE microkit_cothread_ref_t
 
 // return codes:
 #define LIBHOSTEDQUEUE_NOERR 0

@@ -239,7 +239,7 @@ Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uint
 
 ---
 
-### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_t *ret_handle)`
+### `co_err_t microkit_cothread_free_handle_available(bool *ret_flag, microkit_cothread_ref_t *ret_handle)`
 Returns a flag whether the cothreads pool has been exhausted. If the pool has not been exhausted, returns the handle number of the next available cothread. This invariant is guaranteed to be true if you call `spawn()` before any cothread returns or other `libmicrokitco` functions are invoked.
 ##### Arguments
 - `*ret_flag` points to a variable in the caller's stack to write the flag to.
@@ -247,7 +247,7 @@ Returns a flag whether the cothreads pool has been exhausted. If the pool has no
 
 ---
 
-### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_t *handle_ret)`
+### `co_err_t microkit_cothread_spawn(const client_entry_t client_entry, const uintptr_t private_arg, microkit_cothread_ref_t *handle_ret)`
 A variadic function that creates a new cothread then place it into the scheduling queue, but does not switch to it.
 
 A handle is an integer that is allocated in FIFO order. The first cothread created in a PD is guaranteed to have a handle number 1.
@@ -261,7 +261,7 @@ When `client_entry` returns, the cothread handle will be released back into the 
 
 ---
 
-### `co_err_t microkit_cothread_set_arg(const microkit_cothread_t cothread, const uintptr_t private_arg);`
+### `co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, const uintptr_t private_arg);`
 Set the private argument of the given cothread handle, returns error if called from the root thread.
 
 ##### Arguments
@@ -270,7 +270,7 @@ Set the private argument of the given cothread handle, returns error if called f
 
 --- 
 
-### `co_err_t microkit_cothread_query_state(const microkit_cothread_t cothread, co_state_t *ret_state);`
+### `co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);`
 Returns the state of the given cothread handle.
 ##### Arguments
 - `cothread` is the subject cothread handle.
@@ -278,7 +278,7 @@ Returns the state of the given cothread handle.
 
 ---
 
-### `co_err_t microkit_cothread_my_handle(microkit_cothread_t *ret_handle)`
+### `co_err_t microkit_cothread_my_handle(microkit_cothread_ref_t *ret_handle)`
 Returns the calling cothread's handle.
 ##### Arguments
 - `*ret_handle` points to a variable in the caller's stack to write the handle to.
@@ -299,7 +299,7 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 
 ---
 
-### `co_err_t microkit_cothread_destroy(const microkit_cothread_t cothread)`
+### `co_err_t microkit_cothread_destroy(const microkit_cothread_ref_t cothread)`
 Destroy a specific cothread regardless of their running state. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
 
 If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.

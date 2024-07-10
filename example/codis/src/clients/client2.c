@@ -53,7 +53,7 @@ void init(void) {
         microkit_internal_crash(co_err);
     }
 
-    microkit_cothread_t _handle;
+    microkit_cothread_ref_t _handle;
     co_err = microkit_cothread_spawn(co_main, 0, &_handle);
     if (co_err != co_no_err) {
         printf("CLIENT #%d: ERROR: %s\n", our_client_num, microkit_cothread_pretty_error(co_err));
