@@ -145,7 +145,7 @@ co_err_t microkit_cothread_set_arg(const microkit_cothread_ref_t cothread, void 
 
 co_err_t microkit_cothread_query_state(const microkit_cothread_ref_t cothread, co_state_t *ret_state);
 
-microkit_cothread_ref_t microkit_cothread_my_handle();
+microkit_cothread_ref_t microkit_cothread_my_handle(void);
 
 co_err_t microkit_cothread_my_arg(void **ret_priv_arg);
 
