@@ -178,11 +178,11 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(TARGET).o
+LIBMICROKITCO_OBJ := libmicrokitco_$(TARGET).a
 ```
 For example, the library object file built for AArch64 would have the name:
 ```Make
-libmicrokitco_aarch64-none-elf.o
+libmicrokitco_aarch64-none-elf.a
 ```
 
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
@@ -190,7 +190,7 @@ Then, export those variables and invoke `libmicrokitco`'s Makefile. You could al
 TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_OPT_PATH := $(shell pwd)
-LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.a
 
 LLVM = 1
 export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
@@ -205,7 +205,7 @@ TARGET=aarch64-none-elf
 TOOLCHAIN=$(TARGET)
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_OPT_PATH := $(shell pwd)
-LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.o
+LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.a
 
 export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
 
