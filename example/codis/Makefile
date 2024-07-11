@@ -33,10 +33,10 @@ LDFLAGS = -L$(MICROKIT_SDK)/board/$(MICROKIT_BOARD)/$(MICROKIT_CONFIG)/lib
 LIBS = -lmicrokit -Tmicrokit.ld
 
 # Our PDs have different needs for number of cothreads so we need multiple configs of the library.
-LIBMICROKITCO_CLIENT_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
-LIBMICROKITCO_SERVER_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
-LIBMICROKITCO_CLIENT_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).o
-LIBMICROKITCO_SERVER_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).o
+LIBMICROKITCO_CLIENT_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).a
+LIBMICROKITCO_SERVER_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).a
+LIBMICROKITCO_CLIENT_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_1ct_$(TARGET).a
+LIBMICROKITCO_SERVER_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_3ct_$(TARGET).a
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 RISCV64_TARGET_RULE := $(BUILD_DIR)/loader_riscv64.img
@@ -60,17 +60,17 @@ endif
 
 $(LIBMICROKITCO_CLIENT_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
 $(LIBMICROKITCO_SERVER_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
 
 $(LIBMICROKITCO_CLIENT_RISCV64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
 $(LIBMICROKITCO_SERVER_RISCV64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
 
 # Build client system
 $(BUILD_DIR)/printf.o: src/printf.c

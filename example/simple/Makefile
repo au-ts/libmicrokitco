@@ -36,9 +36,9 @@ LDFLAGS = -L$(BOARD_DIR)/lib
 LIBS = -lmicrokit -Tmicrokit.ld
 
 # Arch specific obj
-LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
-LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
-LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).o
+LIBMICROKITCO_AARCH64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
+LIBMICROKITCO_X86_64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
+LIBMICROKITCO_RISCV64_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
 
 AARCH64_TARGET_RULE := $(BUILD_DIR)/loader_aarch64.img
 X86_64_TARGET_RULE := $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/capdl-initialiser-with-spec.elf
