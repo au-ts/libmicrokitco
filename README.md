@@ -294,7 +294,7 @@ Yield the kernel thread to another cothread and place the caller at the back of 
 ---
 
 ### `void microkit_cothread_destroy(const microkit_cothread_ref_t cothread)`
-Destroy a specific cothread initialised cothread. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
+Destroy the given cothread. Internally, the subject cothread's handle is released back into the cothreads pool and such handle is non-scheduleable until it is returned from a `spawn()` call.
 
 If the caller destroy itself, the scheduler will be invoked to pick the next cothread to run.
 
