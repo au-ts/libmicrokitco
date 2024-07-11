@@ -67,19 +67,27 @@ static co_control_t *co_controller = NULL;
 // Pick a ready thread, essentially popping the first item from the scheduling queue.
 static inline microkit_cothread_ref_t internal_schedule(void) {
     microkit_cothread_ref_t next_choice;
-    const int peek_err = hostedqueue_pop(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &next_choice);
-    if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
-        return SCHEDULER_NULL_CHOICE;
-    } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
-        if (co_controller->tcbs[next_choice].state == cothread_ready || next_choice == LIBMICROKITCO_ROOT_THREAD) {
-            return next_choice;
+    
+    while (true) {
+        // This loop will iterate 2 >= times if client destroy a ready cothread. It's TCB will be inactive but it is still
+        // in the scheduling queue, we need to gracefully handle this.
+        const int peek_err = hostedqueue_pop(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &next_choice);
+        if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
+            next_choice = SCHEDULER_NULL_CHOICE;
+        } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
+            if (co_controller->tcbs[next_choice].state == cothread_ready) {
+                break;
+            } else if (next_choice == LIBMICROKITCO_ROOT_THREAD) {
+                break;
+            } else {
+                continue;
+            }
         } else {
-            microkit_cothread_panic(internal_pop_from_queue_found_non_ready_cothread_in_schedule_queue);
+            // catch other errs
+            microkit_cothread_panic(internal_pop_from_queue_cannot_pop);
         }
-    } else {
-        // catch other errs
-        microkit_cothread_panic(internal_pop_from_queue_cannot_pop);
     }
+
     return next_choice;
 }
 
