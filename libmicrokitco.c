@@ -23,6 +23,9 @@ void microkit_cothread_panic(uintptr_t err) {
 #include <libco.h>
 
 // Error handling
+// On an unrecoverable error, such as bad argument or bugs in the implementation.
+// libmicrokitco will crash the client PD with one of the following error code as
+// the faulting virtual memory address.
 typedef enum {
     reserved, // so that internal error code starts from 1 for easy identification.
     cannot_destroy_self_after_return,
