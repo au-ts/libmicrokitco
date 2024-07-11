@@ -362,3 +362,5 @@ Internally, an array maps each Microkit channel into a semaphore that can be use
 
 ### `void microkit_cothread_recv_ntfn(const microkit_channel ch)`
 A convenient thin wrapper of `semaphore_signal()` for unblocking a cothread waiting on Microkit channel.
+
+Call this in your `notified()` if you have cothreads blocked with `wait_on_channel()`.
