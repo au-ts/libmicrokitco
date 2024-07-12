@@ -70,10 +70,13 @@ endif
 
 $(LIBMICROKITCO_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
 $(LIBMICROKITCO_X86_64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
 $(LIBMICROKITCO_RISCV64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile TARGET=$(TARGET)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a
 
 # Link everything together
 .PHONY: aarch64_link
