@@ -61,7 +61,7 @@ LIBMICROKITCO_BUILD_DIR := $(BUILD_DIR)/libmicrokitco
 
 LIBCO_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libco_$(TARGET).o
 LIBMICROKITCO_BARE_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_bare_$(TARGET).o
-LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco_$(TARGET).a
+LIBMICROKITCO_FINAL_OBJ := $(LIBMICROKITCO_BUILD_DIR)/libmicrokitco.a
 
 CO_CFLAGS += -c -O2 -nostdlib -ffreestanding -Wall -Wno-unused-function -Wno-unused-variable
 
@@ -85,8 +85,8 @@ all: libmicrokitco_directory $(LIBMICROKITCO_FINAL_OBJ)
 libmicrokitco_directory: 
 	$(info $(shell mkdir -p $(BUILD_DIR)/libmicrokitco))
 
-$(LIBCO_OBJ): $(LIBCO_PATH)/libco.c
-	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $^ -o $@
+$(LIBCO_OBJ): $(LIBCO_PATH)/libco.c $(LIBCO_PATH)/libco.h $(LIBCO_PATH)/aarch64.c $(LIBCO_PATH)/amd64.c $(LIBCO_PATH)/arm.c $(LIBCO_PATH)/riscv64.c $(LIBCO_PATH)/settings.h 
+	$(CO_CC) $(CO_CFLAGS) -Wno-unused-value $< -o $@
 
 $(LIBMICROKITCO_BARE_OBJ): $(LIBMICROKITCO_PATH)/libmicrokitco.c $(LIBMICROKITCO_PATH)/libmicrokitco.h $(LIBMICROKITCO_PATH)/libhostedqueue/libhostedqueue.h $(LIBMICROKITCO_OPT_PATH)/libmicrokitco_opts.h
 	$(CO_CC) $(CO_CFLAGS) $(CO_CC_INCLUDE_LIBCO_FLAG) $(CO_CC_INCLUDE_MICROKIT_FLAG) $(CO_CC_INCLUDE_OPT_FLAG) $< -o $@

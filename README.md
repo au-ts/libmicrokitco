@@ -178,11 +178,7 @@ To use `libmicrokitco` in your project, define these in your Makefile:
 
 The compiled object filename will have the form:
 ```Make
-LIBMICROKITCO_OBJ := libmicrokitco_$(TARGET).a
-```
-For example, the library object file built for AArch64 would have the name:
-```Make
-libmicrokitco_aarch64-none-elf.a
+LIBMICROKITCO_OBJ := libmicrokitco.a
 ```
 
 Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
