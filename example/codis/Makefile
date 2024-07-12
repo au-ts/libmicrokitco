@@ -60,17 +60,17 @@ endif
 
 $(LIBMICROKITCO_CLIENT_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(LIBMICROKITCO_CLIENT_AARCH64_OBJ)
 $(LIBMICROKITCO_SERVER_AARCH64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(LIBMICROKITCO_SERVER_AARCH64_OBJ)
 
 $(LIBMICROKITCO_CLIENT_RISCV64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/clients TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(LIBMICROKITCO_CLIENT_RISCV64_OBJ)
 $(LIBMICROKITCO_SERVER_RISCV64_OBJ):
 	make -f $(LIBMICROKITCO_PATH)/Makefile LIBMICROKITCO_OPT_PATH=$(PWD)/src/server TARGET=$(TARGET)
-	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco_$(TARGET).a $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
+	mv $(BUILD_DIR)/libmicrokitco/libmicrokitco.a $(LIBMICROKITCO_SERVER_RISCV64_OBJ)
 
 # Build client system
 $(BUILD_DIR)/printf.o: src/printf.c
