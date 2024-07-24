@@ -219,9 +219,6 @@ Finally, for any of your object files that uses this library, link it against `$
 
 
 ## API
-### `const char *microkit_cothread_pretty_error(const co_err_t err_num)`
-Map the error number returned by this library's functions into a human friendly error message string.
-
 ---
 
 ### `void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...)`
