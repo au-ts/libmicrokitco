@@ -99,7 +99,7 @@ $(RISCV64_TARGET_RULE): riscv64_link
 	$(MICROKIT_TOOL) simple.system --search-path $(BUILD_DIR) --board $(MICROKIT_BOARD) --config $(MICROKIT_CONFIG) -o $@ -r $(BUILD_DIR)/report.txt
 
 # Run them on QEMU
-run_qemu_aarch64: MICROKIT_BOARD = qemu_arm_virt
+run_qemu_aarch64: MICROKIT_BOARD = qemu_virt_aarch64
 run_qemu_aarch64: CPU = cortex-a53
 run_qemu_aarch64: CFLAGS += -mstrict-align -mtune=$(shell echo $(CPU) | tr A-Z a-z) 
 run_qemu_aarch64: clean directories $(AARCH64_TARGET_RULE)
@@ -122,9 +122,9 @@ run_qemu_x86_64: clean directories $(X86_64_TARGET_RULE)
 		-kernel $(word 3,$^) \
 		-initrd $(word 4,$^)
 
-run_qemu_riscv64: MICROKIT_BOARD = qemu_riscv_virt
+run_qemu_riscv64: MICROKIT_BOARD = qemu_virt_riscv64
 run_qemu_riscv64: CPU = medany
-run_qemu_riscv64: CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -mabi=lp64 -march=rv64imac
+run_qemu_riscv64: CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -march=rv64imafdc_zicsr_zifencei -mabi=lp64d
 run_qemu_riscv64: clean directories $(RISCV64_TARGET_RULE)
 	qemu-system-riscv64 -machine virt            \
 		-cpu rv64                                                  \

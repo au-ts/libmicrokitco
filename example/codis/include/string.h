@@ -9,6 +9,13 @@
 #define HASZERO(x) ((x)-ONES & ~(x) & HIGHS)
 #define SS (sizeof(size_t))
 
+/* Very simple memzero implementation */
+static void memzero(void *dst, size_t n) {
+    for (int i = 0; i < n; i++) {
+        ((char *)dst)[i] = 0;
+    }
+}
+
 void *memcpy(void *__restrict dest, const void *__restrict src, size_t size) {
     char *destination = (char *) dest;
     char *source = (char *) src;
