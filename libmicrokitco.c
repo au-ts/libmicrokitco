@@ -15,6 +15,13 @@
 #pragma GCC diagnostic error "-Wpedantic"
 #pragma GCC diagnostic push
 
+/* Very simple memzero implementation */
+static void memzero(void *dst, size_t n) {
+    for (int i = 0; i < n; i++) {
+        ((char *)dst)[i] = 0;
+    }
+}
+
 void microkit_cothread_panic(uintptr_t err) {
     volatile char *fault_addr = (volatile char *) err;
     *fault_addr = 0;
