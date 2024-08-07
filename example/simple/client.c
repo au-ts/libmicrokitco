@@ -18,7 +18,12 @@ void co_entry() {
 }
 
 void init(void) {
+    float f = 12.34;
+    double d = 56.7891234;
+    
     printf("CLIENT: starting\n");
+
+    printf("CLIENT: float and double is %f and %lf\n", f, d);
 
     printf("CLIENT: libmicrokitco derived memsize is %lu bytes\n", 
         LIBMICROKITCO_CONTROLLER_SIZE
@@ -48,6 +53,8 @@ void init(void) {
     microkit_cothread_yield();
 
     printf("CLIENT: 1, 2, 3 exited, spawning 4, 5, 6\n");
+
+    printf("CLIENT: float and double is %f and %lf\n", f, d);
 
     microkit_cothread_spawn(co_entry, (void *) 4);
     microkit_cothread_spawn(co_entry, (void *) 5);

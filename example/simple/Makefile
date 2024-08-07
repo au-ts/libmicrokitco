@@ -53,7 +53,7 @@ directories:
 
 # Build client system
 $(BUILD_DIR)/printf.o: printf.c
-	$(CC) $(CFLAGS) -DPRINTF_DISABLE_SUPPORT_FLOAT $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 $(BUILD_DIR)/client.o: client.c
 	$(CC) $(CFLAGS) -I$(LIBMICROKITCO_PATH) $^ -o $@
 
