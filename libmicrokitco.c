@@ -164,6 +164,7 @@ void microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem) {
     if (sched_err != LIBHOSTEDQUEUE_NOERR) {
         microkit_cothread_panic(co_err_sem_sig_once_cannot_schedule_caller);
     }
+    co_controller->tcbs[co_controller->running].state = cothread_ready;
 
     // Move semaphore list
     sem->head = next;
