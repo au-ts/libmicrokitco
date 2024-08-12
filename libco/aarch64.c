@@ -91,8 +91,8 @@ section(text)
         0xD61F03C0, // br lr // jump to destination pc
 };
 
-static void co_entrypoint(cothread_t handle) {
-    uintptr_t *buffer_top = (uintptr_t *)handle;
+static void co_entrypoint(void) {
+    uintptr_t *buffer_top = (uintptr_t *)co_active_handle;
     ((void (*)(void))buffer_top[-x19])();
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
