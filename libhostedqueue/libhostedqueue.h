@@ -42,17 +42,17 @@ static inline int hostedqueue_init(hosted_queue_t *queue_controller, const int c
     return LIBHOSTEDQUEUE_NOERR;
 }
 
-static inline int hostedqueue_peek(const hosted_queue_t *queue_controller, const ITEM_TYPE *queue_memory, const void *ret) {
+static inline int hostedqueue_peek(const hosted_queue_t *queue_controller, const ITEM_TYPE *queue_memory, ITEM_TYPE *ret) {
     if (!queue_controller->items) {
         return LIBHOSTEDQUEUE_ERR_EMPTY;
     }
 
-    *((ITEM_TYPE *) ret) = ((ITEM_TYPE *) queue_memory)[queue_controller->head];
+    *ret = queue_memory[queue_controller->head];
 
     return LIBHOSTEDQUEUE_NOERR;
 }
 
-static inline int hostedqueue_pop(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, void *ret) {
+static inline int hostedqueue_pop(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, ITEM_TYPE *ret) {
     int err = hostedqueue_peek(queue_controller, queue_memory, ret);
     if (err == LIBHOSTEDQUEUE_NOERR) {
         queue_controller->head += 1;
@@ -62,12 +62,12 @@ static inline int hostedqueue_pop(hosted_queue_t *queue_controller, ITEM_TYPE *q
     return err;
 }
 
-static inline int hostedqueue_push(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, const void *item) {
+static inline int hostedqueue_push(hosted_queue_t *queue_controller, ITEM_TYPE *queue_memory, const ITEM_TYPE *item) {
     if (queue_controller->items == queue_controller->capacity) {
         return LIBHOSTEDQUEUE_ERR_FULL;
     }
 
-    ((ITEM_TYPE *) queue_memory)[queue_controller->tail] = *((int *) item);
+    queue_memory[queue_controller->tail] = *item;
 
     queue_controller->items += 1;
     queue_controller->tail += 1;
