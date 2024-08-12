@@ -70,7 +70,6 @@ CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align
 else ifeq (x86_64,$(findstring x86_64,$(TARGET)))
 CO_CFLAGS += -mtune=$(shell echo $(CPU) | tr A-Z a-z) -Wno-parentheses
 else ifeq (riscv64,$(findstring riscv64,$(TARGET)))
-# add the "d" extension after the "a" in -march if you want 64-bits hard float support
 CO_CFLAGS += -mcmodel=$(shell echo $(CPU) | tr A-Z a-z) -mstrict-align -march=rv64imafdc_zicsr_zifencei -mabi=lp64d
 else
 $(error Unsupported target: TARGET="$(TARGET)")
