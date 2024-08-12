@@ -81,10 +81,11 @@ static inline microkit_cothread_ref_t internal_schedule(void) {
         const int peek_err = hostedqueue_pop(&co_controller->scheduling_queue, co_controller->scheduling_queue_mem, &next_choice);
         if (peek_err == LIBHOSTEDQUEUE_ERR_EMPTY) {
             next_choice = SCHEDULER_NULL_CHOICE;
+            break;
         } else if (peek_err == LIBHOSTEDQUEUE_NOERR) {
-            if (co_controller->tcbs[next_choice].state == cothread_ready) {
+            if (next_choice == LIBMICROKITCO_ROOT_THREAD) {
                 break;
-            } else if (next_choice == LIBMICROKITCO_ROOT_THREAD) {
+            } else if (co_controller->tcbs[next_choice].state == cothread_ready) {
                 break;
             } else {
                 continue;
