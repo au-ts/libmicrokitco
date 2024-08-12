@@ -35,7 +35,7 @@ void microkit_cothread_panic(uintptr_t err) {
 // libmicrokitco will crash the client PD with one of the following error code as
 // the faulting virtual memory address.
 typedef enum {
-    reserved, // so that internal error code starts from 1 for easy identification.
+    reserved = 0, // so that internal error code starts from 1 for easy identification.
     cannot_destroy_self_after_return,
     co_err_sem_sig_once_cannot_schedule_caller,
     destroy_cannot_destroy_root,
