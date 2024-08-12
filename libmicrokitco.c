@@ -25,6 +25,7 @@ static void memzero(void *dst, size_t n) {
 void microkit_cothread_panic(uintptr_t err) {
     volatile char *fault_addr = (volatile char *) err;
     *fault_addr = 0;
+    while (true) {};
 }
 
 #include <libco.h>
