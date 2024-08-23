@@ -201,8 +201,6 @@ void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t c
         microkit_cothread_panic(init_stack_too_small);
     }
 
-    co_initialize();
-
     // This part will VMFault on write if the given memory is not large enough.
     memzero((void *) controller_memory_addr, LIBMICROKITCO_CONTROLLER_SIZE);
     co_controller = controller_memory_addr;

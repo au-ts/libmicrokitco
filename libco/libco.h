@@ -8,7 +8,6 @@ extern "C" {
 // cothread handle
 typedef void* cothread_t;
 
-void co_initialize(void);
 cothread_t co_active(void);
 cothread_t co_derive(void*, unsigned int, void (*)(void));
 void co_switch(cothread_t);

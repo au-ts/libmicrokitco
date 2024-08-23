@@ -13,7 +13,6 @@ inline void panic(void) {
 
 static thread_local long long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
-static void (*co_swap)(cothread_t, cothread_t) = 0;
 
 section(text)
 /* ABI: SystemV */
@@ -36,9 +35,7 @@ const unsigned char co_swap_function[4096] = {
   0xff, 0xe0,              /* jmp rax          */
 };
 
-void co_initialize(void) {
-    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-}
+static void (*co_swap)(cothread_t, cothread_t) = (void (*)(cothread_t, cothread_t))co_swap_function;
 
 static void co_entrypoint(cothread_t handle) {
   long long* buffer = (long long*)handle;

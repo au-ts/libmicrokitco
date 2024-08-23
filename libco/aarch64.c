@@ -49,7 +49,6 @@ enum {
 static thread_local uintptr_t co_active_buffer[regs_count] = { 0 };
 static thread_local cothread_t co_active_handle = &co_active_buffer[regs_count - 1];
 // co_swap(char *to, char *from)
-static void (*co_swap)(cothread_t, cothread_t) = 0;
 
 section(text)
     const uint32_t co_swap_function[] = {
@@ -91,9 +90,7 @@ section(text)
         0xD61F03C0, // br lr // jump to destination pc
 };
 
-void co_initialize(void) {
-    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-}
+static void (*co_swap)(cothread_t, cothread_t) = (void (*)(cothread_t, cothread_t))co_swap_function;
 
 static void co_entrypoint(void) {
     uintptr_t *buffer_top = (uintptr_t *)co_active_handle;
