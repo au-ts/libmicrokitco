@@ -75,7 +75,7 @@ static co_control_t *co_controller = NULL;
 // Pick a ready thread, essentially popping the first item from the scheduling queue.
 static inline microkit_cothread_ref_t internal_schedule(void) {
     microkit_cothread_ref_t next_choice;
-    
+
     while (true) {
         // This loop will iterate 2 >= times if client destroy a ready cothread. It's TCB will be inactive but it is still
         // in the scheduling queue, we need to gracefully handle this.
@@ -171,7 +171,7 @@ void microkit_cothread_semaphore_signal(microkit_cothread_sem_t *sem) {
     // Move semaphore list
     sem->head = next;
     co_controller->tcbs[head].next_blocked_on_same_event = LIBMICROKITCO_NULL_HANDLE;
-    
+
     if (next == LIBMICROKITCO_NULL_HANDLE) {
         // Reset semaphore if it's waiting queue is empty
         microkit_cothread_semaphore_init(sem);
@@ -238,7 +238,7 @@ void microkit_cothread_init(
 
                 if (this_stack_start <= other_stack_end && other_stack_start <= this_stack_end) {
                     microkit_cothread_panic(init_co_stack_overlap);
-                } 
+                }
             }
         }
     }
@@ -350,7 +350,7 @@ void microkit_cothread_yield(void) {
     if (sched_err != LIBHOSTEDQUEUE_NOERR) {
         microkit_cothread_panic(yield_cannot_schedule_caller);
     }
-    
+
     co_controller->tcbs[co_controller->running].state = cothread_ready;
 
     // If the scheduling queues are empty beforehand, the caller just get runned again.
