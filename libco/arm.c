@@ -17,6 +17,10 @@ static const unsigned long co_swap_function[1024] = {
   0xe12fff1e,  /* bx lr                     */
 };
 
+void co_initialize(void) {
+    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
+}
+
 cothread_t co_active(void) {
   if(!co_active_handle) co_active_handle = &co_active_buffer;
   return co_active_handle;
@@ -24,9 +28,6 @@ cothread_t co_active(void) {
 
 cothread_t co_derive(void* memory, unsigned int size, void (*entrypoint)(void)) {
   unsigned long* handle;
-  if(!co_swap) {
-    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-  }
   if(!co_active_handle) co_active_handle = &co_active_buffer;
 
   if(handle = (unsigned long*)memory) {

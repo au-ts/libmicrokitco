@@ -232,14 +232,15 @@ static void co_entrypoint(void) {
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
+void co_initialize(void) {
+    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
+}
+
 cothread_t co_active(void) {
     return co_active_handle;
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) {
-    if (!co_swap)
-        co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-
     // We chop up the memory into an array of words.
     uintptr_t *co_local_storage_bottom = (uintptr_t *)memory;
     size_t num_words_storable = size / sizeof(uintptr_t);
