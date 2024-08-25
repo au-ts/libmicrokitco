@@ -8,7 +8,6 @@ extern "C" {
 
 static thread_local unsigned long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
-static void (*co_swap)(cothread_t, cothread_t) = 0;
 
 section(text)
 static const unsigned long co_swap_function[1024] = {
@@ -17,6 +16,8 @@ static const unsigned long co_swap_function[1024] = {
   0xe12fff1e,  /* bx lr                     */
 };
 
+static void (*co_swap)(cothread_t, cothread_t) = (void (*)(cothread_t, cothread_t))co_swap_function;
+
 cothread_t co_active(void) {
   if(!co_active_handle) co_active_handle = &co_active_buffer;
   return co_active_handle;
@@ -24,9 +25,6 @@ cothread_t co_active(void) {
 
 cothread_t co_derive(void* memory, unsigned int size, void (*entrypoint)(void)) {
   unsigned long* handle;
-  if(!co_swap) {
-    co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-  }
   if(!co_active_handle) co_active_handle = &co_active_buffer;
 
   if(handle = (unsigned long*)memory) {

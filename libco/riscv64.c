@@ -88,9 +88,6 @@ static thread_local uintptr_t root_cothread_buffer[num_saved] = { 0 };
 // All cothread_t will point to the top word in the buffer
 static thread_local cothread_t co_active_handle = &root_cothread_buffer[num_saved - 1];
 
-// co_swap(void *to, void *from)
-static void (*co_swap)(cothread_t, cothread_t) = 0;
-
 // Quick reference: https://www.cl.cam.ac.uk/teaching/1617/ECAD+Arch/files/docs/RISCVGreenCardv8-20151013.pdf
 // Instructions encoded with this tool: https://luplab.gitlab.io/rvcodecjs/
 
@@ -232,14 +229,13 @@ static void co_entrypoint(void) {
     co_panic(); /* Panic if cothread_t entrypoint returns */
 }
 
+static void (*co_swap)(cothread_t, cothread_t) = (void (*)(cothread_t, cothread_t))co_swap_function;
+
 cothread_t co_active(void) {
     return co_active_handle;
 }
 
 cothread_t co_derive(void *memory, unsigned int size, void (*entrypoint)(void)) {
-    if (!co_swap)
-        co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
-
     // We chop up the memory into an array of words.
     uintptr_t *co_local_storage_bottom = (uintptr_t *)memory;
     size_t num_words_storable = size / sizeof(uintptr_t);
