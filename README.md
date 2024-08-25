@@ -1,4 +1,4 @@
-# Client Programming Model for Microkit
+# Coroutine library for Microkit
 
 ## Problem
 <!-- Lifted from the ToR project brief -->
