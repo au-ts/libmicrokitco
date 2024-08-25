@@ -39,6 +39,8 @@ void init(void) {
 
     printf("CLIENT: libmicrokitco started\n");
     
+    microkit_cothread_yield();
+
     microkit_cothread_spawn(co_entry, (void *) 1);
     microkit_cothread_spawn(co_entry, (void *) 2);
     microkit_cothread_spawn(co_entry, (void *) 3);
