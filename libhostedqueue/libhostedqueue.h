@@ -21,16 +21,16 @@
 #define LIBHOSTEDQUEUE_ERR_EMPTY 3
 
 typedef struct {
-    int capacity;
-    int items;
+    unsigned capacity;
+    unsigned items;
 
     // points to item at front
-    int head;
+    unsigned head;
     // next available index for insert, i.e. exclusive of last item
-    int tail;
+    unsigned tail;
 } hosted_queue_t;
 
-static inline int hostedqueue_init(hosted_queue_t *queue_controller, const int capacity) {
+static inline int hostedqueue_init(hosted_queue_t *queue_controller, const unsigned capacity) {
     if (capacity < 1) {
         return LIBHOSTEDQUEUE_ERR_INVALID_ARGS;
     }
