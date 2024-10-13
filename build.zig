@@ -30,7 +30,6 @@ pub fn build(b: *std.Build) !void {
     // Find architecture specific source files
     const arch_src = switch (target.result.cpu.arch) {
         .aarch64 => src_aarch64,
-        // TODO: need to specify soft-float
         .riscv64 => src_riscv64,
         .x86_64 => src_x86_64,
         else => {
