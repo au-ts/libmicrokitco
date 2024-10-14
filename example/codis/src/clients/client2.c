@@ -30,7 +30,6 @@ void co_main(void) {
     microkit_cothread_semaphore_wait(&server_async_io_sem);
     printf("done, bucket new len is: %d\n", ((uint16_t *) our_ipc)[0]);
     
-
     our_ipc[COMMAND_IPC_IDX] = APPEND_CMD;
     our_ipc[COMMAND_BUCKET_IDX] = 0;
     strcpy(send, "safety and reliability guarantees. ");
@@ -47,7 +46,8 @@ void init(void) {
     our_client_num = (ipc >> 12) & 0xF;
     printf("CLIENT #%d: starting...", our_client_num);
 
-    microkit_cothread_init((co_control_t *) co_mem, 0x2000, co_stack);
+    stack_ptrs_arg_array_t costacks = { co_stack };
+    microkit_cothread_init((co_control_t *) co_mem, 0x2000, costacks);
 
     if (microkit_cothread_spawn(co_main, 0) == LIBMICROKITCO_NULL_HANDLE) {
         printf("CLIENT: ERR: cannot init worker cothread\n");

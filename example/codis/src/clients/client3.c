@@ -33,7 +33,8 @@ void init(void) {
     our_client_num = (ipc >> 12) & 0xF;
     printf("CLIENT #%d: starting...", our_client_num);
 
-    microkit_cothread_init((co_control_t *) co_mem, 0x2000, co_stack);
+    stack_ptrs_arg_array_t costacks = { co_stack };
+    microkit_cothread_init((co_control_t *) co_mem, 0x2000, costacks);
 
     if (microkit_cothread_spawn(co_main, 0) == LIBMICROKITCO_NULL_HANDLE) {
         printf("CLIENT: ERR: cannot init worker cothread\n");

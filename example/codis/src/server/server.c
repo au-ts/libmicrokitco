@@ -99,7 +99,8 @@ void init(void) {
 
     printf("SERVER: starting\n");
 
-    microkit_cothread_init((co_control_t *) co_mem, stack_size, stack1, stack2, stack3);
+    stack_ptrs_arg_array_t costacks = { stack1, stack2, stack3 };
+    microkit_cothread_init((co_control_t *) co_mem, 0x2000, costacks);
     printf("SERVER: libmicrokitco started\n");
 
     microkit_cothread_ref_t _handle;
