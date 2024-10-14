@@ -1,4 +1,4 @@
-# Coroutine library for Microkit
+# Coroutine library for the seL4 Microkit
 
 ## Problem
 <!-- Lifted from the ToR project brief -->
@@ -215,18 +215,19 @@ Finally, for any of your object files that uses this library, link it against `$
 ## Foot guns
 - If you perform a protected procedure call (PPC), all cothreads in your PD will be blocked even if they are ready until the PPC returns.
 - The only time that your PD can receive notifications is when all cothreads are blocked and the scheduler is invoked, then the execution is switched to the root thread where the Microkit event loop runs to receive and dispatch notifications/PPCs. Consequently, if there is a long running cothread that never blocks, the other cothreads will never wake up if they are blocked on some channel.
-- If you have 2 or more cothreads and they use `signal_delayed()`, the previous cothread's signal will get overwritten!
+- If you have 2 or more cothreads and they use `microkit_deferred_notify()`, the previous cothread's signal will get overwritten!
 
 
 ## API
 ---
 
-### `void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...)`
+### `void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, const stack_ptrs_arg_array_t co_stacks)`
 A variadic function that initialises the library's internal data structure. Each protection domain can only have one "instance" of the library running.
 
 ##### Arguments
 - `controller_memory_addr` points to the base of a buffer/MR that is at least `LIBMICROKITCO_CONTROLLER_SIZE` bytes large.
 - `co_stack_size` to be >= 0x1000 bytes.
+- `co_stacks`: an array of stack pointers for coroutines, see `libmicrokitco.h` for more details.
 
 Then, it expect `LIBMICROKITCO_MAX_COTHREADS` (defined at compile time) of `uintptr_t` that point to where each co-stack starts. Giving less than `LIBMICROKITCO_MAX_COTHREADS` is undefined behaviour!
 
