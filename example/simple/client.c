@@ -2,6 +2,8 @@
 #include <libmicrokitco.h>
 #include <printf.h>
 
+#include <libmicrokitco_opts.h>
+
 #define COSTACK_SIZE 0x1000
 
 co_control_t co_control_mem;
@@ -23,18 +25,23 @@ void init(void) {
     
     printf("CLIENT: starting\n");
 
+    printf("CLIENT: costacks are 0x%p 0x%p 0x%p\n", stack1, stack2, stack3);
+
     printf("CLIENT: float and double is %f and %lf\n", f, d);
 
     printf("CLIENT: libmicrokitco derived memsize is %lu bytes\n", 
         LIBMICROKITCO_CONTROLLER_SIZE
     );
 
+    stack_ptrs_arg_array_t stack_ptrs = {
+        (uintptr_t) &stack1,
+        (uintptr_t) &stack2,
+        (uintptr_t) &stack3
+    };
     microkit_cothread_init(
         &co_control_mem, 
         COSTACK_SIZE,
-        stack1, 
-        stack2, 
-        stack3
+        stack_ptrs
     );
 
     printf("CLIENT: libmicrokitco started\n");

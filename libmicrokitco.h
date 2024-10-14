@@ -8,6 +8,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <libmicrokitco_opts.h>
 
@@ -95,7 +96,15 @@ typedef struct cothreads_control {
 
 // ========== BEGIN API SECTION ==========
 
-void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...);
+// You need to provide (LIBMICROKITCO_MAX_COTHREADS - 1) stack pointers for the coroutines.
+// -1 because the root thread already have a stack
+typedef uintptr_t stack_ptrs_arg_array_t[LIBMICROKITCO_MAX_COTHREADS - 1];
+
+void microkit_cothread_init(
+    co_control_t *controller_memory_addr,
+    const size_t co_stack_size,
+    const stack_ptrs_arg_array_t co_stacks
+);
 
 bool microkit_cothread_free_handle_available(microkit_cothread_ref_t *ret_handle);
 

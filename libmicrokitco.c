@@ -193,7 +193,11 @@ bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem) {
 
 // =========== Public functions ===========
 
-void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t co_stack_size, ...) {
+void microkit_cothread_init(
+    co_control_t *controller_memory_addr,
+    const size_t co_stack_size,
+    const stack_ptrs_arg_array_t co_stacks
+) {
     if (co_controller != NULL) {
         microkit_cothread_panic(init_already_initialised);
     }
@@ -206,13 +210,12 @@ void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t c
     co_controller = controller_memory_addr;
     co_controller->co_stack_size = co_stack_size;
 
-    // Parses all the valid stack memory regions
-    va_list ap;
-    va_start(ap, co_stack_size);
+    // Check that all the stacks are in a valid memory region
+    // Skip the zero TCB because its the root thread.
     for (int i = 1; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
-        co_controller->tcbs[i].local_storage = (void *) va_arg(ap, uintptr_t);
+        co_controller->tcbs[i].local_storage = (void *) co_stacks[i - 1];
 
-        if (!co_controller->tcbs[i].local_storage) {
+        if (co_controller->tcbs[i].local_storage == 0) {
             microkit_cothread_panic(init_co_stack_null);
         }
 
@@ -222,7 +225,6 @@ void microkit_cothread_init(co_control_t *controller_memory_addr, const size_t c
         stack[0] = 0;
         stack[co_stack_size - 1] = 0;
     }
-    va_end(ap);
 
     // Check that none of the stacks overlap
     for (int i = 1; i < LIBMICROKITCO_MAX_COTHREADS; i++) {
