@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <microkit.h>
+#include <os/sddf.h>
 
 // A simple fixed capacity circular queue of `microkit_cothread_ref_t`s.
 

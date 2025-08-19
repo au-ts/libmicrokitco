@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <microkit.h>
+#include <os/sddf.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -275,7 +275,7 @@ void microkit_cothread_init(
     }
 
     // Initialise the blocked table
-    for (int i = 0; i < MICROKIT_MAX_CHANNELS; i++) {
+    for (int i = 0; i < SDDF_MAX_CHANNELS; i++) {
         microkit_cothread_semaphore_init(&co_controller->blocked_channel_map[i]);
     }
 }
@@ -381,19 +381,19 @@ void microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
     }
 }
 
-void microkit_cothread_wait_on_channel(const microkit_channel wake_on) {
-    if (wake_on >= MICROKIT_MAX_CHANNELS) {
+void microkit_cothread_wait_on_channel(const sddf_channel wake_on) {
+    if (wake_on >= SDDF_MAX_CHANNELS) {
         microkit_cothread_panic(wait_on_channel_invalid_channel);
     }
 
     microkit_cothread_semaphore_wait(&co_controller->blocked_channel_map[wake_on]);
 }
 
-void microkit_cothread_recv_ntfn(const microkit_channel ch) {
+void microkit_cothread_recv_ntfn(const sddf_channel ch) {
     if (co_controller->running != LIBMICROKITCO_ROOT_THREAD) {
         microkit_cothread_panic(recv_ntfn_called_from_non_root_cothread);
     }
-    if (ch >= MICROKIT_MAX_CHANNELS) {
+    if (ch >= SDDF_MAX_CHANNELS) {
         microkit_cothread_panic(recv_ntfn_invalid_channel);
     }
 

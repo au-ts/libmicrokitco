@@ -86,7 +86,7 @@ typedef struct cothreads_control {
     microkit_cothread_ref_t scheduling_queue_mem[LIBMICROKITCO_MAX_COTHREADS];
 
     // Map of linked list on what cothreads are blocked on which channel.
-    microkit_cothread_sem_t blocked_channel_map[MICROKIT_MAX_CHANNELS];
+    microkit_cothread_sem_t blocked_channel_map[SDDF_MAX_CHANNELS];
 } co_control_t;
 
 #define LIBMICROKITCO_CONTROLLER_SIZE sizeof(co_control_t)
@@ -130,7 +130,7 @@ bool microkit_cothread_semaphore_is_queue_empty(const microkit_cothread_sem_t *s
 bool microkit_cothread_semaphore_is_set(const microkit_cothread_sem_t *sem);
 
 // Microkit specific semaphore wrapper: blocking on channel
-void microkit_cothread_wait_on_channel(const microkit_channel wake_on); 
-void microkit_cothread_recv_ntfn(const microkit_channel ch);
+void microkit_cothread_wait_on_channel(const sddf_channel wake_on); 
+void microkit_cothread_recv_ntfn(const sddf_channel ch);
 
 // ========== END API SECTION ==========
