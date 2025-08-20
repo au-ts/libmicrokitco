@@ -366,7 +366,7 @@ void microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
         microkit_cothread_panic(destroy_already_not_initialised);
     }
 
-    if (co_controller->running == 0) {
+    if (cothread == 0) {
         // cannot destroy root thread
         microkit_cothread_panic(destroy_cannot_destroy_root);
     }
