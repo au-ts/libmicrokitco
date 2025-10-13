@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-inline void panic(void) {
+static void panic(void) {
     char *panic_addr = (char *) 0;
     *panic_addr = (char) 0;
 }
