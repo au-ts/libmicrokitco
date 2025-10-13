@@ -1,3 +1,8 @@
 A simple toy example showing `libmicrokitco` in action.
 
-Modify the SDK paths in `run_qemu.sh` as appropriate for your system. Then execute the script for running options.
+Execute the `run_qemu.sh` script with `MICROKIT_SDK` specified for options. For example:
+```shell
+MICROKIT_SDK=<path_to_Microkit_SDK> ./run_qemu.sh
+```
+
+Remember to delete the build directory when you switch architecture.
