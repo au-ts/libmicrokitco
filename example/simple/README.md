@@ -1,3 +1,8 @@
+<!-- 
+Copyright 2025, UNSW
+SPDX-License-Identifier: BSD-2-Clause
+-->
+
 A simple toy example showing `libmicrokitco` in action.
 
 Execute the `run_qemu.sh` script with `MICROKIT_SDK` specified for options. For example:

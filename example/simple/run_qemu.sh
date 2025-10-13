@@ -1,3 +1,9 @@
+#
+# Copyright 2025, UNSW
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+
 # You must define this, either here or as part of your environment.
 # MICROKIT_SDK=''
 
