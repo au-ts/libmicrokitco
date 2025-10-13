@@ -9,7 +9,7 @@
 co_control_t co_control_mem;
 
 // These should actually be in the system description file with guard page
-// but setvar_addr does not work in the x86 SDK currently so we putting them here
+// but keeping things simple here
 char stack1[COSTACK_SIZE];
 char stack2[COSTACK_SIZE];
 char stack3[COSTACK_SIZE];
