@@ -119,6 +119,7 @@ microkit_cothread_ref_t microkit_cothread_my_handle(void);
 void *microkit_cothread_my_arg(void);
 
 void microkit_cothread_yield(void);
+void microkit_cothread_switch_to(const microkit_cothread_ref_t cothread);
 
 void microkit_cothread_destroy(const microkit_cothread_ref_t cothread);
 

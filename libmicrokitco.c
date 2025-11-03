@@ -357,6 +357,24 @@ void microkit_cothread_yield(void) {
     internal_go_next();
 }
 
+void microkit_cothread_switch_to(const microkit_cothread_ref_t cothread) {
+    if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0) {
+        microkit_cothread_panic(generic_invalid_handle);
+    }
+
+    // Caller get pushed onto the appropriate scheduling queue.
+    hosted_queue_t *sched_queue = &co_controller->scheduling_queue;
+    const int sched_err = hostedqueue_push(sched_queue, co_controller->scheduling_queue_mem, &co_controller->running);
+    if (sched_err != LIBHOSTEDQUEUE_NOERR) {
+        microkit_cothread_panic(yield_cannot_schedule_caller);
+    }
+
+    co_controller->tcbs[co_controller->running].state = cothread_ready;
+
+    // Yield to the supplied cothread
+    co_switch(co_controller->tcbs[cothread].co_handle);
+}
+
 void microkit_cothread_destroy(const microkit_cothread_ref_t cothread) {
     if (cothread >= LIBMICROKITCO_MAX_COTHREADS || cothread < 0) {
         microkit_cothread_panic(generic_invalid_handle);
