@@ -129,26 +129,16 @@ Note: Significant slow-down in RISC-V is due to signal fastpath not implemented 
 ### Prerequisite
 You have two choices of toolchain: LLVM clang or GCC.
 
-For LLVM clang, you need the LLVM toolchain installed and on your machine's `$PATH`:
-- `clang`,
-- `ld.lld`, and 
-- `llvm-objcopy` (for x86_64 targets only).
+Define your compiler and linker in your main make script:
+- `CC`
+- `LD`
 
-Then define `LLVM = 1` in your Makefile and export it when you invoke libmicrokitco's Makefile.
-
-These `clang` targets have been well tested with this library:
-- `aarch64-none-elf`,
-- `x86_64-none-elf`,
-- `riscv64-none-elf`.
-
----
-
-For GCC, define `TOOLCHAIN` in your Makefile. You also need them on your `$PATH`:
-- `$(TOOLCHAIN)-gcc`,
-- `$(TOOLCHAIN)-ld`,
-- `$(TOOLCHAIN)-objcopy` (for x86_64 targets only),
-
+These will both need to be in your path so that the make snippet can find them.
 If they are not in your `$PATH`, `$(TOOLCHAIN)` must contain the absolute path to them.
+
+You will also need to define the correct C flags for your toolchain. These
+will most likely be the same C flags that you are using in your project:
+- `CFLAGS`
 
 These compiler triples have been well tested with this library:
 - `aarch64-unknown-linux-gnu`,
@@ -163,53 +153,60 @@ You need to create a file called `libmicrokitco_opts.h` that specify this consta
 
 `libmicrokitco_opts.h` is tracked as a dependancy of the library's object file. Changes to `libmicrokitco_opts.h` will trigger a recompilation of the library. 
 
+You can also generate different versions of the library with the same filename stem. This is useful if you want to
+build multiple different versions with different build time configurations. `CFLAGS` can be configured using the
+`LIBMICROKITCO_CFLAGS` variable, as well as its suffixed variant.
+
+For example, if you only need to generate one version of the library, usage is simple:
+
+```
+LIBMICROKITCO_CFLAGS := -O2 -I/path/to/libmicrokitco_opts.h
+include libmicrokitco.mk
+my_program.elf: libmicrokitco.a
+```
+
+However, if you have two different programs requiring two differently configured versions of the library, you
+can do this instead:
+
+```
+LIBMICROKITCO_CFLAGS_0 := -O0 -g -I/path/to/program_0/libmicrokitco_opts.h
+LIBMICROKITCO_CFLAGS_1 := -O3 -I/path/to/program_1/libmicrokitco_opts.h
+include libmicrokitco.mk
+program_0.elf: libmicrokitco_0.a
+program_1.elf: libmicrokitco_1.a
+```
+
+Observe that each LIBMICROKITCO_CFLAGS variant should contain the include path for the respective libmicrokitco_opts.h.
+
 ### Compilation
 To use `libmicrokitco` in your project, define these in your Makefile:
 1. `LIBMICROKITCO_PATH`: absolute path to root of this library,
 2. `MICROKIT_SDK`: absolute path to Microkit SDK,
-3. `TARGET`: triple, e.g. `aarch64-none-elf`, `x86_64-none-elf`, `riscv64-none-elf`. This is used for naming the output object files and as an argument to LLVM's `clang`.
-4. `BUILD_DIR`,
-5. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
-6. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
-7. `CPU`: one of Microkit's supported CPU, e.g. `cortex-a53`, `nehalem`, or `medany`, 
-8. `LIBMICROKITCO_OPT_PATH`: path to directory containing `libmicrokitco_opts.h`. 
-9. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
-10. The variables as outlined in Prerequisite.
+3. `BUILD_DIR`,
+4. `BOARD`: one of Microkit's supported board, e.g. `odroid_c4` or `x86_64_virt`,
+5. `MICROKIT_CONFIG`: one of `debug`, `release` or `benchmark`, 
+6. `LIBMICROKITCO_CFLAGS`: As defined in the above section,
+7. (Optionally) `LIBCO_PATH`: to coroutine primitives implementation, if not defined, default to the bundled `libco`,
+8. The variables as outlined in Prerequisite.
 
-The compiled object filename will have the form:
-```Make
-LIBMICROKITCO_OBJ := libmicrokitco.a
-```
 
-Then, export those variables and invoke `libmicrokitco`'s Makefile. You could also compile many configurations at once, for example with LLVM:
+Then, export those variables and includes `libmicrokitco`'s Makefile:
 ```Make
-TARGET=aarch64-none-elf
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_OPT_PATH := $(shell pwd)
-LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.a
 
-LLVM = 1
-export LIBMICROKITCO_PATH LIBMICROKITCO_OPT_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU LLVM
-
-$(LIBMICROKITCO_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile
+include $(LIBMICROKITCO_PATH)/libmicrokitco.mk
 ```
 
 Or with GCC:
 ```Make
-TARGET=aarch64-none-elf
-TOOLCHAIN=$(TARGET)
 LIBMICROKITCO_PATH := ../../
 LIBMICROKITCO_OPT_PATH := $(shell pwd)
-LIBMICROKITCO_OBJ := $(BUILD_DIR)/libmicrokitco/libmicrokitco_aarch64-none-elf.a
 
-export LIBMICROKITCO_PATH TARGET MICROKIT_SDK BUILD_DIR MICROKIT_BOARD MICROKIT_CONFIG CPU TOOLCHAIN
-
-$(LIBMICROKITCO_OBJ):
-	make -f $(LIBMICROKITCO_PATH)/Makefile
+include $(LIBMICROKITCO_PATH)/libmicrokitco.mk
 ```
 
-Finally, for any of your object files that uses this library, link it against `$(LIBMICROKITCO_OBJ)`.
+Finally, for any of your object files that uses this library, link it against `libmicrokitco.a` or `libmicrokitco%.a`.
 
 
 ## Foot guns
