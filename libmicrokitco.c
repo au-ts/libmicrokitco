@@ -22,11 +22,18 @@ static void memzero(void *dst, size_t n) {
     }
 }
 
+/*
+ * GCC picks this up as an array-dereference out of bounds
+ * as err is a number near zero.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 void microkit_cothread_panic(uintptr_t err) {
     volatile char *fault_addr = (volatile char *) err;
     *fault_addr = 0;
     while (true) {};
 }
+#pragma GCC diagnostic pop
 
 #include <libco.h>
 
