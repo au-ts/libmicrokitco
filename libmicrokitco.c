@@ -377,6 +377,7 @@ void microkit_cothread_switch_to(const microkit_cothread_ref_t cothread) {
     }
 
     co_controller->tcbs[co_controller->running].state = cothread_ready;
+    co_controller->running = cothread;
 
     // Yield to the supplied cothread
     co_switch(co_controller->tcbs[cothread].co_handle);
